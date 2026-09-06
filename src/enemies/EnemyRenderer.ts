@@ -2,17 +2,27 @@ import type { Enemy } from './Enemy';
 import type { Goblin } from './Goblin';
 import type { Slime } from './Slime';
 import type { Ahriman } from './Ahriman';
+import type { Snake } from './Snake';
+import type { Bat } from './Bat';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
 const goblinUrl = new URL('../../assets/monsters/goblin/base.png', import.meta.url).href;
 const ahrimanUrl = new URL('../../assets/monsters/ahriman/base.png', import.meta.url).href;
+const snakeUrls = [1, 2, 3].map((index) =>
+  new URL(`../../assets/monsters/snake/move_0${index}.png`, import.meta.url).href,
+);
+const batUrls = [1, 2, 3].map((index) =>
+  new URL(`../../assets/monsters/bat/fly_0${index}.png`, import.meta.url).href,
+);
 
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
   private goblinImage!: HTMLImageElement;
   private ahrimanImage!: HTMLImageElement;
+  private readonly snakeImages: HTMLImageElement[] = [];
+  private readonly batImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
     [this.slimeImage, this.clingImage, this.goblinImage, this.ahrimanImage] = await Promise.all([
@@ -21,6 +31,8 @@ export class EnemyRenderer {
       loadImage(goblinUrl),
       loadImage(ahrimanUrl),
     ]);
+    this.snakeImages.push(...await Promise.all(snakeUrls.map(loadImage)));
+    this.batImages.push(...await Promise.all(batUrls.map(loadImage)));
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
@@ -28,8 +40,12 @@ export class EnemyRenderer {
       this.drawSlime(ctx, enemy as Slime);
     } else if (enemy.type === 'goblin') {
       this.drawGoblin(ctx, enemy as Goblin);
-    } else {
+    } else if (enemy.type === 'ahriman') {
       this.drawAhriman(ctx, enemy as Ahriman);
+    } else if (enemy.type === 'snake') {
+      this.drawSnake(ctx, enemy as Snake);
+    } else {
+      this.drawBat(ctx, enemy as Bat);
     }
   }
 
@@ -146,6 +162,41 @@ export class EnemyRenderer {
     );
     ctx.restore();
 
+    ctx.restore();
+  }
+  private drawSnake(ctx: CanvasRenderingContext2D, snake: Snake): void {
+    const frame = snake.state === 'strike'
+      ? 2
+      : Math.floor(snake.actionTime * 8) % this.snakeImages.length;
+    const image = this.snakeImages[frame] ?? this.snakeImages[0];
+    if (!image) return;
+
+    const drawW = snake.state === 'strike' ? 58 : 52;
+    const drawH = snake.state === 'strike' ? 34 : 30;
+    const centerX = snake.x + snake.w / 2;
+    const footY = snake.y + snake.h + 2;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    if (snake.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  }
+
+  private drawBat(ctx: CanvasRenderingContext2D, bat: Bat): void {
+    const frame = Math.floor(bat.actionTime * 10) % this.batImages.length;
+    const image = this.batImages[frame] ?? this.batImages[0];
+    if (!image) return;
+
+    const drawW = 50;
+    const drawH = 28;
+    const centerX = bat.x + bat.w / 2;
+    const centerY = bat.y + bat.h / 2;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    if (bat.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   }
 }

@@ -6,6 +6,8 @@ import { EnemyRenderer } from '../enemies/EnemyRenderer';
 import type { Enemy } from '../enemies/Enemy';
 import { Slime } from '../enemies/Slime';
 import { Ahriman } from '../enemies/Ahriman';
+import { Snake } from '../enemies/Snake';
+import { Bat } from '../enemies/Bat';
 import { Inventory } from '../items/Inventory';
 import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
@@ -92,7 +94,9 @@ export class Game {
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     if (this.menu.isOpen || this.player.hp <= 0) return;
 
+    const hpBeforeUpdate = this.player.hp;
     this.player.update(dt, this.input, this.stage);
+    if (this.player.hp !== hpBeforeUpdate) this.refreshUi();
     this.resolvePlayerAttack();
 
     for (const enemy of this.enemies) {
@@ -101,7 +105,14 @@ export class Game {
         stage: this.stage,
         hurtPlayer: (damage, sourceX) => {
           const reduced = Math.max(1, damage - this.totalDefense - this.inventory.flatDamageReduction);
-          if (this.player.hurt(reduced, sourceX)) this.refreshUi();
+          const damaged = this.player.hurt(reduced, sourceX);
+          if (damaged) this.refreshUi();
+          return damaged;
+        },
+        poisonPlayer: (duration, tickInterval, damage) => {
+          this.player.applyPoison(duration, tickInterval, damage);
+          this.showNotice('毒状態になった');
+          this.refreshUi();
         },
       });
     }
@@ -171,6 +182,8 @@ export class Game {
     const goblinX1 = groundSpots[1] ?? 190;
     const goblinX2 = groundSpots[2] ?? 470;
     const ahrimanX = shuffle([260, 330, 430, 560])[0] ?? 430;
+    const snakeX = shuffle([125, 245, 355, 525])[0] ?? 355;
+    const batX = shuffle([220, 340, 455, 590])[0] ?? 455;
 
     this.enemies = [
       new Slime(slimeX, 355, 'crawl'),
@@ -178,6 +191,8 @@ export class Game {
       new Goblin(goblinX1, 342, 1, 0.8),
       new Goblin(goblinX2, 342, -1, 0.5),
       new Ahriman(ahrimanX, 165),
+      new Snake(snakeX, 362),
+      new Bat(batX, 125),
     ];
   }
 
@@ -214,8 +229,80 @@ export class Game {
       if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
     }
     this.player.draw(this.ctx);
+    this.drawEnemyHpBars();
+    this.drawPlayerHpBar();
     this.drawStairPrompt();
     this.drawNotice();
+  }
+
+  private drawPlayerHpBar(): void {
+    const centerX = this.player.x + this.player.w / 2;
+    const topY = this.player.y - 13;
+    const width = 44;
+
+    this.drawHpBar(centerX, topY, width, this.player.hp, this.maxHp);
+
+    if (this.player.poisoned) {
+      this.drawPoisonMark(centerX + width / 2 + 9, topY + 3);
+    }
+  }
+
+  private drawPoisonMark(centerX: number, centerY: number): void {
+    const size = 12;
+    const x = Math.round(centerX - size / 2);
+    const y = Math.round(centerY - size / 2);
+
+    this.ctx.save();
+    this.ctx.fillStyle = '#7d1bb1';
+    this.ctx.fillRect(x, y, size, size);
+    this.ctx.strokeStyle = '#f0b6ff';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x - 0.5, y - 0.5, size + 1, size + 1);
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 9px system-ui';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('毒', centerX, centerY + 0.5);
+    this.ctx.restore();
+  }
+
+  private drawEnemyHpBars(): void {
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+
+      const width = enemy.type === 'ahriman' ? 48 : enemy.type === 'goblin' ? 42 : enemy.type === 'snake' ? 40 : 38;
+      const y = enemy.type === 'ahriman' ? enemy.y - 12 : enemy.y - 10;
+      this.drawHpBar(
+        enemy.x + enemy.w / 2,
+        y,
+        width,
+        enemy.hp,
+        enemy.maxHp,
+      );
+    }
+  }
+
+  private drawHpBar(centerX: number, topY: number, width: number, hp: number, maxHp: number): void {
+    const clampedMax = Math.max(1, maxHp);
+    const ratio = Math.max(0, Math.min(1, hp / clampedMax));
+    const x = Math.round(centerX - width / 2);
+    const y = Math.round(topY);
+    const height = 6;
+
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.92)';
+    this.ctx.fillRect(x - 1, y - 1, width + 2, height + 2);
+
+    this.ctx.fillStyle = '#2a0b0b';
+    this.ctx.fillRect(x, y, width, height);
+
+    this.ctx.fillStyle = '#ff2a2a';
+    this.ctx.fillRect(x, y, Math.round(width * ratio), height);
+
+    this.ctx.strokeStyle = '#f6e7d0';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x - 0.5, y - 0.5, width + 1, height + 1);
+    this.ctx.restore();
   }
 
   private drawStairPrompt(): void {

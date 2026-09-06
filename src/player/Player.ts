@@ -20,6 +20,10 @@ export class Player implements PhysicsBody {
   invulnerability = 0;
   readonly attack = new PlayerAttack();
   walkTime = 0;
+  poisonTime = 0;
+  poisonTickTimer = 0;
+  poisonTickInterval = 1;
+  poisonDamage = 0;
 
   constructor(private readonly renderer: PlayerRenderer) {}
 
@@ -31,6 +35,10 @@ export class Player implements PhysicsBody {
     this.attack.cooldown = 0;
     this.attack.hitConsumed = false;
     this.walkTime = 0;
+    this.poisonTime = 0;
+    this.poisonTickTimer = 0;
+    this.poisonTickInterval = 1;
+    this.poisonDamage = 0;
   }
 
   resetPosition(): void {
@@ -71,6 +79,7 @@ export class Player implements PhysicsBody {
 
     this.attack.update(dt);
     this.invulnerability = Math.max(0, this.invulnerability - dt);
+    this.updatePoison(dt);
 
     const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0;
     if (movingOnGround) this.walkTime += dt;
@@ -80,6 +89,35 @@ export class Player implements PhysicsBody {
     this.x += this.vx;
     this.y += this.vy;
     resolveFloor(this, previousY, stage.platforms);
+  }
+
+  applyPoison(duration: number, tickInterval: number, damage: number): void {
+    this.poisonTime = Math.max(this.poisonTime, duration);
+    this.poisonTickInterval = Math.max(0.1, tickInterval);
+    this.poisonDamage = Math.max(this.poisonDamage, damage);
+    if (this.poisonTickTimer <= 0) this.poisonTickTimer = this.poisonTickInterval;
+  }
+
+  get poisoned(): boolean {
+    return this.poisonTime > 0;
+  }
+
+  private updatePoison(dt: number): void {
+    if (this.poisonTime <= 0 || this.hp <= 0) return;
+
+    this.poisonTime = Math.max(0, this.poisonTime - dt);
+    this.poisonTickTimer -= dt;
+
+    while (this.poisonTickTimer <= 0 && this.poisonTime > 0 && this.hp > 0) {
+      this.hp = Math.max(0, this.hp - this.poisonDamage);
+      this.poisonTickTimer += this.poisonTickInterval;
+    }
+
+    if (this.poisonTime <= 0) {
+      this.poisonTime = 0;
+      this.poisonTickTimer = 0;
+      this.poisonDamage = 0;
+    }
   }
 
   hurt(damage: number, sourceX: number): boolean {

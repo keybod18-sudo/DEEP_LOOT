@@ -8,11 +8,12 @@ import type { Stage } from '../stage/Stage';
 export interface EnemyContext {
   player: Player;
   stage: Stage;
-  hurtPlayer: (damage: number, sourceX: number) => void;
+  hurtPlayer: (damage: number, sourceX: number) => boolean;
+  poisonPlayer: (duration: number, tickInterval: number, damage: number) => void;
 }
 
 export abstract class Enemy implements PhysicsBody {
-  abstract readonly type: 'slime' | 'goblin' | 'ahriman';
+  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat';
 
   vx = 0;
   vy = 0;

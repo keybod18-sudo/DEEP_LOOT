@@ -6,5 +6,7 @@ export const BALANCE = {
   slime: enemyData.slime,
   goblin: enemyData.goblin,
   ahriman: enemyData.ahriman,
+  snake: enemyData.snake,
+  bat: enemyData.bat,
   enemyKnockback: enemyData.knockback,
 } as const;

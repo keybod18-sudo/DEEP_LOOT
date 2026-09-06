@@ -43,5 +43,26 @@
     "minY": 70,
     "maxY": 285,
     "contactDamage": 10
+  },
+  "snake": {
+    "maxHp": 28,
+    "crawlSpeed": 0.48,
+    "biteDamage": 6,
+    "strikeDistance": 48,
+    "strikeDuration": 0.34,
+    "strikeHitTime": 0.14,
+    "strikeCooldown": 1.0,
+    "poisonDuration": 6.0,
+    "poisonTickInterval": 1.0,
+    "poisonDamage": 2
+  },
+  "bat": {
+    "maxHp": 24,
+    "flightSpeed": 1.15,
+    "verticalSpeed": 0.85,
+    "contactDamage": 7,
+    "hitCooldown": 0.85,
+    "minY": 75,
+    "maxY": 300
   }
 }
