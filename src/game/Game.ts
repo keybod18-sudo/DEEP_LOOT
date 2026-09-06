@@ -14,6 +14,7 @@ import { Rat } from '../enemies/Rat';
 import { Skeleton } from '../enemies/Skeleton';
 import { SkeletonArcher } from '../enemies/SkeletonArcher';
 import { Bomb } from '../enemies/Bomb';
+import { Caterpillar } from '../enemies/Caterpillar';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
@@ -118,12 +119,26 @@ export class Game {
   }
 
   toggleMenu(): void {
-    this.setMenuOpen(!this.menu.isOpen);
+    if (this.menu.isOpen) {
+      this.setMenuOpen(false);
+      return;
+    }
+    if (this.player.sealed) {
+      this.showNotice('封印でメニューを開けない');
+      return;
+    }
+    this.setMenuOpen(true);
   }
 
   private update(dt: number): void {
     if (this.input.consumePress('m', 'escape', 'tab')) {
-      this.setMenuOpen(!this.menu.isOpen);
+      if (this.menu.isOpen) {
+        this.setMenuOpen(false);
+      } else if (this.player.sealed) {
+        this.showNotice('封印でメニューを開けない');
+      } else {
+        this.setMenuOpen(true);
+      }
       return;
     }
 
@@ -137,11 +152,19 @@ export class Game {
     this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
     this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
 
-    if (!this.player.paralyzed && this.input.consumePress('k') && this.fireballCooldown <= 0) {
-      this.castFireball();
+    if (this.input.consumePress('k')) {
+      if (this.player.silenced) {
+        this.showNotice('沈黙で呪文を唱えられない');
+      } else if (!this.player.paralyzed && this.fireballCooldown <= 0) {
+        this.castFireball();
+      }
     }
-    if (!this.player.paralyzed && this.input.consumePress('l') && this.thunderCooldown <= 0) {
-      this.castThunder();
+    if (this.input.consumePress('l')) {
+      if (this.player.silenced) {
+        this.showNotice('沈黙で呪文を唱えられない');
+      } else if (!this.player.paralyzed && this.thunderCooldown <= 0) {
+        this.castThunder();
+      }
     }
 
     this.resolvePlayerAttack();
@@ -168,6 +191,31 @@ export class Game {
           const wasParalyzed = this.player.paralyzed;
           this.player.applyParalysis(duration);
           if (!wasParalyzed) this.showNotice('麻痺した');
+          this.refreshUi();
+        },
+        slowPlayer: (duration) => {
+          const wasSlowed = this.player.slowed;
+          this.player.applySlow(duration);
+          if (!wasSlowed) this.showNotice('スロウ状態になった');
+          this.refreshUi();
+        },
+        sealPlayer: (duration) => {
+          const wasSealed = this.player.sealed;
+          this.player.applySeal(duration);
+          this.setMenuOpen(false);
+          if (!wasSealed) this.showNotice('封印された');
+          this.refreshUi();
+        },
+        silencePlayer: (duration) => {
+          const wasSilenced = this.player.silenced;
+          this.player.applySilence(duration);
+          if (!wasSilenced) this.showNotice('沈黙状態になった');
+          this.refreshUi();
+        },
+        blindPlayer: (duration) => {
+          const wasBlinded = this.player.blinded;
+          this.player.applyBlind(duration);
+          if (!wasBlinded) this.showNotice('暗闇状態になった');
           this.refreshUi();
         },
         spawnAhrimanFireball: (x, y, facing) => {
@@ -224,6 +272,12 @@ export class Game {
 
     for (const enemy of this.enemies) {
       if (!enemy.alive || !intersects(hitbox, enemy)) continue;
+
+      if (this.player.blinded && Math.random() < BALANCE.caterpillar.blindMissChance) {
+        this.player.attack.consumeHit();
+        this.showNotice('暗闇で攻撃が外れた');
+        break;
+      }
 
       const killed = damageEnemy(
         enemy,
@@ -487,12 +541,16 @@ export class Game {
     const skeletonPlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
     const skeletonArcherPlatform = midPlatforms[1] ?? startingPlatforms[2] ?? chosen[6];
     const bombPlatform = startingPlatforms[2] ?? midPlatforms[0] ?? chosen[8] ?? chosen[2];
+    const caterpillarPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[0];
+    const caterpillarFarPlatform = groundPlatforms[groundPlatforms.length - 1] ?? chosen[8] ?? chosen[4];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
     const skeleton1 = point(skeletonPlatform, 42, 720, 498);
     const skeletonArcher1 = point(skeletonArcherPlatform, 42, 880, 476);
     const bomb1 = point(bombPlatform, 26, 610, 356);
+    const caterpillar1 = point(caterpillarPlatform, 20, 430, 350);
+    const caterpillar2 = point(caterpillarFarPlatform, 20, this.stage.width - 260, 700);
 
     const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
     const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
@@ -519,6 +577,8 @@ export class Game {
       new Skeleton(skeleton1.x, skeleton1.y),
       new SkeletonArcher(skeletonArcher1.x, skeletonArcher1.y),
       new Bomb(bomb1.x, bomb1.y),
+      new Caterpillar(caterpillar1.x, caterpillar1.y),
+      new Caterpillar(caterpillar2.x, caterpillar2.y),
     ];
 
     const chestPlatforms = shuffle(groundPlatforms)
@@ -641,8 +701,24 @@ export class Game {
       this.drawStatusMark(iconX, topY + 3, '#7d1bb1', '#f0b6ff', '毒');
       iconX += 16;
     }
+    if (this.player.slowed) {
+      this.drawStatusMark(iconX, topY + 3, '#285f70', '#a5efff', '遅');
+      iconX += 16;
+    }
     if (this.player.paralyzed) {
       this.drawStatusMark(iconX, topY + 3, '#8d6c11', '#ffe38a', '麻');
+      iconX += 16;
+    }
+    if (this.player.sealed) {
+      this.drawStatusMark(iconX, topY + 3, '#5d253f', '#ff9dc8', '封');
+      iconX += 16;
+    }
+    if (this.player.silenced) {
+      this.drawStatusMark(iconX, topY + 3, '#283858', '#9cbcff', '沈');
+      iconX += 16;
+    }
+    if (this.player.blinded) {
+      this.drawStatusMark(iconX, topY + 3, '#1d1a28', '#bbb0df', '暗');
     }
   }
 
@@ -677,6 +753,7 @@ export class Game {
         enemy.type === 'roper' ? 44 :
         enemy.type === 'snake' ? 40 :
         enemy.type === 'bomb' ? 38 :
+        enemy.type === 'caterpillar' ? 42 :
         36;
 
       const y =
@@ -690,6 +767,7 @@ export class Game {
         enemy.type === 'slug' ? enemy.y - 15 :
         enemy.type === 'rat' ? enemy.y - 17 :
         enemy.type === 'bomb' ? enemy.y - 20 :
+        enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.y - 16;
 
       this.drawHpBar(

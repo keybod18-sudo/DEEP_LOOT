@@ -27,6 +27,10 @@ export class Player implements PhysicsBody {
   poisonDamage = 0;
 
   paralysisTime = 0;
+  slowTime = 0;
+  sealTime = 0;
+  silenceTime = 0;
+  blindTime = 0;
 
   constructor(private readonly renderer: PlayerRenderer) {}
 
@@ -43,6 +47,10 @@ export class Player implements PhysicsBody {
     this.poisonTickInterval = 1;
     this.poisonDamage = 0;
     this.paralysisTime = 0;
+    this.slowTime = 0;
+    this.sealTime = 0;
+    this.silenceTime = 0;
+    this.blindTime = 0;
   }
 
   resetPosition(x = 30, y = 330): void {
@@ -59,27 +67,33 @@ export class Player implements PhysicsBody {
     this.invulnerability = Math.max(0, this.invulnerability - dt);
     this.updatePoison(dt);
     this.updateParalysis(dt);
+    this.updateSlow(dt);
+    this.updateSeal(dt);
+    this.updateSilence(dt);
+    this.updateBlind(dt);
 
+    const speedFactor = this.slowed ? 0.48 : 1;
     const canAct = !this.paralyzed && this.hp > 0;
     const left = canAct && input.isDown('a', 'arrowleft');
     const right = canAct && input.isDown('d', 'arrowright');
 
     if (left) {
-      this.vx -= BALANCE.player.moveAcceleration;
+      this.vx -= BALANCE.player.moveAcceleration * speedFactor;
       this.facing = -1;
     }
     if (right) {
-      this.vx += BALANCE.player.moveAcceleration;
+      this.vx += BALANCE.player.moveAcceleration * speedFactor;
       this.facing = 1;
     }
     if (!left && !right) {
       this.vx *= this.paralyzed ? 0.72 : BALANCE.player.moveFriction;
     }
 
-    this.vx = Math.max(-BALANCE.player.maxMoveSpeed, Math.min(BALANCE.player.maxMoveSpeed, this.vx));
+    const maxMoveSpeed = BALANCE.player.maxMoveSpeed * speedFactor;
+    this.vx = Math.max(-maxMoveSpeed, Math.min(maxMoveSpeed, this.vx));
 
     if (canAct && input.consumePress('w', 'arrowup', ' ') && this.grounded) {
-      this.vy = -BALANCE.player.jumpPower;
+      this.vy = -BALANCE.player.jumpPower * (this.slowed ? 0.82 : 1);
     }
 
     if (canAct && input.consumePress('j')) {
@@ -109,12 +123,44 @@ export class Player implements PhysicsBody {
     this.paralysisTime = Math.max(this.paralysisTime, duration);
   }
 
+  applySlow(duration: number): void {
+    this.slowTime = Math.max(this.slowTime, duration);
+  }
+
+  applySeal(duration: number): void {
+    this.sealTime = Math.max(this.sealTime, duration);
+  }
+
+  applySilence(duration: number): void {
+    this.silenceTime = Math.max(this.silenceTime, duration);
+  }
+
+  applyBlind(duration: number): void {
+    this.blindTime = Math.max(this.blindTime, duration);
+  }
+
   get poisoned(): boolean {
     return this.poisonTime > 0;
   }
 
   get paralyzed(): boolean {
     return this.paralysisTime > 0;
+  }
+
+  get slowed(): boolean {
+    return this.slowTime > 0;
+  }
+
+  get sealed(): boolean {
+    return this.sealTime > 0;
+  }
+
+  get silenced(): boolean {
+    return this.silenceTime > 0;
+  }
+
+  get blinded(): boolean {
+    return this.blindTime > 0;
   }
 
   private updatePoison(dt: number): void {
@@ -138,6 +184,26 @@ export class Player implements PhysicsBody {
   private updateParalysis(dt: number): void {
     if (this.paralysisTime <= 0) return;
     this.paralysisTime = Math.max(0, this.paralysisTime - dt);
+  }
+
+  private updateSlow(dt: number): void {
+    if (this.slowTime <= 0) return;
+    this.slowTime = Math.max(0, this.slowTime - dt);
+  }
+
+  private updateSeal(dt: number): void {
+    if (this.sealTime <= 0) return;
+    this.sealTime = Math.max(0, this.sealTime - dt);
+  }
+
+  private updateSilence(dt: number): void {
+    if (this.silenceTime <= 0) return;
+    this.silenceTime = Math.max(0, this.silenceTime - dt);
+  }
+
+  private updateBlind(dt: number): void {
+    if (this.blindTime <= 0) return;
+    this.blindTime = Math.max(0, this.blindTime - dt);
   }
 
   hurt(damage: number, sourceX: number): boolean {

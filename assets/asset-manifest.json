@@ -1,5 +1,5 @@
 {
-  "version": "v26-archer-motion-clipfix",
+  "version": "v29-caterpillar-toxic-statuses",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -119,6 +119,32 @@
     "assets/monsters/skeleton_archer/walk_03.png": "89f5f5f5b27a8c01e2f79a587b591a6f9fe62b6d0b2035f5750860d184a47548",
     "assets/monsters/skeleton_archer/walk_04.png": "57ab4895d57767d4b90c274d3e62e4f67aa5df3c8693deac7da9063e88322b1b",
     "assets/monsters/skeleton_archer/walk_05.png": "51841bcc120d65f027fea1d8cc7486eda1bc81fe5959d900cb3bb6a906a1ba60",
-    "assets/monsters/skeleton_archer/walk_06.png": "cd265cb547c0ddcec86e562dd39333d11ae0fc84262913d71c66e98d38af61ba"
+    "assets/monsters/skeleton_archer/walk_06.png": "cd265cb547c0ddcec86e562dd39333d11ae0fc84262913d71c66e98d38af61ba",
+    "assets/monsters/caterpillar/butterfly_fly/fly_01.png": "860a397b70fb8ba046b38ab9755eb283024b3fd6d3b0ad8ee9248adf818e5064",
+    "assets/monsters/caterpillar/butterfly_fly/fly_02.png": "10be8f9299e12119827e858d3cc4b7442ca0938f54515b003b38b8ea652cc72d",
+    "assets/monsters/caterpillar/butterfly_fly/fly_03.png": "10be8f9299e12119827e858d3cc4b7442ca0938f54515b003b38b8ea652cc72d",
+    "assets/monsters/caterpillar/butterfly_fly/fly_04.png": "860a397b70fb8ba046b38ab9755eb283024b3fd6d3b0ad8ee9248adf818e5064",
+    "assets/monsters/caterpillar/butterfly_fly/fly_05.png": "180070054eb23c2f4bccc0418c652a317d664a383bf33eb05f039041d62513fa",
+    "assets/monsters/caterpillar/butterfly_fly/fly_06.png": "180070054eb23c2f4bccc0418c652a317d664a383bf33eb05f039041d62513fa",
+    "assets/monsters/caterpillar/butterfly_powder/powder_01.png": "1dc3043c473fec23f4733272c9f2e7e25dc43f12816b0a8c8bd2414576276e5f",
+    "assets/monsters/caterpillar/butterfly_powder/powder_02.png": "e201f3e414961b0dcf6ef8eb97eee381dfee0e5bd82be7c17cc840a0e54c144e",
+    "assets/monsters/caterpillar/butterfly_powder/powder_03.png": "16810e1b067e75ff7f6d556d1658c1b2b66a4380cc0497c76f7b75eb62fc277a",
+    "assets/monsters/caterpillar/butterfly_powder/powder_04.png": "d0e0f55030b4beb6b25f240ac4b2ec4b8f9f368e924e0a3d924e8db2e5d2cc60",
+    "assets/monsters/caterpillar/butterfly_powder/powder_05.png": "d284d009f762f0159e6f69dccd415aa6f529fafbc445a41e260f9099cb218ac0",
+    "assets/monsters/caterpillar/butterfly_powder/powder_06.png": "6234f8b4cd9b9248e8014bf2562079fb15f4e2e41cd06110a6faf82780420120",
+    "assets/monsters/caterpillar/butterfly_ram/ram_01.png": "2f191c93be99f7ee582fb007b07de2a4c631e1db265ad55c5e19577f624ac441",
+    "assets/monsters/caterpillar/butterfly_ram/ram_02.png": "e60cdb88b7673fc87a6b366afa24467ce01b90fc5f58f114e36644e261f02fd5",
+    "assets/monsters/caterpillar/butterfly_ram/ram_03.png": "63e944954038fce4f8463326967c82f17a9666b5790724d3ed23b791f24c79bc",
+    "assets/monsters/caterpillar/butterfly_ram/ram_04.png": "860a397b70fb8ba046b38ab9755eb283024b3fd6d3b0ad8ee9248adf818e5064",
+    "assets/monsters/caterpillar/larva/crawl_01.png": "acbab3209ee011c2ae0e9c75f369b441a4bf8aee6a9d254616ccd5970f70c55f",
+    "assets/monsters/caterpillar/larva/crawl_02.png": "1505e520239b67e110e9731b1aa351e33e39226ddc750c1f6562226644191f51",
+    "assets/monsters/caterpillar/larva/crawl_03.png": "e7a3967fb8c0a5e90767c3a32fe782bce9872d8dc85065380b4e148cfb85c9bc",
+    "assets/monsters/caterpillar/larva/crawl_04.png": "ad1fd7fbabb9f1c3c41eddafe05307de86cd2d9774f2309d6b9d85b3b7dfa1bd",
+    "assets/monsters/caterpillar/larva/crawl_05.png": "0afe36a2112fe7f75e6f786f0bc4aeb9f7af82cd9282967c8917cbbf408513b1",
+    "assets/monsters/caterpillar/larva/crawl_06.png": "51033a2aa0e09fd2ef98d0d9bcf1b1757f1e889cc8141ed6eb72af21bdea0101",
+    "assets/monsters/caterpillar/pupa/pupa_01.png": "02d13f9c8f1fdcf91460be64088972ef70cc6718e29aab2b8b8bf15f2db5a7ee",
+    "assets/monsters/caterpillar/pupa/pupa_02.png": "bc2b046be3717d47e3d3f6f1786ad80df7fee5574640832f630e344a8ac37c7a",
+    "assets/monsters/caterpillar/pupa/pupa_03.png": "029f0226f81506cf76b025831be29cf3de6439ab36b59185f3f50259f9b201bd",
+    "assets/monsters/caterpillar/pupa/pupa_04.png": "808bf7506794ee92a4ed5f649cb07f7b660c9b40e54a541721ccd2fc3b72aa7e"
   }
 }

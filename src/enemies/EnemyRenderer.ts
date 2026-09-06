@@ -10,6 +10,7 @@ import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
 import type { SkeletonArcher } from './SkeletonArcher';
 import type { Bomb } from './Bomb';
+import type { Caterpillar } from './Caterpillar';
 import type { Facing } from '../game/types';
 import { BALANCE } from '../config/balance';
 
@@ -65,6 +66,21 @@ const skeletonArcherShootUrls = [1, 2, 3, 4, 5].map((index) =>
 const bombExplosionUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((index) =>
   new URL(`../../assets/effects/bomb_explosion/explosion_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
 );
+const caterpillarLarvaUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/caterpillar/larva/crawl_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const caterpillarPupaUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/caterpillar/pupa/pupa_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const caterpillarFlyUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const caterpillarRamUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
 
 
 // Explicit orientation of the adopted source sprites.
@@ -77,6 +93,7 @@ const SOURCE_FACING = {
   rat: 1,
   skeleton: -1,
   skeletonArcher: -1,
+  caterpillar: 1,
 } as const satisfies Record<string, Facing>;
 
 export class EnemyRenderer {
@@ -99,6 +116,11 @@ export class EnemyRenderer {
   private readonly skeletonArcherWalkImages: HTMLImageElement[] = [];
   private readonly skeletonArcherShootImages: HTMLImageElement[] = [];
   private readonly bombExplosionImages: HTMLImageElement[] = [];
+  private readonly caterpillarLarvaImages: HTMLImageElement[] = [];
+  private readonly caterpillarPupaImages: HTMLImageElement[] = [];
+  private readonly caterpillarFlyImages: HTMLImageElement[] = [];
+  private readonly caterpillarRamImages: HTMLImageElement[] = [];
+  private readonly caterpillarPowderImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
     [this.slimeImage, this.clingImage, this.ahrimanImage] = await Promise.all([
@@ -106,7 +128,7 @@ export class EnemyRenderer {
       loadImage(clingUrl),
       loadImage(ahrimanUrl),
     ]);
-    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, skeletonArcherWalk, skeletonArcherShoot, bombExplosion] = await Promise.all([
+    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, skeletonArcherWalk, skeletonArcherShoot, bombExplosion, caterpillarLarva, caterpillarPupa, caterpillarFly, caterpillarRam, caterpillarPowder] = await Promise.all([
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
@@ -123,6 +145,11 @@ export class EnemyRenderer {
       Promise.all(skeletonArcherWalkUrls.map(loadImage)),
       Promise.all(skeletonArcherShootUrls.map(loadImage)),
       Promise.all(bombExplosionUrls.map(loadImage)),
+      Promise.all(caterpillarLarvaUrls.map(loadImage)),
+      Promise.all(caterpillarPupaUrls.map(loadImage)),
+      Promise.all(caterpillarFlyUrls.map(loadImage)),
+      Promise.all(caterpillarRamUrls.map(loadImage)),
+      Promise.all(caterpillarPowderUrls.map(loadImage)),
     ]);
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
@@ -140,6 +167,11 @@ export class EnemyRenderer {
     this.skeletonArcherWalkImages.push(...skeletonArcherWalk);
     this.skeletonArcherShootImages.push(...skeletonArcherShoot);
     this.bombExplosionImages.push(...bombExplosion);
+    this.caterpillarLarvaImages.push(...caterpillarLarva);
+    this.caterpillarPupaImages.push(...caterpillarPupa);
+    this.caterpillarFlyImages.push(...caterpillarFly);
+    this.caterpillarRamImages.push(...caterpillarRam);
+    this.caterpillarPowderImages.push(...caterpillarPowder);
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
@@ -152,6 +184,7 @@ export class EnemyRenderer {
     else if (enemy.type === 'slug') this.drawSlug(ctx, enemy as Slug);
     else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
     else if (enemy.type === 'bomb') this.drawBomb(ctx, enemy as Bomb);
+    else if (enemy.type === 'caterpillar') this.drawCaterpillar(ctx, enemy as Caterpillar);
     else if (enemy.type === 'skeletonArcher') this.drawSkeletonArcher(ctx, enemy as SkeletonArcher);
     else this.drawSkeleton(ctx, enemy as Skeleton);
   }
@@ -445,6 +478,88 @@ export class EnemyRenderer {
   }
 
 
+
+  private drawCaterpillar(ctx: CanvasRenderingContext2D, caterpillar: Caterpillar): void {
+    let images: HTMLImageElement[];
+    let index = 0;
+    let drawH = 36;
+
+    if (caterpillar.phase === 'larva') {
+      images = this.caterpillarLarvaImages;
+      index = Math.floor(caterpillar.actionTime * 9) % Math.max(1, images.length);
+      drawH = 34;
+    } else if (caterpillar.phase === 'pupa') {
+      images = this.caterpillarPupaImages;
+      const progress = Math.min(0.999, caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration);
+      index = Math.min(images.length - 1, Math.floor(progress * images.length));
+      drawH = 54;
+    } else if (caterpillar.butterflyState === 'powder') {
+      images = this.caterpillarPowderImages;
+      index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
+      drawH = 72;
+    } else if (caterpillar.butterflyState === 'ram' || caterpillar.butterflyState === 'ramWindup') {
+      images = this.caterpillarRamImages;
+      index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
+      drawH = 68;
+    } else {
+      images = this.caterpillarFlyImages;
+      index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
+      drawH = 72;
+    }
+
+    const image = images[index] ?? images[0];
+    if (!image) return;
+
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = caterpillar.x + caterpillar.w / 2;
+
+    if (caterpillar.phase === 'butterfly' && caterpillar.butterflyState === 'powder') {
+      const release = BALANCE.caterpillar.powderReleaseTime;
+      const progress = Math.min(1, caterpillar.actionTime / Math.max(0.01, release));
+      const cloudRadius = 24 + progress * 112;
+
+      ctx.save();
+      for (let i = 0; i < 34; i += 1) {
+        const seed = i * 2.399963 + caterpillar.actionTime * (1.4 + (i % 3) * 0.18);
+        const ring = ((i * 17) % 31) / 31;
+        const radius = cloudRadius * (0.22 + ring * 0.78);
+        const px = centerX + Math.cos(seed) * radius;
+        const py = caterpillar.y + caterpillar.h / 2
+          + Math.sin(seed * 1.23) * radius * 0.58;
+        const size = 2 + (i % 3);
+        ctx.globalAlpha = 0.24 + (i % 5) * 0.07;
+        ctx.fillStyle =
+          i % 3 === 0 ? '#b7df36' :
+          i % 3 === 1 ? '#e33e9f' :
+          '#71308c';
+        ctx.fillRect(Math.round(px), Math.round(py), size, size);
+      }
+      ctx.restore();
+    }
+
+    ctx.save();
+    if (caterpillar.phase === 'butterfly') {
+      const centerY = caterpillar.y + caterpillar.h / 2;
+      const hover = Math.sin(caterpillar.phaseTime * 7.4) * 2.2;
+      ctx.translate(centerX, centerY + hover);
+      applySpriteFacing(ctx, caterpillar.facing, SOURCE_FACING.caterpillar);
+      if (caterpillar.butterflyState === 'ramWindup') {
+        ctx.rotate(caterpillar.facing * -0.09);
+      } else if (caterpillar.butterflyState === 'ram') {
+        ctx.rotate(Math.atan2(caterpillar.vy, Math.max(0.01, Math.abs(caterpillar.vx))) * 0.28);
+      }
+      ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+    } else {
+      const footY = caterpillar.y + caterpillar.h + 1;
+      const squash = caterpillar.phase === 'larva'
+        ? Math.sin(caterpillar.actionTime * 18) * 1.4
+        : Math.sin(caterpillar.phaseTime * 7) * 0.8;
+      ctx.translate(centerX, footY);
+      applySpriteFacing(ctx, caterpillar.facing, SOURCE_FACING.caterpillar);
+      ctx.drawImage(image, -drawW / 2, -drawH + squash, drawW, drawH - squash);
+    }
+    ctx.restore();
+  }
 
   private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
     const attacking = skeletonArcher.state === 'attack';
