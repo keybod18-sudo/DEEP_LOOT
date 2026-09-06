@@ -17,6 +17,7 @@ import { Bomb } from '../enemies/Bomb';
 import { Caterpillar } from '../enemies/Caterpillar';
 import { FrostMite } from '../enemies/FrostMite';
 import { CrystalEye } from '../enemies/CrystalEye';
+import { Kagenoko } from '../enemies/Kagenoko';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
@@ -578,6 +579,7 @@ export class Game {
     const caterpillarPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[0];
     const caterpillarFarPlatform = groundPlatforms[groundPlatforms.length - 1] ?? chosen[8] ?? chosen[4];
     const frostMitePlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
+    const kagenokoPlatform = startingPlatforms[2] ?? startingPlatforms[1] ?? midPlatforms[0] ?? chosen[2];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
@@ -587,6 +589,7 @@ export class Game {
     const caterpillar1 = point(caterpillarPlatform, 20, 430, 350);
     const caterpillar2 = point(caterpillarFarPlatform, 20, this.stage.width - 260, 700);
     const frostMite1 = point(frostMitePlatform, 24, 760, 526);
+    const kagenoko1 = point(kagenokoPlatform, 28, 650, 350);
 
     const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
     const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
@@ -616,6 +619,7 @@ export class Game {
       new Caterpillar(caterpillar1.x, caterpillar1.y),
       new Caterpillar(caterpillar2.x, caterpillar2.y),
       new FrostMite(frostMite1.x, frostMite1.y),
+      new Kagenoko(kagenoko1.x, kagenoko1.y),
       new CrystalEye(
         Math.min(this.stage.width - 140, this.stage.spawn.x + 720 + Math.random() * 220),
         190 + Math.random() * 170,
@@ -735,6 +739,7 @@ export class Game {
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
       if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
+      else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(this.ctx);
       else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
       else this.enemyRenderer.draw(this.ctx, enemy);
     }
@@ -822,6 +827,7 @@ export class Game {
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
         enemy.type === 'crystalEye' ? 58 :
+        enemy.type === 'kagenoko' ? 38 :
         36;
 
       const y =
@@ -838,6 +844,7 @@ export class Game {
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
         enemy.type === 'crystalEye' ? enemy.y - 46 :
+        enemy.type === 'kagenoko' ? enemy.y - 22 :
         enemy.y - 16;
 
       this.drawHpBar(

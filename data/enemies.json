@@ -224,5 +224,25 @@
     "orbLife": 3.2,
     "orbDamage": 10,
     "recoverDuration": 0.42
+  },
+  "kagenoko": {
+    "maxHp": 24,
+    "scuttleSpeed": 0.62,
+    "attackRange": 250,
+    "attackCooldown": 1.35,
+    "sinkDuration": 0.38,
+    "pounceSpeed": 4.2,
+    "pounceLift": 3.8,
+    "pounceDuration": 0.82,
+    "pounceDamage": 8,
+    "pounceBlindDuration": 2.2,
+    "orbChargeDuration": 0.88,
+    "orbReleaseTime": 0.48,
+    "orbSpeed": 3.55,
+    "orbHoming": 0.034,
+    "orbLife": 2.8,
+    "orbDamage": 6,
+    "orbBlindDuration": 2.6,
+    "recoverDuration": 0.38
   }
 }

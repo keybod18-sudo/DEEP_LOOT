@@ -276,63 +276,94 @@ export class CrystalEye extends Enemy {
   }
 
   private drawOrganicEye(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
-    const pulse = 1 + Math.sin(this.actionTime * 2.7) * 0.018;
+    const pulse = 1 + Math.sin(this.actionTime * 2.7) * 0.014;
     ctx.save();
     ctx.translate(centerX, centerY + 2);
     ctx.scale(pulse, 1 / pulse);
 
-    const sclera = ctx.createRadialGradient(-6, -7, 2, 0, 0, 29);
-    sclera.addColorStop(0, '#fff5e7');
-    sclera.addColorStop(0.66, '#d9c6b6');
-    sclera.addColorStop(1, '#855c65');
+    // Fleshy socket behind the eyeball. The crystal shell is not touched by V39.
+    ctx.fillStyle = '#3a112c';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 30.5, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 32, 82, 0.82)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 29, 23.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const sclera = ctx.createRadialGradient(-8, -8, 2, 1, 1, 31);
+    sclera.addColorStop(0, '#fffdf2');
+    sclera.addColorStop(0.55, '#e5dfcf');
+    sclera.addColorStop(0.82, '#b9a8a0');
+    sclera.addColorStop(1, '#765765');
     ctx.fillStyle = sclera;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 27, 21, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 27.5, 22, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Organic red veins across the sclera.
-    ctx.strokeStyle = 'rgba(156, 36, 66, 0.72)';
-    ctx.lineWidth = 1.2;
-    for (let i = 0; i < 9; i += 1) {
-      const angle = i * (Math.PI * 2 / 9) + 0.22;
-      const ex = Math.cos(angle) * 24;
-      const ey = Math.sin(angle) * 18;
-      const mx = Math.cos(angle + 0.32) * 15;
-      const my = Math.sin(angle + 0.32) * 11;
+    // Bloodshot veins, closer to the reference eye: thin, branching and irregular.
+    ctx.strokeStyle = 'rgba(151, 33, 62, 0.74)';
+    ctx.lineWidth = 1.05;
+    for (let i = 0; i < 11; i += 1) {
+      const angle = i * (Math.PI * 2 / 11) + 0.18;
+      const ex = Math.cos(angle) * 25.5;
+      const ey = Math.sin(angle) * 19.5;
+      const mx = Math.cos(angle + (i % 2 ? 0.26 : -0.24)) * 16;
+      const my = Math.sin(angle + (i % 2 ? 0.26 : -0.24)) * 12;
+      const tx = this.lookX * 0.42 + Math.cos(angle) * 8;
+      const ty = this.lookY * 0.34 + Math.sin(angle) * 6;
       ctx.beginPath();
       ctx.moveTo(ex, ey);
-      ctx.quadraticCurveTo(mx, my, this.lookX * 0.65, this.lookY * 0.65);
+      ctx.quadraticCurveTo(mx, my, tx, ty);
       ctx.stroke();
+      if ((i % 3) === 0) {
+        ctx.beginPath();
+        ctx.moveTo(mx, my);
+        ctx.lineTo(mx + Math.cos(angle + 0.9) * 5, my + Math.sin(angle + 0.9) * 4);
+        ctx.stroke();
+      }
     }
 
     const irisX = this.lookX;
     const irisY = this.lookY;
-    const iris = ctx.createRadialGradient(irisX - 2, irisY - 2, 1, irisX, irisY, 12);
-    iris.addColorStop(0, charge > 0 ? '#ffd6ff' : '#ff8bdc');
-    iris.addColorStop(0.42, '#bf43ca');
-    iris.addColorStop(0.75, '#5a1d89');
-    iris.addColorStop(1, '#24123c');
-    ctx.fillStyle = iris;
+    const irisGlow = ctx.createRadialGradient(irisX, irisY, 1, irisX, irisY, 15);
+    irisGlow.addColorStop(0, charge > 0 ? '#fff0ff' : '#ffb7ed');
+    irisGlow.addColorStop(0.25, '#f05bd0');
+    irisGlow.addColorStop(0.58, '#a82aac');
+    irisGlow.addColorStop(1, 'rgba(63, 15, 76, 0)');
+    ctx.fillStyle = irisGlow;
     ctx.beginPath();
-    ctx.arc(irisX, irisY, 12.5, 0, Math.PI * 2);
+    ctx.ellipse(irisX, irisY, 11.5, 16, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#100817';
+    // Tall magenta iris and a narrow vertical pupil, matching the requested eye feel.
+    ctx.fillStyle = charge > 0 ? '#ff75e9' : '#d83ac4';
     ctx.beginPath();
-    ctx.arc(irisX, irisY, 5.7, 0, Math.PI * 2);
+    ctx.ellipse(irisX, irisY, 7.4, 14.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#6f1b7d';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = '#120813';
+    ctx.beginPath();
+    ctx.ellipse(irisX, irisY, 2.25, 10.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = '#ffffff';
     ctx.globalAlpha = 0.9;
     ctx.beginPath();
-    ctx.arc(irisX - 3.2, irisY - 4.0, 2.1, 0, Math.PI * 2);
+    ctx.ellipse(irisX - 3.7, irisY - 6.2, 1.8, 3.1, -0.25, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
 
-    ctx.strokeStyle = 'rgba(76, 24, 65, 0.8)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(80, 31, 55, 0.88)';
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 27, 21, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 27.5, 22, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
