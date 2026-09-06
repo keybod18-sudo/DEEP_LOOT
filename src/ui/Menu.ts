@@ -184,15 +184,6 @@ function designRarityFor(name: string): string {
   return FIXED_DESIGN_RARITY[name] ?? '通常';
 }
 
-function equipmentPreviewSeed(name: string): number {
-  let value = 2166136261;
-  for (let index = 0; index < name.length; index += 1) {
-    value ^= name.charCodeAt(index);
-    value = Math.imul(value, 16777619);
-  }
-  return value >>> 0;
-}
-
 function previewPalette(name: string, rarity: string): { metal: string; glow: string; shade: string; accent: string; border: string; bg: string } {
   let metal = '#c9cdd5';
   let glow = '#e6c77f';
@@ -224,136 +215,60 @@ function previewPalette(name: string, rarity: string): { metal: string; glow: st
   return { metal, glow, shade, accent, border, bg };
 }
 
-function weaponPreviewMotif(name: string): string {
-  if (/短剣/.test(name)) return 'dagger';
-  if (/刀|丸/.test(name)) return 'katana';
-  if (/槍/.test(name)) return 'spear';
-  if (/斧/.test(name)) return 'axe';
-  if (/弓/.test(name)) return 'bow';
-  if (/杖/.test(name)) return 'staff';
-  if (/鎌/.test(name)) return 'scythe';
-  if (/爪|牙/.test(name)) return 'claw';
-  return 'sword';
-}
-
-function armorPreviewMotif(name: string): string {
-  if (/外套|マント/.test(name)) return 'cloak';
-  if (/衣|法衣|ローブ/.test(name)) return 'robe';
-  if (/胸当て/.test(name)) return 'breastplate';
-  return 'armor';
-}
-
 function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const rarity = item.designRarity ?? item.rarity ?? designRarityFor(item.name);
   const palette = previewPalette(item.name, rarity);
-  const seed = equipmentPreviewSeed(item.name);
   const label = escapeHtml(item.name);
   const abilityName = escapeHtml(item.intrinsicAbility?.name ?? '固有能力なし');
   const ability = escapeHtml(item.intrinsicAbility?.description ?? '固有能力なし');
   const statLabel = item.category === 'weapon' ? '攻撃力' : '防御力';
   const statValue = item.category === 'weapon' ? item.attack : item.defense;
-  const weaponMotif = item.category === 'weapon' ? weaponPreviewMotif(item.name) : '';
-  const armorMotif = item.category === 'armor' ? armorPreviewMotif(item.name) : '';
+  const weaponCodes = {"鉄の剣":"WPN-001","山賊の剣":"WPN-002","古びた長剣":"WPN-003","青鋼の剣":"WPN-004","黒鉄の剣":"WPN-005","錆喰いの剣":"WPN-006","洞窟刀":"WPN-007","月影の短剣":"WPN-008","火打ちの剣":"WPN-009","骨断ち":"WPN-010","風切丸":"WPN-011","泥濘の刃":"WPN-012","赤銅の長剣":"WPN-013","白銀の小剣":"WPN-014","影縫い":"WPN-015","雷鳴の剣":"WPN-016","苔むす剣":"WPN-017","深層の刃":"WPN-018","血煙丸":"WPN-019","岩砕き":"WPN-020","狩人の曲刀":"WPN-021","亡者の剣":"WPN-022","星屑の剣":"WPN-023","夜渡り":"WPN-024","燐光剣":"WPN-025","黒曜の刃":"WPN-026","朽王の剣":"WPN-027","竜骨剣":"WPN-028","鉱夫の鉈":"WPN-029","迷宮の剣":"WPN-030","霧裂き":"WPN-031","紅蓮の短剣":"WPN-032","氷脈の剣":"WPN-033","紫電の刃":"WPN-034","鬼灯丸":"WPN-035","夢喰い":"WPN-036","蟲狩りの剣":"WPN-037","蛇殺し":"WPN-038","蝙蝠切り":"WPN-039","晶砕き":"WPN-040","影子守":"WPN-041","断層剣":"WPN-042","墓守の剣":"WPN-043","祈り砕き":"WPN-044","灰冠の剣":"WPN-045","金喰いの刃":"WPN-046","幽世の剣":"WPN-047","月蝕刀":"WPN-048","黒薔薇":"WPN-049","太古の剣":"WPN-050","深淵の牙":"WPN-051","旅人の名剣":"WPN-052","迷い星":"WPN-053","終夜の剣":"WPN-054"} as const;
+  const armorCodes = {"革の鎧":"ARM-001","鉄の胸当て":"ARM-002","探索者の鎧":"ARM-003","青鋼の鎧":"ARM-004","黒革の鎧":"ARM-005","錆鉄の鎧":"ARM-006","苔衣":"ARM-007","鉱夫の胸当て":"ARM-008","月影の外套":"ARM-009","骨組み鎧":"ARM-010","風除けのコート":"ARM-011","泥壁の鎧":"ARM-012","赤銅の胸甲":"ARM-013","白銀の鎧":"ARM-014","影縫いの衣":"ARM-015","雷除け胴":"ARM-016","深層探索服":"ARM-017","血染めの鎧":"ARM-018","岩殻の鎧":"ARM-019","狩人の胴衣":"ARM-020","亡者の鎧":"ARM-021","星屑の外套":"ARM-022","夜渡りの服":"ARM-023","燐光の鎧":"ARM-024","黒曜の鎧":"ARM-025","朽王の外套":"ARM-026","竜骨鎧":"ARM-027","坑道作業服":"ARM-028","迷宮騎士鎧":"ARM-029","霧衣":"ARM-030","紅蓮の胸甲":"ARM-031","氷脈の鎧":"ARM-032","紫電の外套":"ARM-033","鬼灯の鎧":"ARM-034","夢守りの衣":"ARM-035","蟲殻の鎧":"ARM-036","蛇革の胴衣":"ARM-037","蝙蝠羽の外套":"ARM-038","晶殻鎧":"ARM-039","影子守の衣":"ARM-040","断層の鎧":"ARM-041","墓守の鎧":"ARM-042","祈祷師の法衣":"ARM-043","灰冠の鎧":"ARM-044","金継ぎの鎧":"ARM-045","幽世の衣":"ARM-046","月蝕の鎧":"ARM-047","黒薔薇のドレス":"ARM-048","太古の甲冑":"ARM-049","深淵の鎧":"ARM-050","旅人の外套":"ARM-051","迷い星の鎧":"ARM-052","終夜の外套":"ARM-053","王墓の甲冑":"ARM-054"} as const;
+  const code = item.category === 'weapon'
+    ? weaponCodes[item.name as keyof typeof weaponCodes]
+    : armorCodes[item.name as keyof typeof armorCodes];
+  const imgSrc = code ? `/v45_icons/${item.category === 'weapon' ? 'weapons' : 'armors'}/${code}.png` : '';
+  const accent = palette.accent;
+  const frameGlow = rarity === '伝説級' ? 'rgba(255,215,120,.45)' : rarity === '激レア' ? 'rgba(201,117,255,.42)' : rarity === '希少' ? 'rgba(108,214,255,.36)' : 'rgba(160,188,225,.24)';
+  const flavor = escapeHtml(item.category === 'weapon' ? '闇深い迷宮で見つかる異形の武器。' : '迷宮の瘴気と加護をまとった防具。');
+  const artBlock = imgSrc
+    ? `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:282px;border-radius:20px;border:1px solid ${palette.border};background:radial-gradient(circle at 50% 32%, ${frameGlow}, rgba(255,255,255,0) 46%),radial-gradient(circle at 50% 68%, rgba(255,255,255,.06), rgba(255,255,255,0) 56%),linear-gradient(180deg, rgba(20,26,38,.96), rgba(9,12,19,.98));box-shadow: inset 0 0 42px rgba(0,0,0,.48), 0 0 24px rgba(0,0,0,.24);overflow:hidden;">
+         <div style="position:absolute;inset:16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);"></div>
+         <div style="position:absolute;width:210px;height:210px;border-radius:50%;border:1px solid rgba(255,255,255,.08);box-shadow:0 0 28px ${frameGlow}, inset 0 0 28px rgba(255,255,255,.03);"></div>
+         <img src="${imgSrc}" alt="${label}" style="position:relative;z-index:2;width:224px;height:224px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 14px 16px rgba(0,0,0,.55)) drop-shadow(0 0 18px ${frameGlow});" />
+         <div style="position:absolute;left:18px;bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(8,12,18,.72);border:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.82);letter-spacing:.06em;">${label}</div>
+       </div>`
+    : `<div style="display:flex;align-items:center;justify-content:center;min-height:282px;border-radius:20px;border:1px solid ${palette.border};background:linear-gradient(180deg, rgba(20,26,38,.96), rgba(9,12,19,.98));color:rgba(255,255,255,.45);font-size:12px;">NO IMAGE</div>`;
 
-  const rarityAura =
-    rarity === '伝説級' ? 'rgba(255,205,76,.88)' :
-    rarity === '激レア' ? 'rgba(195,112,255,.86)' :
-    rarity === '希少' ? 'rgba(96,214,255,.78)' :
-    rarity === '上質' ? 'rgba(166,204,255,.62)' :
-    'rgba(160,170,190,.36)';
-
-  const themeParts: string[] = [];
-  const name = item.name;
-  if (/月|月蝕/.test(name)) themeParts.push(`<path d="M44 42 A30 30 0 1 0 77 86 A22 22 0 1 1 44 42 Z" fill="rgba(164,128,255,.26)" stroke="rgba(225,214,255,.55)" stroke-width="2"/>`);
-  if (/影|夜|幽|夢|深淵|終夜/.test(name)) themeParts.push(`<path d="M28 118 C44 94 67 110 85 91 C101 74 122 81 154 52" fill="none" stroke="rgba(110,66,185,.42)" stroke-width="6" stroke-linecap="round"/><ellipse cx="98" cy="78" rx="62" ry="34" fill="rgba(44,18,76,.26)"/>`);
-  if (/火|炎|紅蓮|鬼灯/.test(name)) themeParts.push(`<path d="M44 118 C35 99 53 91 46 72 C64 79 69 90 60 107 C78 96 86 111 78 126" fill="rgba(255,98,44,.22)" stroke="rgba(255,162,92,.58)" stroke-width="2"/><path d="M141 104 C131 88 147 80 140 66 C155 73 160 86 152 102" fill="rgba(255,129,61,.18)" stroke="rgba(255,191,102,.42)" stroke-width="2"/>`);
-  if (/氷|霜|雪|凍/.test(name)) themeParts.push(`<g fill="rgba(175,235,255,.22)" stroke="rgba(225,251,255,.62)" stroke-width="1.4"><path d="M38 44 L47 61 L37 75 L28 58 Z"/><path d="M145 39 L154 55 L145 70 L136 53 Z"/><path d="M124 104 L133 119 L124 132 L116 118 Z"/></g>`);
-  if (/雷|紫電/.test(name)) themeParts.push(`<path d="M35 37 L56 62 L47 62 L62 88 L50 84 L63 116" fill="none" stroke="rgba(255,225,96,.76)" stroke-width="4" stroke-linejoin="bevel" filter="url(#glow)"/>`);
-  if (/苔|蟲|蛇/.test(name)) themeParts.push(`<path d="M34 116 C48 98 58 119 74 101 C91 82 108 104 122 89" fill="none" stroke="rgba(92,214,112,.44)" stroke-width="4" stroke-linecap="round"/>`);
-  if (/骨|骸|墓|竜骨/.test(name)) themeParts.push(`<path d="M35 113 L56 95 M35 95 L56 113 M136 47 L154 62 M154 47 L137 63" stroke="rgba(235,226,207,.48)" stroke-width="5" stroke-linecap="round"/>`);
-  if (/星|燐光|迷い星/.test(name)) themeParts.push(`<g fill="rgba(255,243,165,.76)" filter="url(#glow)"><path d="M43 45 L46 53 L55 56 L46 59 L43 68 L40 59 L31 56 L40 53 Z"/><path d="M145 75 L148 82 L155 85 L148 88 L145 95 L142 88 L135 85 L142 82 Z"/></g>`);
-  if (/血|黒薔薇/.test(name)) themeParts.push(`<path d="M39 43 C54 51 58 63 54 76 C49 90 53 97 47 111" fill="none" stroke="rgba(176,25,55,.46)" stroke-width="5" stroke-linecap="round"/>`);
-  if (/晶|黒曜/.test(name)) themeParts.push(`<g fill="rgba(166,228,255,.18)" stroke="rgba(216,243,255,.56)" stroke-width="1.4"><path d="M37 40 L47 30 L57 44 L50 60 L35 56 Z"/><path d="M143 97 L154 86 L161 99 L154 113 L140 108 Z"/></g>`);
-  if (/霧/.test(name)) themeParts.push(`<path d="M26 107 C46 94 64 110 85 100 C107 88 125 106 157 94" fill="none" stroke="rgba(220,232,240,.2)" stroke-width="10" stroke-linecap="round"/>`);
-  if (/竜|太古|王墓|灰冠/.test(name)) themeParts.push(`<path d="M39 48 C47 35 58 33 66 42 C55 40 49 48 52 58 C45 57 41 53 39 48 Z" fill="rgba(216,182,118,.28)" stroke="rgba(247,221,171,.45)" stroke-width="2"/>`);
-  if (/金継ぎ|金喰い/.test(name)) themeParts.push(`<path d="M36 111 L62 86 L75 100 L95 76 L112 92 L146 58" fill="none" stroke="rgba(255,216,96,.58)" stroke-width="3" filter="url(#glow)"/>`);
-  if (/蝙蝠/.test(name)) themeParts.push(`<path d="M34 56 C47 43 58 44 69 55 L61 61 L69 69 C57 65 47 68 34 81 C39 68 39 66 34 56 Z" fill="rgba(95,54,135,.34)" stroke="rgba(157,103,209,.44)" stroke-width="1.5"/>`);
-
-  const abilityAccent =
-    /移動速度/.test(ability) ? `<path d="M31 79 H54 M38 70 H61 M28 89 H48" stroke="${palette.accent}" stroke-width="2.5" opacity=".72"/>` :
-    /自動回復|HP/.test(ability) ? `<path d="M146 42 V61 M136 51.5 H156" stroke="rgba(132,255,161,.68)" stroke-width="5" stroke-linecap="round"/>` :
-    /完全無効|耐性|状態異常/.test(ability) ? `<path d="M141 36 L155 42 V55 C155 67 148 74 141 78 C134 74 127 67 127 55 V42 Z" fill="rgba(116,205,255,.14)" stroke="rgba(167,230,255,.58)" stroke-width="2"/>` :
-    /追撃|魔法|ファイア|フリーズ|星弾|魔弾/.test(ability) ? `<circle cx="146" cy="50" r="10" fill="rgba(255,239,146,.18)" stroke="rgba(255,243,178,.58)" stroke-width="2" filter="url(#glow)"/>` :
-    '';
-
-  let art = '';
-  if (item.category === 'weapon') {
-    if (weaponMotif === 'dagger') {
-      art = `<g transform="translate(96 79) rotate(-26)" filter="url(#shadow)"><rect x="-84" y="-5" width="18" height="10" rx="3" fill="${palette.shade}"/><rect x="-67" y="-8" width="10" height="16" rx="3" fill="${palette.glow}" opacity=".82"/><path d="M-56 -5 H18 L74 0 L18 5 H-56 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.7"/><path d="M18 -5 L73 0 L18 5 Z" fill="${palette.glow}" opacity=".58"/></g>`;
-    } else if (weaponMotif === 'katana') {
-      art = `<g transform="translate(95 79) rotate(-18)" filter="url(#shadow)"><path d="M-74 7 Q-25 -8 53 -5 Q63 -4 82 0 Q64 6 53 7 Q-25 12 -74 7 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.7"/><path d="M-72 5 Q-20 -6 55 -4" fill="none" stroke="rgba(255,255,255,.62)" stroke-width="2"/><rect x="-95" y="-6" width="20" height="12" rx="3" fill="${palette.shade}"/><rect x="-113" y="-5" width="18" height="10" rx="3" fill="${palette.glow}"/><path d="M-78 -10 L-68 0 L-78 10 L-88 0 Z" fill="${palette.accent}" opacity=".72"/></g>`;
-    } else if (weaponMotif === 'spear') {
-      art = `<g transform="translate(96 79) rotate(-17)" filter="url(#shadow)"><rect x="-96" y="-4" width="154" height="8" rx="4" fill="${palette.shade}" stroke="rgba(0,0,0,.55)" stroke-width="2"/><path d="M56 0 L90 -15 L79 0 L90 15 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.5"/><path d="M48 -9 L61 0 L48 9 Z" fill="${palette.glow}" opacity=".7"/></g>`;
-    } else if (weaponMotif === 'axe') {
-      art = `<g transform="translate(96 80) rotate(-15)" filter="url(#shadow)"><rect x="-7" y="-62" width="14" height="119" rx="5" fill="${palette.shade}" stroke="rgba(0,0,0,.58)" stroke-width="2"/><path d="M6 -44 C46 -60 63 -21 49 7 C36 26 21 32 6 27 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/><path d="M-4 -42 C-35 -55 -51 -21 -39 7 C-29 22 -17 28 -4 25 Z" fill="${palette.glow}" opacity=".7" stroke="${palette.accent}" stroke-width="1.2"/></g>`;
-    } else if (weaponMotif === 'bow') {
-      art = `<g transform="translate(96 78) rotate(-7)" filter="url(#shadow)"><path d="M-38 -59 C36 -30 36 30 -38 59" fill="none" stroke="${palette.metal}" stroke-width="11" stroke-linecap="round"/><path d="M31 -55 C-43 -24 -43 24 31 55" fill="none" stroke="${palette.shade}" stroke-width="8" stroke-linecap="round"/><line x1="-38" y1="-59" x2="31" y2="55" stroke="${palette.accent}" stroke-width="2.2"/><line x1="-16" y1="-8" x2="60" y2="-8" stroke="${palette.glow}" stroke-width="4"/><path d="M60 -8 L47 -15 L51 -8 L47 -1 Z" fill="${palette.glow}"/></g>`;
-    } else if (weaponMotif === 'staff') {
-      art = `<g transform="translate(96 81) rotate(-14)" filter="url(#shadow)"><rect x="-8" y="-63" width="16" height="126" rx="7" fill="${palette.shade}" stroke="rgba(0,0,0,.6)" stroke-width="2"/><circle cx="0" cy="-73" r="24" fill="rgba(255,255,255,.04)" stroke="${palette.metal}" stroke-width="4"/><circle cx="0" cy="-73" r="13" fill="${palette.glow}" stroke="${palette.accent}" stroke-width="2" filter="url(#glow)"/><path d="M-24 -67 C-44 -74 -45 -93 -25 -103 M24 -67 C44 -74 45 -93 25 -103" fill="none" stroke="${palette.metal}" stroke-width="5" stroke-linecap="round"/></g>`;
-    } else if (weaponMotif === 'scythe') {
-      art = `<g transform="translate(96 82) rotate(-14)" filter="url(#shadow)"><rect x="-7" y="-62" width="14" height="121" rx="5" fill="${palette.shade}"/><path d="M3 -54 C64 -74 89 -31 80 5 C54 -8 29 -10 3 3 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/><path d="M16 -45 C47 -49 63 -35 67 -18" fill="none" stroke="${palette.glow}" stroke-width="2.5"/></g>`;
-    } else if (weaponMotif === 'claw') {
-      art = `<g transform="translate(90 79) rotate(-8)" filter="url(#shadow)"><path d="M-45 19 C-15 -30 27 -46 73 -31 C34 -18 7 5 -10 34 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="1.4"/><path d="M-20 21 C0 -30 38 -52 75 -43 C50 -24 29 4 21 36 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.4"/><path d="M10 22 C33 -22 61 -36 88 -31 C70 -12 58 9 52 36 Z" fill="${palette.glow}" opacity=".76"/></g>`;
-    } else {
-      art = `<g transform="translate(96 79) rotate(-21)" filter="url(#shadow)"><rect x="-88" y="-7" width="25" height="14" rx="5" fill="${palette.shade}" stroke="rgba(0,0,0,.55)" stroke-width="2"/><rect x="-64" y="-10" width="12" height="20" rx="4" fill="${palette.glow}" opacity=".82"/><path d="M-52 -7 H42 L86 0 L42 7 H-52 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/><path d="M-46 -4 H42 L77 0 L42 2 H-46 Z" fill="rgba(255,255,255,.42)"/><path d="M42 -5 L85 0 L42 5 Z" fill="${palette.glow}" opacity=".64"/></g>`;
-    }
-  } else {
-    if (armorMotif === 'cloak') {
-      art = `<g transform="translate(96 80)" filter="url(#shadow)"><path d="M0 -59 C31 -59 51 -43 55 -13 C60 31 33 56 0 68 C-33 56 -60 31 -55 -13 C-51 -43 -31 -59 0 -59 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2"/><path d="M-21 -49 C-7 -24 -9 29 -27 54 C-44 36 -50 13 -45 -16 C-42 -31 -33 -43 -21 -49 Z" fill="${palette.metal}" opacity=".92"/><path d="M21 -49 C7 -24 9 29 27 54 C44 36 50 13 45 -16 C42 -31 33 -43 21 -49 Z" fill="${palette.glow}" opacity=".66"/></g>`;
-    } else if (armorMotif === 'robe') {
-      art = `<g transform="translate(96 80)" filter="url(#shadow)"><path d="M-43 -54 H43 L53 59 L20 59 L0 34 L-20 59 L-53 59 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2"/><path d="M-25 -50 H25 L18 54 H-18 Z" fill="${palette.metal}" opacity=".84"/><path d="M0 -49 V54" stroke="${palette.accent}" stroke-width="4"/><circle cx="0" cy="-25" r="8" fill="${palette.glow}" filter="url(#glow)"/></g>`;
-    } else if (armorMotif === 'breastplate') {
-      art = `<g transform="translate(96 79)" filter="url(#shadow)"><path d="M-55 -49 L-16 -61 H16 L55 -49 L50 36 C37 53 18 62 0 69 C-18 62 -37 53 -50 36 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2.2"/><path d="M-37 -36 H37 L32 28 C23 39 11 46 0 50 C-11 46 -23 39 -32 28 Z" fill="${palette.metal}" opacity=".92"/><path d="M0 -58 V50 M-43 -8 H43" stroke="${palette.accent}" stroke-width="3" opacity=".8"/></g>`;
-    } else {
-      art = `<g transform="translate(96 79)" filter="url(#shadow)"><path d="M-58 -52 L-25 -65 H25 L58 -52 L52 -4 L40 40 C28 55 14 64 0 69 C-14 64 -28 55 -40 40 L-52 -4 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2.2"/><path d="M-40 -38 L-16 -48 H16 L40 -38 L36 0 L24 31 C16 40 8 46 0 49 C-8 46 -16 40 -24 31 L-36 0 Z" fill="${palette.metal}" opacity=".94"/><path d="M0 -47 V49 M-37 -9 H37" stroke="${palette.glow}" stroke-width="3" opacity=".72"/><circle cx="0" cy="-22" r="9" fill="${palette.accent}" stroke="${palette.glow}" stroke-width="2"/></g>`;
-    }
-  }
-
-  return `<span class="equipment-preview" style="display:block;margin-top:12px;padding:12px 13px 13px;border:1px solid ${palette.border};border-radius:18px;background:linear-gradient(140deg, rgba(7,11,18,.98), rgba(22,17,31,.96));box-shadow:inset 0 0 40px rgba(0,0,0,.48),0 8px 24px rgba(0,0,0,.28);">
-    <span style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:11px;color:rgba(255,255,255,.78);letter-spacing:.08em;">
-      <b style="font-weight:700;">装備イメージ</b>
-      <span style="color:${palette.accent};font-weight:700;">${escapeHtml(rarity)}</span>
+  return `<span class="equipment-preview" style="display:block;margin-top:14px;padding:16px;border:1px solid ${palette.border};border-radius:22px;background:radial-gradient(circle at 82% 18%, rgba(255,255,255,.06), rgba(255,255,255,0) 24%),linear-gradient(135deg, rgba(13,18,28,.98), rgba(18,14,27,.98));box-shadow:inset 0 0 55px rgba(0,0,0,.46),0 12px 28px rgba(0,0,0,.24);">
+    <span style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
+      <span style="display:flex;flex-direction:column;gap:4px;">
+        <span style="font-size:12px;letter-spacing:.1em;color:rgba(255,255,255,.58);">EQUIPMENT VISION</span>
+        <span style="font-size:25px;font-weight:800;line-height:1.1;color:rgba(255,255,255,.98);">${label}</span>
+      </span>
+      <span style="display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;border:1px solid ${palette.border};color:${accent};background:rgba(255,255,255,.03);font-size:12px;font-weight:700;">${escapeHtml(rarity)}</span>
     </span>
-    <span style="display:grid;grid-template-columns:minmax(0,1fr) 258px;gap:12px;align-items:stretch;">
-      <span style="display:flex;flex-direction:column;justify-content:space-between;padding:14px 14px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));box-shadow:inset 0 0 24px rgba(255,255,255,.02);min-height:198px;">
+    <span style="display:grid;grid-template-columns:minmax(0,1.12fr) minmax(260px,.88fr);gap:16px;align-items:stretch;">
+      <span style="display:flex;flex-direction:column;justify-content:space-between;padding:16px 17px;border-radius:18px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));min-height:282px;">
         <span>
-          <span style="display:block;font-size:24px;line-height:1.15;font-weight:800;color:rgba(255,255,255,.98);text-shadow:0 0 12px rgba(0,0,0,.32);margin-bottom:10px;">${label}</span>
-          <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid ${palette.border};background:rgba(255,255,255,.03);font-size:11px;color:rgba(255,255,255,.84);margin-bottom:10px;">
-            <b style="color:${palette.accent};">${statLabel}</b><span>${escapeHtml(String(statValue))}</span>
+          <span style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            <span style="display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;color:rgba(255,255,255,.88);"><b style="color:${accent};">${statLabel}</b><span>${escapeHtml(String(statValue))}</span></span>
+            <span style="display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;color:rgba(255,255,255,.88);"><b style="color:${accent};">分類</b><span>${item.category === 'weapon' ? '武器' : '防具'}</span></span>
           </span>
-          <span style="display:block;font-size:11px;letter-spacing:.08em;color:rgba(255,255,255,.58);margin-bottom:5px;">固有能力</span>
-          <span style="display:block;font-size:18px;line-height:1.2;font-weight:700;color:${palette.glow};margin-bottom:7px;">${abilityName}</span>
-          <span style="display:block;font-size:13px;line-height:1.55;color:rgba(255,255,255,.88);">${ability}</span>
+          <span style="display:block;font-size:12px;letter-spacing:.12em;color:rgba(255,255,255,.52);margin-bottom:7px;">固有能力</span>
+          <span style="display:block;font-size:20px;line-height:1.18;font-weight:800;color:${palette.glow};margin-bottom:8px;">${abilityName}</span>
+          <span style="display:block;font-size:14px;line-height:1.7;color:rgba(255,255,255,.9);margin-bottom:14px;">${ability}</span>
+          <span style="display:block;height:1px;background:linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0));margin:10px 0 14px;"></span>
+          <span style="display:block;font-size:12px;letter-spacing:.12em;color:rgba(255,255,255,.52);margin-bottom:7px;">装備解説</span>
+          <span style="display:block;font-size:13px;line-height:1.7;color:rgba(255,255,255,.76);">${flavor}</span>
         </span>
-        <span style="display:block;font-size:11px;line-height:1.5;color:rgba(255,255,255,.46);padding-top:10px;border-top:1px solid rgba(255,255,255,.06);">名前と固有能力に合わせて見た目を個別化した装備プレビュー。</span>
+        <span style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:14px;">
+          <span style="font-size:11px;line-height:1.6;color:rgba(255,255,255,.45);">名前・レア度・固有能力に合わせて装備絵を個別表示。</span>
+          <span style="font-size:11px;letter-spacing:.12em;color:${accent};">DEEP LOOT</span>
+        </span>
       </span>
-      <span style="display:flex;align-items:center;justify-content:center;padding:10px;border-radius:16px;border:1px solid ${palette.border};background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.05), rgba(255,255,255,.015) 58%, rgba(0,0,0,.08) 100%);box-shadow:inset 0 0 34px rgba(0,0,0,.34);">
-        <svg viewBox="0 0 188 158" width="100%" height="184" role="img" aria-label="${label}" style="display:block;max-width:236px;">
-          <defs>
-            <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,.78)"/></filter>
-            <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            <radialGradient id="halo" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="${rarityAura}" stop-opacity=".30"/><stop offset="55%" stop-color="${rarityAura}" stop-opacity=".08"/><stop offset="100%" stop-color="${rarityAura}" stop-opacity="0"/></radialGradient>
-          </defs>
-          <rect x="1" y="1" width="186" height="156" rx="15" fill="rgba(5,8,14,.24)" stroke="${palette.border}"/>
-          <ellipse cx="94" cy="78" rx="78" ry="61" fill="url(#halo)"/>
-          <circle cx="94" cy="78" r="51" fill="none" stroke="${rarityAura}" stroke-width="1.1" opacity=".25"/>
-          <circle cx="94" cy="78" r="39" fill="none" stroke="${rarityAura}" stroke-width=".8" opacity=".18" stroke-dasharray="4 5"/>
-          ${themeParts.join('')}
-          ${abilityAccent}
-          ${art}
-          <circle cx="${74 + ((seed >>> 4) % 30)}" cy="${51 + ((seed >>> 9) % 24)}" r="2.8" fill="${palette.glow}" opacity=".68" filter="url(#glow)"/>
-        </svg>
-      </span>
+      ${artBlock}
     </span>
   </span>`;
 }
