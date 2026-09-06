@@ -1,0 +1,14 @@
+{
+  "maxHp": 100,
+  "attackDamage": 10,
+  "moveAcceleration": 0.55,
+  "moveFriction": 0.78,
+  "maxMoveSpeed": 3.4,
+  "jumpPower": 9.2,
+  "hurtInvulnerability": 0.7,
+  "hurtKnockbackX": 4,
+  "hurtKnockbackY": 4,
+  "attackDuration": 0.38,
+  "attackCooldown": 0.44,
+  "attackFrames": 5
+}

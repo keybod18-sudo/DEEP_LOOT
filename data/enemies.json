@@ -1,0 +1,24 @@
+{
+  "slime": {
+    "maxHp": 30,
+    "crawlSpeed": 0.42,
+    "contactDamage": 8,
+    "dropDamage": 12,
+    "pounceDamage": 10,
+    "states": ["crawl", "cling", "drop", "pounce"]
+  },
+  "goblin": {
+    "maxHp": 45,
+    "walkSpeed": 0.36,
+    "clubDamage": 12,
+    "leapContactDamage": 10,
+    "smashDamage": 16,
+    "states": ["walk", "swing", "leap", "smash"]
+  },
+  "knockback": {
+    "duration": 0.22,
+    "x": 4.6,
+    "y": 3.2,
+    "friction": 0.88
+  }
+}

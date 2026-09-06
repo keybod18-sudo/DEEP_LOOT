@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DEEP LOOT</title>
+  </head>
+  <body>
+    <main id="app">
+      <div class="hud">
+        <span>階層 <b id="floor">1</b></span>
+        <span>HP <b id="hp">100/100</b></span>
+        <span>攻撃 <b id="attack">10</b></span>
+        <span>防御 <b id="defense">0</b></span>
+        <span>所持金 <b id="gold">0</b>G</span>
+        <button id="menu-button" type="button">メニュー</button>
+        <button id="reset" type="button">最初から</button>
+      </div>
+
+      <div class="game-shell">
+        <canvas id="game" width="736" height="420"></canvas>
+
+        <section id="game-menu" class="game-menu" aria-hidden="true">
+          <div class="menu-window">
+            <header class="menu-header">
+              <div>
+                <p class="menu-kicker">DEEP LOOT</p>
+                <h1>メニュー</h1>
+              </div>
+              <button id="menu-close" type="button">閉じる</button>
+            </header>
+
+            <div class="menu-layout">
+              <section class="status-panel">
+                <h2>ステータス</h2>
+                <div id="menu-status" class="status-grid"></div>
+                <p class="menu-help">M / Esc / Tab で開閉</p>
+                <p class="menu-help">武器・防具はクリックで装備。回復アイテムはクリックで使用。</p>
+              </section>
+
+              <section class="inventory-panel">
+                <div class="inventory-group">
+                  <h2>武器 <span data-inventory-header="weapon">0 / 8　空き 8</span></h2>
+                  <div id="weapon-slots" class="equipment-list"></div>
+                </div>
+                <div class="inventory-group">
+                  <h2>防具 <span data-inventory-header="armor">0 / 8　空き 8</span></h2>
+                  <div id="armor-slots" class="equipment-list"></div>
+                </div>
+                <div class="inventory-group">
+                  <h2>アイテム <span data-inventory-header="consumable">0 / 8　空き 8</span></h2>
+                  <div id="item-slots" class="slot-grid"></div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="controls">A / D または ← / →：移動　W / ↑ / Space：ジャンプ　J：攻撃　M / Esc / Tab：メニュー　階段で E / Enter：次の階</p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

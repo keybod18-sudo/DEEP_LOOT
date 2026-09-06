@@ -1,0 +1,430 @@
+:root {
+  font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+  color: #111;
+  background: #fff;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+#app {
+  width: min(960px, calc(100vw - 20px));
+  margin: 10px auto;
+}
+
+.hud {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+button {
+  padding: 8px 12px;
+  border: 1px solid #c7ccd3;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.game-shell { position: relative; }
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: #1c252f;
+  image-rendering: pixelated;
+}
+
+.controls {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.game-menu {
+  position: absolute;
+  inset: 0;
+  display: none;
+  padding: 18px;
+  border-radius: 12px;
+  background: rgba(8, 12, 18, 0.82);
+  color: #e8edf2;
+  overflow: auto;
+}
+
+.game-menu.is-open { display: block; }
+
+.menu-window {
+  min-height: 100%;
+  padding: 18px;
+  border: 2px solid #536271;
+  border-radius: 10px;
+  background: #151e27;
+  box-shadow: inset 0 0 0 2px #0c1218;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #35424f;
+}
+
+.menu-header h1,
+.inventory-group h2,
+.status-panel h2 { margin: 0; }
+
+.menu-kicker {
+  margin: 0 0 2px;
+  color: #8fa4b8;
+  font-size: 11px;
+  letter-spacing: .15em;
+}
+
+.menu-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.status-panel,
+.inventory-group {
+  border: 1px solid #344453;
+  border-radius: 8px;
+  background: #101820;
+}
+
+.status-panel { padding: 14px; }
+
+.status-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.status-grid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px dotted #344453;
+}
+
+.status-grid span { color: #9bacbb; }
+.status-grid b { text-align: right; }
+
+.menu-help {
+  margin: 13px 0 0;
+  color: #8294a5;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.inventory-panel { display: grid; gap: 10px; }
+
+.inventory-group { padding: 10px; }
+.inventory-group h2 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.inventory-group h2 span {
+  margin-left: 6px;
+  color: #708396;
+  font-size: 9px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.item-slot {
+  position: relative;
+  min-height: 62px;
+  padding: 7px 7px 6px;
+  border: 1px solid #526171;
+  border-radius: 5px;
+  background: #202c37;
+  color: #e8edf2;
+  text-align: left;
+  overflow: hidden;
+}
+
+.item-slot:hover { background: #283746; }
+.item-slot.empty {
+  border-style: dashed;
+  background: #141d25;
+  color: #5f7181;
+  cursor: default;
+}
+.item-slot.equipped {
+  outline: 2px solid #d3aa55;
+  background: #312b21;
+}
+.item-slot strong,
+.item-slot small,
+.item-slot em { display: block; }
+.item-slot strong {
+  padding-right: 14px;
+  font-size: 11px;
+}
+.item-slot small {
+  margin-top: 3px;
+  color: #a9b8c5;
+  font-size: 9px;
+  line-height: 1.25;
+}
+.item-slot em {
+  margin-top: 3px;
+  color: #e6c470;
+  font-size: 9px;
+  font-style: normal;
+}
+.slot-index {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  color: #687b8c;
+  font-size: 9px;
+}
+
+@media (max-width: 760px) {
+  .game-menu { padding: 8px; }
+  .menu-window { padding: 10px; }
+  .menu-layout { grid-template-columns: 1fr; }
+  .slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* v5: 装備名・基礎性能・固有能力と、8個の能力スロットを明確に分離 */
+.equipment-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.equipment-entry {
+  position: relative;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #526171;
+  border-radius: 7px;
+  background: #202c37;
+  color: #e8edf2;
+  text-align: left;
+  overflow: hidden;
+}
+
+.equipment-entry:hover { background: #283746; }
+
+.equipment-entry.equipped {
+  outline: 2px solid #d3aa55;
+  background: #312b21;
+}
+
+.inventory-slot-index {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  color: #708396;
+  font-size: 9px;
+}
+
+.equipment-name {
+  display: block;
+  padding-right: 62px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.equipment-summary {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 4px 8px;
+  border: 1px solid #506274;
+  border-radius: 5px;
+  background: #131d26;
+  color: #dbe5ee;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.summary-chip.intrinsic {
+  border-color: #665f4c;
+  color: #e8d9ae;
+}
+
+.equipped-mark {
+  display: inline-block;
+  margin-top: 6px;
+  color: #e6c470;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.ability-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid #354554;
+}
+
+.ability-slot {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 6px;
+  border: 1px solid #526171;
+  border-radius: 5px;
+  background: #18232d;
+  color: #dce6ee;
+  font-size: 9px;
+  line-height: 1.15;
+}
+
+.ability-slot b {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  border-radius: 3px;
+  background: #273746;
+  color: #9fb1c1;
+  font-size: 9px;
+}
+
+.ability-slot span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ability-slot.empty {
+  border-style: dashed;
+  background: #101820;
+  color: #708294;
+}
+
+.ability-slot.filled {
+  border-color: #758899;
+  background: #24323e;
+  color: #ffffff;
+}
+
+.empty-equipment {
+  min-height: 44px;
+  border-style: dashed;
+  background: #111a22;
+  color: #607385;
+  cursor: default;
+}
+
+.empty-equipment-label {
+  display: block;
+  padding: 6px 0;
+  text-align: center;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .ability-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+/* v6: 装備能力スロットを横長・1行固定にして視認性を改善 */
+.menu-layout {
+  grid-template-columns: 190px minmax(0, 1fr);
+}
+
+.inventory-panel,
+.inventory-group,
+.equipment-entry {
+  min-width: 0;
+}
+
+.equipment-entry {
+  overflow: visible;
+}
+
+.equipment-name {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.equipment-summary {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr);
+  align-items: stretch;
+}
+
+.summary-chip {
+  min-height: 30px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.summary-chip.intrinsic {
+  white-space: normal;
+}
+
+.ability-slot-grid {
+  grid-template-columns: repeat(4, minmax(112px, 1fr));
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ability-slot {
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ability-slot b {
+  width: 20px;
+  height: 20px;
+  margin-right: 7px;
+}
+
+.ability-slot span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-equipment {
+  min-height: 46px;
+}
+
+@media (max-width: 760px) {
+  .menu-layout { grid-template-columns: 1fr; }
+  .equipment-summary { grid-template-columns: 1fr; }
+  .ability-slot-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    overflow-x: visible;
+  }
+}

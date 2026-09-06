@@ -1,0 +1,18 @@
+{
+  "name": "deep-loot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run verify:assets && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "verify:assets": "node tools/verify-assets.mjs",
+    "verify": "npm run verify:assets && npm run check"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^7.1.0"
+  }
+}
