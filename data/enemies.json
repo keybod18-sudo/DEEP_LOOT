@@ -125,13 +125,13 @@
   },
   "bomb": {
     "maxHp": 14,
-    "rollSpeed": 1.65,
-    "triggerRange": 76,
-    "fuseDuration": 0.7,
-    "explosionRadius": 88,
-    "explosionDamage": 20,
-    "explosionDuration": 0.42,
-    "blastKnockbackX": 9.2,
-    "blastKnockbackY": 8.6
+    "rollSpeed": 2.35,
+    "triggerRange": 108,
+    "fuseDuration": 0.4,
+    "explosionRadius": 132,
+    "explosionDamage": 28,
+    "explosionDuration": 0.58,
+    "blastKnockbackX": 14.2,
+    "blastKnockbackY": 11.4
   }
 }

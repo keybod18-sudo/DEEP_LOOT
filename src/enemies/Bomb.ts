@@ -46,16 +46,15 @@ export class Bomb extends Enemy {
 
     if (this.state === 'explode') {
       const progress = Math.min(1, this.actionTime / BALANCE.bomb.explosionDuration);
-      this.blastRadius = BALANCE.bomb.explosionRadius * Math.max(0.12, progress);
+      const burst = 1 - (1 - progress) * (1 - progress) * (1 - progress);
+      this.blastRadius = BALANCE.bomb.explosionRadius * (0.24 + burst * 0.76);
 
-      if (!this.damageDone) {
-        if (distance <= this.blastRadius) {
-          const damaged = context.hurtPlayer(BALANCE.bomb.explosionDamage, this.x);
-          if (damaged) {
-            const knockDir = dx >= 0 ? 1 : -1;
-            player.vx = knockDir * BALANCE.bomb.blastKnockbackX;
-            player.vy = -BALANCE.bomb.blastKnockbackY;
-          }
+      if (!this.damageDone && distance <= this.blastRadius) {
+        const damaged = context.hurtPlayer(BALANCE.bomb.explosionDamage, this.x);
+        if (damaged) {
+          const knockDir = dx >= 0 ? 1 : -1;
+          player.vx = knockDir * BALANCE.bomb.blastKnockbackX;
+          player.vy = -BALANCE.bomb.blastKnockbackY;
         }
         this.damageDone = true;
       }
@@ -73,13 +72,15 @@ export class Bomb extends Enemy {
 
     if (this.state === 'fuse') {
       this.vx = 0;
+      // Short, nervous pre-explosion shimmy to sell the imminent blast.
+      this.x += Math.sin(this.actionTime * 36) * 0.7;
       if (this.actionTime >= BALANCE.bomb.fuseDuration) {
         this.state = 'explode';
         this.actionTime = 0;
         this.damageDone = false;
         this.vx = 0;
         this.vy = 0;
-        this.blastRadius = BALANCE.bomb.explosionRadius * 0.12;
+        this.blastRadius = BALANCE.bomb.explosionRadius * 0.24;
       }
       return;
     }

@@ -10,6 +10,7 @@ import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
 import type { Bomb } from './Bomb';
 import type { Facing } from '../game/types';
+import { BALANCE } from '../config/balance';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
@@ -292,31 +293,65 @@ export class EnemyRenderer {
     const centerY = bomb.y + bomb.h / 2;
 
     if (bomb.state === 'explode') {
-      const radius = Math.max(14, bomb.blastRadius);
+      const progress = Math.min(1, bomb.actionTime / BALANCE.bomb.explosionDuration);
+      const burst = 1 - (1 - progress) * (1 - progress) * (1 - progress);
+      const radius = Math.max(18, bomb.blastRadius);
+
       ctx.save();
-      ctx.fillStyle = 'rgba(255, 205, 72, 0.38)';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.translate(centerX, centerY);
 
-      ctx.fillStyle = 'rgba(255, 118, 30, 0.42)';
+      // Fast outer shock ring.
+      ctx.strokeStyle = `rgba(255, 245, 190, ${0.85 - progress * 0.55})`;
+      ctx.lineWidth = Math.max(2, 7 - progress * 4);
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 0.72, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#fff1bf';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 0.92, 0, Math.PI * 2);
+      ctx.arc(0, 0, radius * (0.9 + progress * 0.24), 0, Math.PI * 2);
       ctx.stroke();
 
-      for (let i = 0; i < 8; i += 1) {
-        const angle = bomb.actionTime * 10 + i * (Math.PI / 4);
-        const px = centerX + Math.cos(angle) * radius * 0.92;
-        const py = centerY + Math.sin(angle) * radius * 0.92;
-        ctx.fillStyle = i % 2 === 0 ? '#ffe07a' : '#ff7b2c';
-        ctx.fillRect(Math.round(px) - 3, Math.round(py) - 3, 6, 6);
+      // Jagged starburst core.
+      const spikes = 14;
+      ctx.fillStyle = `rgba(255, 142, 34, ${0.82 - progress * 0.3})`;
+      ctx.beginPath();
+      for (let i = 0; i <= spikes * 2; i += 1) {
+        const angle = -Math.PI / 2 + (i / (spikes * 2)) * Math.PI * 2;
+        const spikeRadius = i % 2 === 0 ? radius * (0.55 + burst * 0.65) : radius * (0.26 + burst * 0.34);
+        const px = Math.cos(angle) * spikeRadius;
+        const py = Math.sin(angle) * spikeRadius;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
+      ctx.closePath();
+      ctx.fill();
+
+      // Bright inner fireball.
+      ctx.fillStyle = `rgba(255, 230, 120, ${0.9 - progress * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * (0.30 + burst * 0.18), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Smoke chunks around the blast.
+      for (let i = 0; i < 7; i += 1) {
+        const angle = progress * 5 + i * (Math.PI * 2 / 7);
+        const orbit = radius * (0.46 + (i % 3) * 0.1);
+        const px = Math.cos(angle) * orbit;
+        const py = Math.sin(angle) * orbit;
+        const puff = 7 + (i % 3) * 3 + progress * 7;
+        ctx.fillStyle = `rgba(74, 72, 86, ${0.30 - progress * 0.18})`;
+        ctx.beginPath();
+        ctx.arc(px, py, puff, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Sparks / debris.
+      for (let i = 0; i < 12; i += 1) {
+        const angle = progress * 8 + i * (Math.PI * 2 / 12);
+        const sparkDist = radius * (0.72 + (i % 2) * 0.18);
+        const px = Math.cos(angle) * sparkDist;
+        const py = Math.sin(angle) * sparkDist;
+        const size = i % 3 === 0 ? 5 : 4;
+        ctx.fillStyle = i % 2 === 0 ? '#fff2c5' : '#ff8b28';
+        ctx.fillRect(Math.round(px) - size / 2, Math.round(py) - size / 2, size, size);
+      }
+
       ctx.restore();
       return;
     }
@@ -324,17 +359,12 @@ export class EnemyRenderer {
     const fuseFlash = bomb.state === 'fuse' ? (Math.sin(bomb.actionTime * 18) * 0.5 + 0.5) : 0;
     const radius = 12 + Math.sin(bomb.actionTime * 12) * 0.45;
     const rollOffset = bomb.state === 'roll' ? Math.sin(bomb.actionTime * 10) * 0.7 : 0;
-
-    // Rotation derives from actual world X, so rightward movement rotates clockwise,
-    // leftward movement rotates counter-clockwise, and the exact angle is preserved
-    // when the bomb stops to light its fuse.
     const rollAngle = bomb.x / 12;
 
     ctx.save();
     ctx.translate(centerX, centerY + rollOffset);
     ctx.rotate(rollAngle);
 
-    // The entire bomb is now one rigid rotating body: shell, face, seam AND fuse.
     ctx.fillStyle = fuseFlash > 0.45 ? '#f27d34' : '#363d4e';
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -351,20 +381,17 @@ export class EnemyRenderer {
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Rolling seam is attached to the shell; no separate rotation.
     ctx.strokeStyle = '#1a1f2b';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, radius * 0.65, -0.9, 0.9);
     ctx.stroke();
 
-    // Face is painted on the shell and rotates with it too.
     ctx.fillStyle = '#14181f';
     ctx.fillRect(-5, -2, 3, 3);
     ctx.fillRect(2, -2, 3, 3);
     ctx.fillRect(-3, 5, 6, 2);
 
-    // Fuse is physically attached to the shell, so it uses the same transform.
     ctx.strokeStyle = '#59462a';
     ctx.lineWidth = 2;
     ctx.beginPath();
