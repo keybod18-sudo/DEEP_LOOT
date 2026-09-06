@@ -1,9 +1,16 @@
 import { BALANCE } from '../config/balance';
 import type { Facing, Rect } from '../game/types';
 
+const frameUrls = [1, 2, 3, 4, 5, 6, 7, 8].map((index) =>
+  new URL(`../../assets/effects/fireball/fireball_0${index}.png`, import.meta.url).href,
+);
+
 export class Fireball {
+  static readonly images: HTMLImageElement[] = [];
+
   static async loadAssets(): Promise<void> {
-    // Procedural effect: no image asset is required to start the game.
+    if (this.images.length > 0) return;
+    this.images.push(...await Promise.all(frameUrls.map(loadImage)));
   }
 
   readonly w = BALANCE.fireball.width;
@@ -43,7 +50,6 @@ export class Fireball {
     ctx.translate(centerX, centerY);
     if (this.facing < 0) ctx.scale(-1, 1);
 
-    // Flame shapes only. No rectangular background panel.
     ctx.fillStyle = '#5f1b08';
     ctx.beginPath();
     ctx.ellipse(-tail * 0.45, 0, tail, 10, 0, 0, Math.PI * 2);
@@ -76,4 +82,13 @@ export class Fireball {
 
     ctx.restore();
   }
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`画像を読み込めません: ${src}`));
+    image.src = src;
+  });
 }

@@ -34,8 +34,3 @@
 - When a user reports a rectangular background behind a projectile/effect, inspect every object drawn behind it as well as the projectile itself.
 - Stairs, doors, room zones, debug shapes and effect glows must not visually masquerade as a sprite background.
 - Major explosions must use a multi-frame sprite animation or equivalent layered animation, not a single expanding circle.
-
-## Runtime update completeness rule
-- APPLY_UPDATE.bat must not assume that a previous asset-only update was applied successfully.
-- When a change introduces or depends on runtime-loaded assets, ship the complete current assets/src/data set in the updater.
-- A missing optional/obsolete projectile image must never prevent Game.start(); procedural effects should not await unused image files.

@@ -16,7 +16,7 @@ export class SkeletonArcher extends Enemy {
 
   constructor(x: number, y: number) {
     super(x, y, 28, 42, BALANCE.skeletonArcher.maxHp, BALANCE.skeletonArcher.maxHp);
-    this.cooldown = 0.9;
+    this.cooldown = 0.8;
   }
 
   interruptForKnockback(): void {
@@ -33,12 +33,14 @@ export class SkeletonArcher extends Enemy {
     const player = context.player;
     const playerCenterX = player.x + player.w / 2;
     const playerCenterY = player.y + player.h / 2;
-    const dx = playerCenterX - (this.x + this.w / 2);
+    const centerX = this.x + this.w / 2;
+    const dx = playerCenterX - centerX;
     const distance = Math.abs(dx);
 
     this.facing = dx >= 0 ? 1 : -1;
 
     if (this.state === 'attack') {
+      this.vx = 0;
       if (!this.shotReleased && this.actionTime >= BALANCE.skeletonArcher.releaseTime) {
         this.fireVolley(context, playerCenterX, playerCenterY);
         this.shotReleased = true;
@@ -53,8 +55,12 @@ export class SkeletonArcher extends Enemy {
       return;
     }
 
+    // Archer is intentionally almost stationary. It only shuffles when the player is
+    // well outside its shooting distance or extremely close.
     if (distance > BALANCE.skeletonArcher.idealRange) {
       this.x += this.facing * BALANCE.skeletonArcher.walkSpeed;
+    } else if (distance < 70) {
+      this.x -= this.facing * (BALANCE.skeletonArcher.walkSpeed * 0.55);
     }
 
     const previousY = this.y;
@@ -72,7 +78,7 @@ export class SkeletonArcher extends Enemy {
 
   private nextShotType(): SkeletonArcherShot {
     const order: SkeletonArcherShot[] = ['normal', 'triple', 'poison'];
-    const shot = order[this.shotCycle % order.length];
+    const shot = order[this.shotCycle % order.length]!;
     this.shotCycle += 1;
     return shot;
   }
@@ -80,16 +86,29 @@ export class SkeletonArcher extends Enemy {
   private fireVolley(context: EnemyContext, targetX: number, targetY: number): void {
     const originX = this.facing > 0 ? this.x + this.w + 2 : this.x - 2;
     const originY = this.y + 14;
-    const base = this.computeVelocity(originX, originY, targetX, targetY);
 
     if (this.shotType === 'triple') {
-      const spreads = [-1.05, 0, 1.05] as const;
-      for (const spread of spreads) {
+      // Three clearly separated high arcs. They rise first, spread apart, then rain
+      // down around the player's current position.
+      const targets = [
+        { x: targetX - 72, frames: 58 },
+        { x: targetX,      frames: 66 },
+        { x: targetX + 72, frames: 74 },
+      ] as const;
+
+      for (const target of targets) {
+        const velocity = this.computeBallisticVelocity(
+          originX,
+          originY,
+          target.x,
+          targetY,
+          target.frames,
+        );
         context.spawnSkeletonArrow(
           originX,
           originY,
-          base.vx,
-          base.vy + spread,
+          velocity.vx,
+          velocity.vy,
           BALANCE.skeletonArcher.tripleArrowDamage,
           false,
         );
@@ -97,11 +116,20 @@ export class SkeletonArcher extends Enemy {
       return;
     }
 
+    const flightFrames = this.shotType === 'poison' ? 56 : 48;
+    const velocity = this.computeBallisticVelocity(
+      originX,
+      originY,
+      targetX,
+      targetY,
+      flightFrames,
+    );
+
     context.spawnSkeletonArrow(
       originX,
       originY,
-      base.vx,
-      base.vy,
+      velocity.vx,
+      velocity.vy,
       this.shotType === 'poison'
         ? BALANCE.skeletonArcher.poisonArrowDamage
         : BALANCE.skeletonArcher.arrowDamage,
@@ -109,14 +137,24 @@ export class SkeletonArcher extends Enemy {
     );
   }
 
-  private computeVelocity(originX: number, originY: number, targetX: number, targetY: number): { vx: number; vy: number } {
-    const dx = targetX - originX;
-    const dy = targetY - originY;
-    const dir = dx >= 0 ? 1 : -1;
-    const distance = Math.abs(dx);
-    const vx = dir * clamp(4.1 + distance / 120, 4.1, 6.4);
-    const vy = clamp((dy / Math.max(28, distance * 0.22)) - (2.9 + Math.min(1.4, distance / 180)), -7.2, 1.5);
-    return { vx, vy };
+  private computeBallisticVelocity(
+    originX: number,
+    originY: number,
+    targetX: number,
+    targetY: number,
+    flightFrames: number,
+  ): { vx: number; vy: number } {
+    const frames = Math.max(20, flightFrames);
+    const gravity = BALANCE.skeletonArcher.arrowGravity;
+    const vx = (targetX - originX) / frames;
+    const vy = (
+      targetY - originY - (gravity * frames * (frames - 1)) / 2
+    ) / frames;
+
+    return {
+      vx: clamp(vx, -7.2, 7.2),
+      vy: clamp(vy, -9.2, 1.0),
+    };
   }
 }
 

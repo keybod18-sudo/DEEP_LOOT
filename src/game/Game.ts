@@ -372,20 +372,20 @@ export class Game {
       arrow.update(dt);
       if (!arrow.alive) continue;
 
-      if (intersects(arrow.rect, this.player)) {
-        const hit = this.player.hurt(arrow.damage, arrow.x);
-        if (hit) {
-          if (arrow.poisoned) {
-            const wasPoisoned = this.player.poisoned;
-            this.player.applyPoison(
-              BALANCE.skeletonArcher.poisonDuration,
-              BALANCE.skeletonArcher.poisonTickInterval,
-              BALANCE.skeletonArcher.poisonDamage,
-            );
-            if (!wasPoisoned) this.showNotice('毒矢を受けた');
-          }
-          this.refreshUi();
+      if (intersects(arrow.sweptRect, this.player)) {
+        const hit = this.player.hurtProjectile(arrow.damage, arrow.x);
+
+        if (arrow.poisoned) {
+          const wasPoisoned = this.player.poisoned;
+          this.player.applyPoison(
+            BALANCE.skeletonArcher.poisonDuration,
+            BALANCE.skeletonArcher.poisonTickInterval,
+            BALANCE.skeletonArcher.poisonDamage,
+          );
+          if (!wasPoisoned) this.showNotice('毒矢を受けた');
         }
+
+        if (hit) this.refreshUi();
         arrow.alive = false;
       }
     }

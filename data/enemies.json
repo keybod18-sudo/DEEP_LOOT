@@ -136,12 +136,12 @@
   },
   "skeletonArcher": {
     "maxHp": 34,
-    "walkSpeed": 0.28,
-    "attackRange": 300,
-    "idealRange": 150,
-    "attackDuration": 0.82,
-    "releaseTime": 0.42,
-    "cooldown": 1.65,
+    "walkSpeed": 0.1,
+    "attackRange": 360,
+    "idealRange": 300,
+    "attackDuration": 0.96,
+    "releaseTime": 0.62,
+    "cooldown": 1.75,
     "arrowDamage": 10,
     "tripleArrowDamage": 8,
     "poisonArrowDamage": 9,
@@ -149,6 +149,6 @@
     "poisonTickInterval": 1.0,
     "poisonDamage": 2,
     "arrowGravity": 0.18,
-    "arrowLife": 2.8
+    "arrowLife": 3.2
   }
 }

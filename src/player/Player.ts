@@ -150,6 +150,17 @@ export class Player implements PhysicsBody {
     return true;
   }
 
+
+  hurtProjectile(damage: number, sourceX: number): boolean {
+    if (this.hp <= 0) return false;
+
+    this.hp = Math.max(0, this.hp - damage);
+    this.invulnerability = Math.max(this.invulnerability, BALANCE.player.hurtInvulnerability * 0.7);
+    this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
+    this.vy = -BALANCE.player.hurtKnockbackY;
+    return true;
+  }
+
   heal(amount: number, maxHp: number): void {
     this.hp = Math.min(maxHp, this.hp + amount);
   }

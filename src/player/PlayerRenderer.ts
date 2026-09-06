@@ -52,7 +52,7 @@ export class PlayerRenderer {
     }
 
     // Dedicated walking PNG frames are used here: no fake bob/squash animation.
-    const drawH = attacking ? 92 : 88;
+    const drawH = attacking ? 98 : 95;
     const aspect = image.naturalWidth / image.naturalHeight;
     const drawW = Math.round(drawH * aspect);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);

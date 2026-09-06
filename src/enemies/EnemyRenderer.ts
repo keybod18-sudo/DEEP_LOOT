@@ -56,6 +56,12 @@ const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
 );
+const skeletonArcherWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/skeleton_archer/walk_0${index}.png`, import.meta.url).href,
+);
+const skeletonArcherShootUrls = [1, 2, 3, 4, 5].map((index) =>
+  new URL(`../../assets/monsters/skeleton_archer/shoot_0${index}.png`, import.meta.url).href,
+);
 const bombExplosionUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((index) =>
   new URL(`../../assets/effects/bomb_explosion/explosion_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
 );
@@ -90,6 +96,8 @@ export class EnemyRenderer {
   private readonly ratBiteImages: HTMLImageElement[] = [];
   private readonly skeletonWalkImages: HTMLImageElement[] = [];
   private readonly skeletonAttackImages: HTMLImageElement[] = [];
+  private readonly skeletonArcherWalkImages: HTMLImageElement[] = [];
+  private readonly skeletonArcherShootImages: HTMLImageElement[] = [];
   private readonly bombExplosionImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
@@ -98,7 +106,7 @@ export class EnemyRenderer {
       loadImage(clingUrl),
       loadImage(ahrimanUrl),
     ]);
-    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, bombExplosion] = await Promise.all([
+    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, skeletonArcherWalk, skeletonArcherShoot, bombExplosion] = await Promise.all([
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
@@ -112,6 +120,8 @@ export class EnemyRenderer {
       Promise.all(ratBiteUrls.map(loadImage)),
       Promise.all(skeletonWalkUrls.map(loadImage)),
       Promise.all(skeletonAttackUrls.map(loadImage)),
+      Promise.all(skeletonArcherWalkUrls.map(loadImage)),
+      Promise.all(skeletonArcherShootUrls.map(loadImage)),
       Promise.all(bombExplosionUrls.map(loadImage)),
     ]);
     this.snakeImages.push(...snake);
@@ -127,6 +137,8 @@ export class EnemyRenderer {
     this.ratBiteImages.push(...ratBite);
     this.skeletonWalkImages.push(...skeletonWalk);
     this.skeletonAttackImages.push(...skeletonAttack);
+    this.skeletonArcherWalkImages.push(...skeletonArcherWalk);
+    this.skeletonArcherShootImages.push(...skeletonArcherShoot);
     this.bombExplosionImages.push(...bombExplosion);
   }
 
@@ -269,8 +281,8 @@ export class EnemyRenderer {
     const frame = snake.state === 'strike' ? 2 : Math.floor(snake.actionTime * 8) % this.snakeImages.length;
     const image = this.snakeImages[frame] ?? this.snakeImages[0];
     if (!image) return;
-    const drawW = snake.state === 'strike' ? 58 : 52;
-    const drawH = snake.state === 'strike' ? 34 : 30;
+    const drawW = snake.state === 'strike' ? 64 : 58;
+    const drawH = snake.state === 'strike' ? 38 : 34;
     const centerX = snake.x + snake.w / 2;
     const footY = snake.y + snake.h + 2;
     ctx.save();
@@ -284,8 +296,8 @@ export class EnemyRenderer {
     const frame = Math.floor(bat.actionTime * 10) % this.batImages.length;
     const image = this.batImages[frame] ?? this.batImages[0];
     if (!image) return;
-    const drawW = 44;
-    const drawH = 24;
+    const drawW = 52;
+    const drawH = 30;
     const bob = Math.sin(bat.actionTime * 14) * 1.5;
     const centerX = bat.x + bat.w / 2;
     const centerY = bat.y + bat.h / 2 + bob;
@@ -434,176 +446,32 @@ export class EnemyRenderer {
 
 
 
-private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
-  const centerX = skeletonArcher.x + skeletonArcher.w / 2;
-  const footY = skeletonArcher.y + skeletonArcher.h + 1;
-  const walkCycle = skeletonArcher.state === 'walk' ? Math.sin(skeletonArcher.actionTime * 8.5) : 0;
-  const drawProgress = skeletonArcher.state === 'attack'
-    ? Math.min(1, skeletonArcher.actionTime / BALANCE.skeletonArcher.releaseTime)
-    : 0;
-  const releasePulse = skeletonArcher.state === 'attack' && skeletonArcher.shotReleased
-    ? Math.max(0, 1 - (skeletonArcher.actionTime - BALANCE.skeletonArcher.releaseTime) * 5)
-    : 0;
-  const hipBob = skeletonArcher.state === 'walk' ? Math.max(0, Math.sin(skeletonArcher.actionTime * 17)) * 1.1 : 0;
+  private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
+    const images = skeletonArcher.state === 'attack'
+      ? this.skeletonArcherShootImages
+      : this.skeletonArcherWalkImages;
+    if (images.length === 0) return;
 
-  ctx.save();
-  ctx.translate(centerX, footY);
-  applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
+    const index = skeletonArcher.state === 'attack'
+      ? Math.min(
+          images.length - 1,
+          Math.floor((skeletonArcher.actionTime / BALANCE.skeletonArcher.attackDuration) * images.length),
+        )
+      : Math.floor(skeletonArcher.actionTime * 7) % images.length;
+    const image = images[index] ?? images[0];
+    if (!image) return;
 
-  const bone = '#d7d0c8';
-  const boneDark = '#857d76';
-  const rib = '#bcb4ac';
-  const bowWood = '#6d4726';
-  const bowString = '#f1eee7';
-  const poison = skeletonArcher.shotType === 'poison';
-  const arrowShaft = poison ? '#87f77b' : '#d7dadf';
-  const arrowTip = poison ? '#cbff9f' : '#eef5fd';
+    const centerX = skeletonArcher.x + skeletonArcher.w / 2;
+    const footY = skeletonArcher.y + skeletonArcher.h + 1;
+    const drawH = 78;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
 
-  const bodyY = -42 + hipBob;
-  const headY = bodyY - 11;
-  const leftLegSwing = walkCycle * 2.9;
-  const rightLegSwing = -walkCycle * 2.9;
-  const bowHandX = -11;
-  const bowHandY = -31;
-  const pullBaseX = 1;
-  const pullX = pullBaseX + drawProgress * 7.5;
-  const pullY = -29 + Math.sin(drawProgress * Math.PI) * 1.5;
-
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  ctx.beginPath();
-  ctx.ellipse(0, -1, 12, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // back arm
-  ctx.strokeStyle = boneDark;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(7, bodyY - 2);
-  ctx.lineTo(12 - drawProgress * 1.2, -30);
-  ctx.lineTo(8 - drawProgress * 0.8, -19);
-  ctx.stroke();
-
-  // legs
-  ctx.strokeStyle = boneDark;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(-4, bodyY + 9);
-  ctx.lineTo(-6 - leftLegSwing * 0.6, bodyY + 18);
-  ctx.lineTo(-9 - leftLegSwing, -2);
-  ctx.moveTo(3, bodyY + 9);
-  ctx.lineTo(6 - rightLegSwing * 0.6, bodyY + 18);
-  ctx.lineTo(9 - rightLegSwing, -2);
-  ctx.stroke();
-
-  ctx.fillStyle = boneDark;
-  ctx.fillRect(-12 - leftLegSwing, -2, 8, 2);
-  ctx.fillRect(4 - rightLegSwing, -2, 8, 2);
-
-  // pelvis + ribcage
-  ctx.fillStyle = rib;
-  ctx.fillRect(-5, bodyY + 5, 10, 6);
-  ctx.fillRect(-7, bodyY - 10, 14, 14);
-  ctx.fillStyle = boneDark;
-  ctx.fillRect(-4, bodyY - 7, 8, 1);
-  ctx.fillRect(-5, bodyY - 3, 10, 1);
-  ctx.fillRect(-4, bodyY + 1, 8, 1);
-
-  // spine/neck
-  ctx.fillStyle = boneDark;
-  ctx.fillRect(-1, bodyY - 12, 2, 20);
-  ctx.fillRect(-1, bodyY - 15, 2, 4);
-
-  // head
-  ctx.fillStyle = bone;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 9, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#21252d';
-  ctx.fillRect(-5, headY - 1, 3, 4);
-  ctx.fillRect(2, headY - 1, 3, 4);
-  ctx.fillRect(-2, headY + 4, 4, 2);
-  ctx.fillStyle = boneDark;
-  ctx.fillRect(-6, headY - 8, 12, 1);
-  ctx.fillRect(-8, headY + 8, 16, 1);
-
-  // quiver on back
-  ctx.fillStyle = '#5a3417';
-  ctx.fillRect(8, -45, 6, 16);
-  ctx.fillStyle = '#e0e8ef';
-  ctx.fillRect(7, -49, 2, 5);
-  ctx.fillRect(10, -50, 2, 6);
-  ctx.fillRect(13, -48, 2, 4);
-
-  // front arm drawing bow
-  ctx.strokeStyle = bone;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(-5, bodyY - 4);
-  ctx.lineTo(bowHandX + 4, bowHandY + 4);
-  ctx.lineTo(bowHandX, bowHandY);
-  ctx.stroke();
-
-  // draw arm pulling string
-  ctx.strokeStyle = bone;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(4, bodyY - 4);
-  ctx.lineTo(4 + drawProgress * 1.4, -31);
-  ctx.lineTo(pullX, pullY);
-  ctx.stroke();
-
-  // bow
-  ctx.strokeStyle = bowWood;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(bowHandX - 1, -43);
-  ctx.quadraticCurveTo(bowHandX - 10, -30, bowHandX - 1, -16);
-  ctx.stroke();
-
-  ctx.strokeStyle = bowString;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(bowHandX - 1, -42);
-  ctx.lineTo(pullX, pullY);
-  ctx.lineTo(bowHandX - 1, -17);
-  ctx.stroke();
-
-  // nocked arrow while drawing
-  if (skeletonArcher.state === 'attack' && !skeletonArcher.shotReleased) {
-    ctx.fillStyle = '#28303a';
-    ctx.fillRect(bowHandX - 1, -30, 18, 3);
-    ctx.fillStyle = arrowShaft;
-    ctx.fillRect(bowHandX, -29, 15, 1);
-    ctx.fillStyle = '#7d4f24';
-    ctx.fillRect(bowHandX - 3, -30, 3, 1);
-    ctx.fillRect(bowHandX - 3, -28, 3, 1);
-    ctx.fillStyle = arrowTip;
-    ctx.beginPath();
-    ctx.moveTo(19, -28.5);
-    ctx.lineTo(14, -32);
-    ctx.lineTo(14, -25);
-    ctx.closePath();
-    ctx.fill();
-    if (skeletonArcher.shotType === 'triple') {
-      ctx.fillStyle = '#dfe5ec';
-      ctx.fillRect(2, -34, 11, 1);
-      ctx.fillRect(2, -24, 11, 1);
-    }
+    ctx.save();
+    ctx.translate(centerX, footY);
+    applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
   }
-
-  // release flash
-  if (releasePulse > 0) {
-    ctx.fillStyle = poison ? '#9fff85' : '#f6f4ef';
-    ctx.fillRect(7, -30, 8 * releasePulse, 2);
-    if (skeletonArcher.shotType === 'triple') {
-      ctx.fillRect(7, -35, 7 * releasePulse, 1);
-      ctx.fillRect(7, -24, 7 * releasePulse, 1);
-    }
-  }
-
-  ctx.restore();
-}
 
   private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
     const images = skeleton.state === 'attack' ? this.skeletonAttackImages : this.skeletonWalkImages;
