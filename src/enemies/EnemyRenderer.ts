@@ -1,29 +1,35 @@
 import type { Enemy } from './Enemy';
 import type { Goblin } from './Goblin';
 import type { Slime } from './Slime';
+import type { Ahriman } from './Ahriman';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
 const goblinUrl = new URL('../../assets/monsters/goblin/base.png', import.meta.url).href;
+const ahrimanUrl = new URL('../../assets/monsters/ahriman/base.png', import.meta.url).href;
 
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
   private goblinImage!: HTMLImageElement;
+  private ahrimanImage!: HTMLImageElement;
 
   async load(): Promise<void> {
-    [this.slimeImage, this.clingImage, this.goblinImage] = await Promise.all([
+    [this.slimeImage, this.clingImage, this.goblinImage, this.ahrimanImage] = await Promise.all([
       loadImage(slimeUrl),
       loadImage(clingUrl),
       loadImage(goblinUrl),
+      loadImage(ahrimanUrl),
     ]);
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
     if (enemy.type === 'slime') {
       this.drawSlime(ctx, enemy as Slime);
-    } else {
+    } else if (enemy.type === 'goblin') {
       this.drawGoblin(ctx, enemy as Goblin);
+    } else {
+      this.drawAhriman(ctx, enemy as Ahriman);
     }
   }
 
@@ -81,6 +87,21 @@ export class EnemyRenderer {
     ctx.translate(0, offsetY);
     ctx.rotate(rotation);
     ctx.drawImage(this.goblinImage, -34, -67, 68, 67);
+    ctx.restore();
+  }
+
+  private drawAhriman(ctx: CanvasRenderingContext2D, ahriman: Ahriman): void {
+    const drawW = 76;
+    const flap = Math.sin(ahriman.actionTime * 12);
+    const drawH = 40 + flap * 2.2;
+    const centerX = ahriman.x + ahriman.w / 2;
+    const centerY = ahriman.y + ahriman.h / 2;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    if (ahriman.facing < 0) ctx.scale(-1, 1);
+    ctx.rotate(flap * 0.025);
+    ctx.drawImage(this.ahrimanImage, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   }
 }

@@ -9,6 +9,7 @@
     "assets/player/attack/attack_05.png": "96a7270a62f1e92f2fda0f6caececae569c1f2dd0094c5e09b087097b3c3977a",
     "assets/monsters/slime/crawl.png": "057d6293f7d26511bbf93d9ad01accf58d043b2d7ddab17d9970ae9acc271180",
     "assets/monsters/slime/cling.png": "592322bd3d1c1467651d96aecafbd2bf9aec7c7519f7cbd349296ecae3a9076f",
-    "assets/monsters/goblin/base.png": "4f69add5c07a6454f9d290320bd9d37ae5cc04d2faab2d527f9cbab68687a9af"
+    "assets/monsters/goblin/base.png": "4f69add5c07a6454f9d290320bd9d37ae5cc04d2faab2d527f9cbab68687a9af",
+    "assets/monsters/ahriman/base.png": "a329ed4958aab0e5ec314d983079093c7a03102688c07a776c072904ea15bd62"
   }
 }

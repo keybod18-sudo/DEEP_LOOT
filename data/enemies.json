@@ -5,7 +5,12 @@
     "contactDamage": 8,
     "dropDamage": 12,
     "pounceDamage": 10,
-    "states": ["crawl", "cling", "drop", "pounce"]
+    "states": [
+      "crawl",
+      "cling",
+      "drop",
+      "pounce"
+    ]
   },
   "goblin": {
     "maxHp": 45,
@@ -13,12 +18,30 @@
     "clubDamage": 12,
     "leapContactDamage": 10,
     "smashDamage": 16,
-    "states": ["walk", "swing", "leap", "smash"]
+    "states": [
+      "walk",
+      "swing",
+      "leap",
+      "smash"
+    ]
   },
   "knockback": {
     "duration": 0.22,
     "x": 4.6,
     "y": 3.2,
     "friction": 0.88
+  },
+  "ahriman": {
+    "maxHp": 38,
+    "flightSpeed": 0.58,
+    "verticalTracking": 0.045,
+    "maxVerticalSpeed": 0.72,
+    "keepDistance": 42,
+    "hoverAbovePlayer": 62,
+    "bobSpeed": 3.8,
+    "bobAmplitude": 10,
+    "minY": 70,
+    "maxY": 285,
+    "contactDamage": 10
   }
 }

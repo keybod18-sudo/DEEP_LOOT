@@ -5,6 +5,7 @@ import { Goblin } from '../enemies/Goblin';
 import { EnemyRenderer } from '../enemies/EnemyRenderer';
 import type { Enemy } from '../enemies/Enemy';
 import { Slime } from '../enemies/Slime';
+import { Ahriman } from '../enemies/Ahriman';
 import { Inventory } from '../items/Inventory';
 import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
@@ -169,12 +170,14 @@ export class Game {
     const slimeX = groundSpots[0] ?? 95;
     const goblinX1 = groundSpots[1] ?? 190;
     const goblinX2 = groundSpots[2] ?? 470;
+    const ahrimanX = shuffle([260, 330, 430, 560])[0] ?? 430;
 
     this.enemies = [
       new Slime(slimeX, 355, 'crawl'),
       new Slime(410, 129, 'cling'),
       new Goblin(goblinX1, 342, 1, 0.8),
       new Goblin(goblinX2, 342, -1, 0.5),
+      new Ahriman(ahrimanX, 165),
     ];
   }
 
