@@ -82,3 +82,8 @@
 - Added small Slug with 6-frame crawl.
 - Added small Rat with 6-frame run / bite animation.
 - Added Skeleton with 6-frame walk / 4-frame sword attack.
+
+## v24 archery / fireball fix
+- 主人公ファイアーボール: 画像依存をやめ、透過のコード描画へ変更。
+- Skeleton Archer を1体追加。通常矢 / 3方向矢 / 毒矢の3種を使用。
+- 矢は重力付きで弓なりに飛ぶ。

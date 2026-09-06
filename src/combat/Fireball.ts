@@ -39,22 +39,47 @@ export class Fireball {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.alive || Fireball.images.length === 0) return;
-    const frame = Math.floor(this.age * 18) % Fireball.images.length;
-    const image = Fireball.images[frame] ?? Fireball.images[0]!;
-    const drawH = BALANCE.fireball.drawHeight;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    if (!this.alive) return;
 
-    ctx.save();
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
+    const flicker = Math.sin(this.age * 20) * 1.5;
+    const tail = 18 + Math.sin(this.age * 16) * 2;
+
+    ctx.save();
     ctx.translate(centerX, centerY);
     if (this.facing < 0) ctx.scale(-1, 1);
 
-    ctx.fillStyle = 'rgba(255, 158, 38, 0.18)';
-    ctx.fillRect(-drawW / 2 - 6, -drawH / 2 - 6, drawW + 12, drawH + 12);
+    ctx.fillStyle = '#5f1b08';
+    ctx.beginPath();
+    ctx.ellipse(-tail * 0.45, 0, tail, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.fillStyle = '#c74a12';
+    ctx.beginPath();
+    ctx.ellipse(-tail * 0.28, 0, tail * 0.78, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ff7a1a';
+    ctx.beginPath();
+    ctx.ellipse(2, 0, 18 + flicker, 12 + flicker * 0.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffc53d';
+    ctx.beginPath();
+    ctx.ellipse(6, 0, 11 + flicker * 0.45, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff2a6';
+    ctx.beginPath();
+    ctx.ellipse(9, 0, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffd168';
+    ctx.fillRect(-18, -2, 8, 2);
+    ctx.fillRect(-24, -1, 6, 1);
+    ctx.fillRect(-14, 3, 5, 1);
+
     ctx.restore();
   }
 }

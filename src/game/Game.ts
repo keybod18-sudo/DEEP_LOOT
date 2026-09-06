@@ -12,11 +12,13 @@ import { Roper } from '../enemies/Roper';
 import { Slug } from '../enemies/Slug';
 import { Rat } from '../enemies/Rat';
 import { Skeleton } from '../enemies/Skeleton';
+import { SkeletonArcher } from '../enemies/SkeletonArcher';
 import { Bomb } from '../enemies/Bomb';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
+import { SkeletonArrow } from '../combat/SkeletonArrow';
 import { Inventory } from '../items/Inventory';
 import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
@@ -54,6 +56,7 @@ export class Game {
   private thunderStrikes: ThunderStrike[] = [];
   private ahrimanFireballs: AhrimanFireball[] = [];
   private freezeLancers: FreezeLancer[] = [];
+  private skeletonArrows: SkeletonArrow[] = [];
   private fireballCooldown = 0;
   private thunderCooldown = 0;
   private cameraX = 0;
@@ -101,6 +104,7 @@ export class Game {
     this.thunderStrikes = [];
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
+    this.skeletonArrows = [];
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
     this.stage = createDungeonStage(this.floor);
@@ -189,11 +193,23 @@ export class Game {
             BALANCE.ahriman.freezeLife,
           ));
         },
+        spawnSkeletonArrow: (x, y, vx, vy, damage, poisoned) => {
+          this.skeletonArrows.push(new SkeletonArrow(
+            x,
+            y,
+            vx,
+            vy,
+            damage,
+            poisoned,
+            BALANCE.skeletonArcher.arrowLife,
+          ));
+        },
       });
     }
 
     this.updateAhrimanFireballs(dt);
     this.updateFreezeLancers(dt);
+    this.updateSkeletonArrows(dt);
 
     for (const drop of this.loot) drop.update(dt, this.stage);
     this.collectLoot();
@@ -350,6 +366,44 @@ export class Game {
     );
   }
 
+
+  private updateSkeletonArrows(dt: number): void {
+    for (const arrow of this.skeletonArrows) {
+      arrow.update(dt);
+      if (!arrow.alive) continue;
+
+      if (this.stage.platforms.some((platform) => intersects(arrow.rect, platform))) {
+        arrow.alive = false;
+        continue;
+      }
+
+      if (intersects(arrow.rect, this.player)) {
+        const hit = this.player.hurt(arrow.damage, arrow.x);
+        if (hit) {
+          if (arrow.poisoned) {
+            const wasPoisoned = this.player.poisoned;
+            this.player.applyPoison(
+              BALANCE.skeletonArcher.poisonDuration,
+              BALANCE.skeletonArcher.poisonTickInterval,
+              BALANCE.skeletonArcher.poisonDamage,
+            );
+            if (!wasPoisoned) this.showNotice('毒矢を受けた');
+          }
+          this.refreshUi();
+        }
+        arrow.alive = false;
+      }
+    }
+
+    this.skeletonArrows = this.skeletonArrows.filter((arrow) =>
+      arrow.alive &&
+      arrow.x > -120 &&
+      arrow.x < this.stage.width + 120 &&
+      arrow.y > -60 &&
+      arrow.y < this.stage.height + 120
+    );
+  }
+
   private handleEnemyKilled(enemy: Enemy): void {
     this.gold += 5;
     if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
@@ -387,6 +441,7 @@ export class Game {
     this.thunderStrikes = [];
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
+    this.skeletonArrows = [];
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
     this.stage = createDungeonStage(this.floor);
@@ -435,11 +490,13 @@ export class Game {
     const ratPlatform = startingPlatforms[0] ?? chosen[0];
     const slugPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[1];
     const skeletonPlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
+    const skeletonArcherPlatform = midPlatforms[1] ?? startingPlatforms[2] ?? chosen[6];
     const bombPlatform = startingPlatforms[2] ?? midPlatforms[0] ?? chosen[8] ?? chosen[2];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
     const skeleton1 = point(skeletonPlatform, 42, 720, 498);
+    const skeletonArcher1 = point(skeletonArcherPlatform, 42, 880, 476);
     const bomb1 = point(bombPlatform, 26, 610, 356);
 
     const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
@@ -465,6 +522,7 @@ export class Game {
       new Slug(slug1.x, slug1.y),
       new Rat(rat1.x, rat1.y),
       new Skeleton(skeleton1.x, skeleton1.y),
+      new SkeletonArcher(skeletonArcher1.x, skeletonArcher1.y),
       new Bomb(bomb1.x, bomb1.y),
     ];
 
@@ -538,7 +596,23 @@ export class Game {
 
   private draw(): void {
     this.ctx.save();
-    this.ctx.translate(-Math.round(this.cameraX), -Math.round(this.cameraY));
+
+    const explodingBomb = this.enemies.find((enemy) =>
+      enemy.type === 'bomb' && (enemy as Bomb).state === 'explode'
+    ) as Bomb | undefined;
+    let shakeX = 0;
+    let shakeY = 0;
+    if (explodingBomb) {
+      const progress = Math.min(1, explodingBomb.actionTime / BALANCE.bomb.explosionDuration);
+      const strength = 10 * (1 - progress);
+      shakeX = (Math.random() * 2 - 1) * strength;
+      shakeY = (Math.random() * 2 - 1) * strength;
+    }
+
+    this.ctx.translate(
+      -Math.round(this.cameraX) + Math.round(shakeX),
+      -Math.round(this.cameraY) + Math.round(shakeY),
+    );
     this.stage.draw(this.ctx);
 
     for (const chest of this.chests) chest.draw(this.ctx);
@@ -547,6 +621,7 @@ export class Game {
     for (const fireball of this.fireballs) fireball.draw(this.ctx);
     for (const shot of this.ahrimanFireballs) shot.draw(this.ctx);
     for (const lance of this.freezeLancers) lance.draw(this.ctx);
+    for (const arrow of this.skeletonArrows) arrow.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
     }
@@ -603,6 +678,7 @@ export class Game {
         enemy.type === 'ahriman' ? 48 :
         enemy.type === 'goblin' ? 42 :
         enemy.type === 'skeleton' ? 44 :
+        enemy.type === 'skeletonArcher' ? 44 :
         enemy.type === 'roper' ? 44 :
         enemy.type === 'snake' ? 40 :
         enemy.type === 'bomb' ? 38 :
@@ -611,6 +687,7 @@ export class Game {
       const y =
         enemy.type === 'goblin' ? enemy.y - 30 :
         enemy.type === 'skeleton' ? enemy.y - 34 :
+        enemy.type === 'skeletonArcher' ? enemy.y - 34 :
         enemy.type === 'roper' ? enemy.y - 32 :
         enemy.type === 'ahriman' ? enemy.y - 18 :
         enemy.type === 'bat' ? enemy.y - 16 :

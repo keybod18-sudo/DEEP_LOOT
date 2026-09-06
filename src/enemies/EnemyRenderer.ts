@@ -8,6 +8,7 @@ import type { Roper } from './Roper';
 import type { Slug } from './Slug';
 import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
+import type { SkeletonArcher } from './SkeletonArcher';
 import type { Bomb } from './Bomb';
 import type { Facing } from '../game/types';
 import { BALANCE } from '../config/balance';
@@ -55,6 +56,9 @@ const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
 );
+const bombExplosionUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((index) =>
+  new URL(`../../assets/effects/bomb_explosion/explosion_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
 
 
 // Explicit orientation of the adopted source sprites.
@@ -66,6 +70,7 @@ const SOURCE_FACING = {
   slug: 1,
   rat: 1,
   skeleton: -1,
+  skeletonArcher: -1,
 } as const satisfies Record<string, Facing>;
 
 export class EnemyRenderer {
@@ -85,6 +90,7 @@ export class EnemyRenderer {
   private readonly ratBiteImages: HTMLImageElement[] = [];
   private readonly skeletonWalkImages: HTMLImageElement[] = [];
   private readonly skeletonAttackImages: HTMLImageElement[] = [];
+  private readonly bombExplosionImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
     [this.slimeImage, this.clingImage, this.ahrimanImage] = await Promise.all([
@@ -92,7 +98,7 @@ export class EnemyRenderer {
       loadImage(clingUrl),
       loadImage(ahrimanUrl),
     ]);
-    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack] = await Promise.all([
+    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, bombExplosion] = await Promise.all([
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
@@ -106,6 +112,7 @@ export class EnemyRenderer {
       Promise.all(ratBiteUrls.map(loadImage)),
       Promise.all(skeletonWalkUrls.map(loadImage)),
       Promise.all(skeletonAttackUrls.map(loadImage)),
+      Promise.all(bombExplosionUrls.map(loadImage)),
     ]);
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
@@ -120,6 +127,7 @@ export class EnemyRenderer {
     this.ratBiteImages.push(...ratBite);
     this.skeletonWalkImages.push(...skeletonWalk);
     this.skeletonAttackImages.push(...skeletonAttack);
+    this.bombExplosionImages.push(...bombExplosion);
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
@@ -132,6 +140,7 @@ export class EnemyRenderer {
     else if (enemy.type === 'slug') this.drawSlug(ctx, enemy as Slug);
     else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
     else if (enemy.type === 'bomb') this.drawBomb(ctx, enemy as Bomb);
+    else if (enemy.type === 'skeletonArcher') this.drawSkeletonArcher(ctx, enemy as SkeletonArcher);
     else this.drawSkeleton(ctx, enemy as Skeleton);
   }
 
@@ -294,64 +303,20 @@ export class EnemyRenderer {
 
     if (bomb.state === 'explode') {
       const progress = Math.min(1, bomb.actionTime / BALANCE.bomb.explosionDuration);
-      const burst = 1 - (1 - progress) * (1 - progress) * (1 - progress);
-      const radius = Math.max(18, bomb.blastRadius);
+      const frameIndex = Math.min(
+        this.bombExplosionImages.length - 1,
+        Math.floor(progress * this.bombExplosionImages.length),
+      );
+      const image = this.bombExplosionImages[frameIndex] ?? this.bombExplosionImages[0];
+      if (!image) return;
 
+      // Real sprite animation; no rectangular panel and no single-circle explosion.
+      const drawSize = BALANCE.bomb.explosionRadius * 2.08;
+      const pulse = progress < 0.18 ? 1 + (0.18 - progress) * 0.9 : 1;
       ctx.save();
       ctx.translate(centerX, centerY);
-
-      // Fast outer shock ring.
-      ctx.strokeStyle = `rgba(255, 245, 190, ${0.85 - progress * 0.55})`;
-      ctx.lineWidth = Math.max(2, 7 - progress * 4);
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * (0.9 + progress * 0.24), 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Jagged starburst core.
-      const spikes = 14;
-      ctx.fillStyle = `rgba(255, 142, 34, ${0.82 - progress * 0.3})`;
-      ctx.beginPath();
-      for (let i = 0; i <= spikes * 2; i += 1) {
-        const angle = -Math.PI / 2 + (i / (spikes * 2)) * Math.PI * 2;
-        const spikeRadius = i % 2 === 0 ? radius * (0.55 + burst * 0.65) : radius * (0.26 + burst * 0.34);
-        const px = Math.cos(angle) * spikeRadius;
-        const py = Math.sin(angle) * spikeRadius;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fill();
-
-      // Bright inner fireball.
-      ctx.fillStyle = `rgba(255, 230, 120, ${0.9 - progress * 0.35})`;
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * (0.30 + burst * 0.18), 0, Math.PI * 2);
-      ctx.fill();
-
-      // Smoke chunks around the blast.
-      for (let i = 0; i < 7; i += 1) {
-        const angle = progress * 5 + i * (Math.PI * 2 / 7);
-        const orbit = radius * (0.46 + (i % 3) * 0.1);
-        const px = Math.cos(angle) * orbit;
-        const py = Math.sin(angle) * orbit;
-        const puff = 7 + (i % 3) * 3 + progress * 7;
-        ctx.fillStyle = `rgba(74, 72, 86, ${0.30 - progress * 0.18})`;
-        ctx.beginPath();
-        ctx.arc(px, py, puff, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Sparks / debris.
-      for (let i = 0; i < 12; i += 1) {
-        const angle = progress * 8 + i * (Math.PI * 2 / 12);
-        const sparkDist = radius * (0.72 + (i % 2) * 0.18);
-        const px = Math.cos(angle) * sparkDist;
-        const py = Math.sin(angle) * sparkDist;
-        const size = i % 3 === 0 ? 5 : 4;
-        ctx.fillStyle = i % 2 === 0 ? '#fff2c5' : '#ff8b28';
-        ctx.fillRect(Math.round(px) - size / 2, Math.round(py) - size / 2, size, size);
-      }
-
+      ctx.scale(pulse, pulse);
+      ctx.drawImage(image, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
       ctx.restore();
       return;
     }
@@ -464,6 +429,84 @@ export class EnemyRenderer {
     ctx.translate(centerX, footY);
     applySpriteFacing(ctx, rat.facing, SOURCE_FACING.rat);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  }
+
+
+  private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
+    const frame = Math.floor(skeletonArcher.actionTime * 8) % Math.max(1, this.skeletonWalkImages.length);
+    const image = this.skeletonWalkImages[frame] ?? this.skeletonWalkImages[0];
+    if (!image) return;
+
+    const drawH = 68;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = skeletonArcher.x + skeletonArcher.w / 2;
+    const footY = skeletonArcher.y + skeletonArcher.h + 1;
+    const drawProgress = skeletonArcher.state === 'attack'
+      ? Math.min(1, skeletonArcher.actionTime / BALANCE.skeletonArcher.releaseTime)
+      : 0;
+    const releasePulse = skeletonArcher.state === 'attack' && skeletonArcher.shotReleased
+      ? Math.max(0, 1 - (skeletonArcher.actionTime - BALANCE.skeletonArcher.releaseTime) * 5)
+      : 0;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+
+    // quiver
+    ctx.fillStyle = '#5a3417';
+    ctx.fillRect(8, -46, 6, 15);
+    ctx.fillStyle = '#e0e8ef';
+    ctx.fillRect(7, -49, 2, 5);
+    ctx.fillRect(10, -50, 2, 6);
+    ctx.fillRect(13, -48, 2, 4);
+
+    // bow body
+    const bowX = -15;
+    const bowTop = -43;
+    const bowBottom = -14;
+    const pullX = 4 + drawProgress * 8;
+
+    ctx.strokeStyle = '#6d4726';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bowX, bowTop);
+    ctx.quadraticCurveTo(bowX - 8, -29, bowX, bowBottom);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#dfeaf6';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bowX, bowTop + 1);
+    ctx.lineTo(bowX + pullX, -29);
+    ctx.lineTo(bowX, bowBottom - 1);
+    ctx.stroke();
+
+    if (skeletonArcher.state === 'attack' && !skeletonArcher.shotReleased) {
+      const arrowColor = skeletonArcher.shotType === 'poison' ? '#8cf47c' : '#d8dade';
+      ctx.fillStyle = '#27323c';
+      ctx.fillRect(bowX - 1, -30, 19, 3);
+      ctx.fillStyle = arrowColor;
+      ctx.fillRect(bowX, -29, 16, 1);
+      ctx.fillStyle = skeletonArcher.shotType === 'poison' ? '#cbff9f' : '#eff6ff';
+      ctx.beginPath();
+      ctx.moveTo(19, -28.5);
+      ctx.lineTo(14, -32);
+      ctx.lineTo(14, -25);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (releasePulse > 0) {
+      ctx.fillStyle = skeletonArcher.shotType === 'poison' ? '#9fff85' : '#f6f4ef';
+      ctx.fillRect(6, -30, 6 * releasePulse, 2);
+      if (skeletonArcher.shotType === 'triple') {
+        ctx.fillRect(6, -35, 5 * releasePulse, 1);
+        ctx.fillRect(6, -24, 5 * releasePulse, 1);
+      }
+    }
+
     ctx.restore();
   }
 

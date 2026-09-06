@@ -125,13 +125,30 @@
   },
   "bomb": {
     "maxHp": 14,
-    "rollSpeed": 2.35,
-    "triggerRange": 108,
-    "fuseDuration": 0.4,
-    "explosionRadius": 132,
-    "explosionDamage": 28,
-    "explosionDuration": 0.58,
-    "blastKnockbackX": 14.2,
-    "blastKnockbackY": 11.4
+    "rollSpeed": 2.7,
+    "triggerRange": 126,
+    "fuseDuration": 0.28,
+    "explosionRadius": 154,
+    "explosionDamage": 30,
+    "explosionDuration": 0.62,
+    "blastKnockbackX": 16.5,
+    "blastKnockbackY": 13.0
+  },
+  "skeletonArcher": {
+    "maxHp": 34,
+    "walkSpeed": 0.28,
+    "attackRange": 300,
+    "idealRange": 150,
+    "attackDuration": 0.82,
+    "releaseTime": 0.42,
+    "cooldown": 1.65,
+    "arrowDamage": 10,
+    "tripleArrowDamage": 8,
+    "poisonArrowDamage": 9,
+    "poisonDuration": 6.0,
+    "poisonTickInterval": 1.0,
+    "poisonDamage": 2,
+    "arrowGravity": 0.18,
+    "arrowLife": 2.8
   }
 }

@@ -12,6 +12,7 @@ export const BALANCE = {
   slug: enemyData.slug,
   rat: enemyData.rat,
   skeleton: enemyData.skeleton,
+  skeletonArcher: enemyData.skeletonArcher,
   bomb: enemyData.bomb,
   fireball: enemyData.fireball,
   thunder: enemyData.thunder,
