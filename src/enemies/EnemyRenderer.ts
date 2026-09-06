@@ -191,29 +191,29 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 46;
-    let drawH = 30;
-    let drawY = slime.y + slime.h - drawH;
+    let drawW = 32;
+    let drawH = 21;
+    let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 42;
-      drawH = 28;
-      drawY = slime.y - 1;
+      drawW = 29;
+      drawH = 20;
+      drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 50;
-      drawH = 30;
+      drawW = 36;
+      drawH = 22;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
-      drawW *= 1 + Math.abs(crawlPhase) * 0.12;
-      drawH *= 1 - Math.abs(crawlPhase) * 0.10;
-      drawY = slime.y + slime.h - drawH + Math.max(0, crawlPhase) * 1.5;
+      drawW *= 1 + Math.abs(crawlPhase) * 0.10;
+      drawH *= 1 - Math.abs(crawlPhase) * 0.13;
+      drawY = slime.y + slime.h - drawH + Math.max(0, crawlPhase) * 1.3;
     }
 
     ctx.save();
-    const centerX = slime.x + slime.w / 2 + crawlPhase * 1.2;
+    const centerX = slime.x + slime.w / 2 + crawlPhase * 0.9;
     ctx.translate(centerX, 0);
     if (slime.facing < 0) ctx.scale(-1, 1);
     ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
