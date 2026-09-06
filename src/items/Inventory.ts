@@ -36,6 +36,18 @@ export class Inventory {
     if (item) this.equippedArmorId = item.id;
   }
 
+  clear(): void {
+    this.weapons.fill(null);
+    this.armor.fill(null);
+    this.consumables.fill(null);
+    this.equippedWeaponId = null;
+    this.equippedArmorId = null;
+  }
+
+  getConsumable(index: number): ConsumableItem | null {
+    return this.consumables[index] ?? null;
+  }
+
   takeConsumable(index: number): ConsumableItem | null {
     const item = this.consumables[index];
     if (!item) return null;

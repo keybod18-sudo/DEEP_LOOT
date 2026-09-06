@@ -40,6 +40,7 @@ export interface ArmorItem extends BaseItem {
 
 export interface ConsumableItem extends BaseItem {
   category: 'consumable';
+  effect: 'heal' | 'remedy';
   heal: number;
   description: string;
 }
@@ -114,8 +115,33 @@ function createConsumable(floor: number): ConsumableItem {
     category: 'consumable',
     name: strong ? '上級回復薬' : '回復薬',
     rarity: strong ? '上質' : '通常',
+    effect: 'heal',
     heal: strong ? 45 : 25,
     description: strong ? 'HPを45回復する' : 'HPを25回復する',
+  };
+}
+
+export function createHealingPotion(): ConsumableItem {
+  return {
+    id: `starter-heal-${nextItemId++}`,
+    category: 'consumable',
+    name: '回復薬',
+    rarity: '通常',
+    effect: 'heal',
+    heal: 25,
+    description: 'HPを25回復する',
+  };
+}
+
+export function createRemedy(): ConsumableItem {
+  return {
+    id: `starter-remedy-${nextItemId++}`,
+    category: 'consumable',
+    name: '万能薬',
+    rarity: '通常',
+    effect: 'remedy',
+    heal: 0,
+    description: 'すべての状態異常を解除する',
   };
 }
 

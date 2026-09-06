@@ -27,6 +27,8 @@ export class Player implements PhysicsBody {
   poisonDamage = 0;
 
   paralysisTime = 0;
+  paralysisStunTime = 0;
+  paralysisPulseTime = 0;
   slowTime = 0;
   sealTime = 0;
   silenceTime = 0;
@@ -50,6 +52,8 @@ export class Player implements PhysicsBody {
     this.poisonTickInterval = 1;
     this.poisonDamage = 0;
     this.paralysisTime = 0;
+    this.paralysisStunTime = 0;
+    this.paralysisPulseTime = 0;
     this.slowTime = 0;
     this.sealTime = 0;
     this.silenceTime = 0;
@@ -73,7 +77,7 @@ export class Player implements PhysicsBody {
     this.updatePoison(dt);
     this.updateTimedStatuses(dt);
 
-    const disabled = this.paralyzed || this.sleeping || this.frozen;
+    const disabled = this.paralysisStunned || this.sleeping || this.frozen;
     const speedFactor = this.slowed ? 0.48 : 1;
     const canAct = !disabled && this.hp > 0;
     const left = canAct && input.isDown('a', 'arrowleft');
@@ -115,15 +119,20 @@ export class Player implements PhysicsBody {
     resolveFloor(this, previousY, stage.platforms, stage.width);
   }
 
-  applyPoison(duration: number, tickInterval: number, damage: number): void {
-    this.poisonTime = Math.max(this.poisonTime, duration);
+  applyPoison(_duration: number, tickInterval: number, damage: number): void {
+    this.poisonTime = Number.POSITIVE_INFINITY;
     this.poisonTickInterval = Math.max(0.1, tickInterval);
     this.poisonDamage = Math.max(this.poisonDamage, damage);
     if (this.poisonTickTimer <= 0) this.poisonTickTimer = this.poisonTickInterval;
   }
 
-  applyParalysis(duration: number): void {
-    this.paralysisTime = Math.max(this.paralysisTime, duration);
+  applyParalysis(_duration: number): void {
+    const wasParalyzed = this.paralyzed;
+    this.paralysisTime = Number.POSITIVE_INFINITY;
+    if (!wasParalyzed) {
+      this.paralysisStunTime = 0;
+      this.paralysisPulseTime = 0.7 + Math.random() * 1.4;
+    }
   }
 
   applySlow(duration: number): void {
@@ -158,8 +167,35 @@ export class Player implements PhysicsBody {
     this.sleepTime = 0;
   }
 
+  clearStatusEffects(): void {
+    this.poisonTime = 0;
+    this.poisonTickTimer = 0;
+    this.poisonDamage = 0;
+    this.paralysisTime = 0;
+    this.paralysisStunTime = 0;
+    this.paralysisPulseTime = 0;
+    this.slowTime = 0;
+    this.sealTime = 0;
+    this.silenceTime = 0;
+    this.blindTime = 0;
+    this.sleepTime = 0;
+    this.frozenTime = 0;
+  }
+
+  get hasStatusEffects(): boolean {
+    return this.poisoned || this.paralyzed || this.slowed || this.sealed ||
+      this.silenced || this.blinded || this.sleeping || this.frozen;
+  }
+
+  private breakFrozenWithDamage(damage: number): number {
+    if (!this.frozen) return damage;
+    this.frozenTime = 0;
+    return Math.max(damage + 8, Math.ceil(damage * 2.25));
+  }
+
   get poisoned(): boolean { return this.poisonTime > 0; }
   get paralyzed(): boolean { return this.paralysisTime > 0; }
+  get paralysisStunned(): boolean { return this.paralysisStunTime > 0; }
   get slowed(): boolean { return this.slowTime > 0; }
   get sealed(): boolean { return this.sealTime > 0; }
   get silenced(): boolean { return this.silenceTime > 0; }
@@ -170,7 +206,7 @@ export class Player implements PhysicsBody {
   private updatePoison(dt: number): void {
     if (this.poisonTime <= 0 || this.hp <= 0) return;
 
-    this.poisonTime = Math.max(0, this.poisonTime - dt);
+    // Poison is permanent until cured by a remedy.
     this.poisonTickTimer -= dt;
 
     while (this.poisonTickTimer <= 0 && this.poisonTime > 0 && this.hp > 0) {
@@ -186,7 +222,17 @@ export class Player implements PhysicsBody {
   }
 
   private updateTimedStatuses(dt: number): void {
-    this.paralysisTime = Math.max(0, this.paralysisTime - dt);
+    if (this.paralyzed) {
+      this.paralysisStunTime = Math.max(0, this.paralysisStunTime - dt);
+      this.paralysisPulseTime -= dt;
+      if (this.paralysisPulseTime <= 0) {
+        this.paralysisStunTime = 0.5;
+        this.paralysisPulseTime = 0.85 + Math.random() * 1.75;
+      }
+    } else {
+      this.paralysisStunTime = 0;
+      this.paralysisPulseTime = 0;
+    }
     this.slowTime = Math.max(0, this.slowTime - dt);
     this.sealTime = Math.max(0, this.sealTime - dt);
     this.silenceTime = Math.max(0, this.silenceTime - dt);
@@ -199,7 +245,8 @@ export class Player implements PhysicsBody {
     if (this.invulnerability > 0 || this.hp <= 0) return false;
 
     this.wakeUp();
-    this.hp = Math.max(0, this.hp - damage);
+    const finalDamage = this.breakFrozenWithDamage(damage);
+    this.hp = Math.max(0, this.hp - finalDamage);
     this.invulnerability = BALANCE.player.hurtInvulnerability;
     this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
     this.vy = -BALANCE.player.hurtKnockbackY;
@@ -210,7 +257,8 @@ export class Player implements PhysicsBody {
     if (this.hp <= 0) return false;
 
     this.wakeUp();
-    this.hp = Math.max(0, this.hp - damage);
+    const finalDamage = this.breakFrozenWithDamage(damage);
+    this.hp = Math.max(0, this.hp - finalDamage);
     this.invulnerability = Math.max(this.invulnerability, BALANCE.player.hurtInvulnerability * 0.7);
     this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
     this.vy = -BALANCE.player.hurtKnockbackY;
@@ -230,7 +278,7 @@ export class Player implements PhysicsBody {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    const disabled = this.paralyzed || this.sleeping || this.frozen;
+    const disabled = this.paralysisStunned || this.sleeping || this.frozen;
     this.renderer.draw(
       ctx,
       this.x,

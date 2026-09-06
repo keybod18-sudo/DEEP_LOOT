@@ -22,7 +22,7 @@ import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
 import { SkeletonArrow } from '../combat/SkeletonArrow';
 import { Inventory } from '../items/Inventory';
-import { createRandomItem } from '../items/Item';
+import { createHealingPotion, createRandomItem, createRemedy } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
 import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
@@ -99,6 +99,11 @@ export class Game {
 
   reset(): void {
     this.player.reset();
+    this.inventory.clear();
+    this.inventory.add(createHealingPotion());
+    this.inventory.add(createHealingPotion());
+    this.inventory.add(createRemedy());
+    this.inventory.add(createRemedy());
     this.floor = 1;
     this.gold = 0;
     this.loot = [];
@@ -168,14 +173,14 @@ export class Game {
     if (this.input.consumePress('k')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralyzed && !this.player.sleeping && !this.player.frozen && this.fireballCooldown <= 0) {
+      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.fireballCooldown <= 0) {
         this.castFireball();
       }
     }
     if (this.input.consumePress('l')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralyzed && !this.player.sleeping && !this.player.frozen && this.thunderCooldown <= 0) {
+      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.thunderCooldown <= 0) {
         this.castThunder();
       }
     }
@@ -299,12 +304,6 @@ export class Game {
 
     for (const enemy of this.enemies) {
       if (!enemy.alive || !intersects(hitbox, enemy)) continue;
-
-      if (this.player.blinded && Math.random() < BALANCE.caterpillar.blindMissChance) {
-        this.player.attack.consumeHit();
-        this.showNotice('暗闇で攻撃が外れた');
-        break;
-      }
 
       const killed = damageEnemy(
         enemy,
@@ -668,12 +667,26 @@ export class Game {
   }
 
   private useConsumable(index: number): void {
+    const item = this.inventory.getConsumable(index);
+    if (!item) return;
+
+    if (item.effect === 'remedy') {
+      if (!this.player.hasStatusEffects) {
+        this.showNotice('状態異常はない');
+        return;
+      }
+      this.inventory.takeConsumable(index);
+      this.player.clearStatusEffects();
+      this.showNotice('万能薬: 状態異常を解除');
+      this.refreshUi();
+      return;
+    }
+
     if (this.player.hp >= this.maxHp) {
       this.showNotice('HPは満タンです');
       return;
     }
-    const item = this.inventory.takeConsumable(index);
-    if (!item) return;
+    this.inventory.takeConsumable(index);
     this.player.heal(item.heal, this.maxHp);
     this.showNotice(`${item.name}: HP +${item.heal}`);
     this.refreshUi();

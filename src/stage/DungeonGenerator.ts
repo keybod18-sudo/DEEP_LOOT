@@ -31,14 +31,15 @@ export function createDungeonStage(
     }
 
     // Floating shelves, side chambers and alternate paths.
-    for (let i = 0; i < 5; i += 1) {
-      const w = 110 + Math.floor(rng() * 100);
-      const x = 50 + Math.floor(rng() * (WORLD_WIDTH - w - 100));
-      const py = y - 72 - (i % 2) * 54 - Math.floor(rng() * 18);
-      platforms.push({ x, y: py, w, h: 14 });
+    for (let i = 0; i < 8; i += 1) {
+      const w = 72 + Math.floor(rng() * 96);
+      const x = 34 + Math.floor(rng() * (WORLD_WIDTH - w - 68));
+      const layer = i % 3;
+      const py = y - 46 - layer * 43 - Math.floor(rng() * 24);
+      platforms.push({ x, y: py, w, h: 18 + Math.floor(rng() * 10) });
     }
 
-    const roomCount = 3 + Math.floor(rng() * 2);
+    const roomCount = 4 + Math.floor(rng() * 2);
     for (let i = 0; i < roomCount; i += 1) {
       const rw = 170 + Math.floor(rng() * 190);
       const rh = 90 + Math.floor(rng() * 55);

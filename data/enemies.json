@@ -169,8 +169,8 @@
     "powderRange": 148,
     "powderDamage": 4,
     "slowDuration": 4.6,
-    "paralysisDuration": 1.9,
-    "poisonDuration": 6,
+    "paralysisDuration": 999999,
+    "poisonDuration": 999999,
     "sealDuration": 5,
     "silenceDuration": 5.2,
     "blindDuration": 6,
@@ -198,13 +198,13 @@
     "breathReleaseTime": 0.16,
     "breathDuration": 0.66,
     "breathDamage": 7,
-    "breathFreezeDuration": 1.65,
+    "breathFreezeDuration": 2.1,
     "shardReleaseTime": 0.2,
     "shardDuration": 0.58,
     "shardSpeed": 4.4,
     "shardLife": 2.4,
     "shardDamage": 9,
-    "shardFreezeDuration": 2.25,
+    "shardFreezeDuration": 2.8,
     "recoverDuration": 0.42
   }
 }
