@@ -90,18 +90,14 @@ export class EnemyRenderer {
     // Keep the adopted goblin facing rule.
     if (goblin.facing > 0) ctx.scale(-1, 1);
 
+    if (goblin.state === 'walk') {
+      this.drawGoblinWalkCycle(ctx, goblin);
+      ctx.restore();
+      return;
+    }
+
     let rotation = 0;
     let offsetY = 0;
-    let scaleX = 1;
-    let scaleY = 1;
-
-    if (goblin.state === 'walk') {
-      const step = Math.sin(goblin.actionTime * 12);
-      offsetY = -Math.abs(step) * 2;
-      rotation = step * 0.035;
-      scaleX = 1 + Math.abs(step) * 0.035;
-      scaleY = 1 - Math.abs(step) * 0.025;
-    }
     if (goblin.state === 'swing') {
       rotation = Math.sin(Math.min(1, goblin.actionTime / 0.42) * Math.PI) * -0.20;
     }
@@ -116,8 +112,54 @@ export class EnemyRenderer {
 
     ctx.translate(0, offsetY);
     ctx.rotate(rotation);
-    ctx.scale(scaleX, scaleY);
-    ctx.drawImage(this.goblinImage, -34, -67, 68, 67);
+    ctx.drawImage(this.goblinImage, -30, -59, 60, 59);
+    ctx.restore();
+  }
+
+  private drawGoblinWalkCycle(ctx: CanvasRenderingContext2D, goblin: Goblin): void {
+    const sourceW = this.goblinImage.naturalWidth;
+    const sourceH = this.goblinImage.naturalHeight;
+    const splitX = Math.floor(sourceW / 2);
+    const splitY = Math.floor(sourceH * 0.61);
+
+    const drawW = 60;
+    const drawH = 59;
+    const destSplitX = drawW / 2;
+    const destSplitY = drawH * 0.61;
+
+    const phase = Math.floor(goblin.actionTime * 10) % 4;
+    const legShift = [0, 4, 0, -4][phase] ?? 0;
+    const oppositeShift = -legShift;
+    const bodyBob = phase === 1 || phase === 3 ? -2 : 0;
+    const bodyLean = [0.02, -0.045, -0.02, 0.045][phase] ?? 0;
+
+    ctx.save();
+    ctx.translate(0, bodyBob);
+    ctx.rotate(bodyLean);
+
+    // Upper body stays coherent while the legs alternate.
+    ctx.drawImage(
+      this.goblinImage,
+      0, 0, sourceW, splitY,
+      -drawW / 2, -drawH, drawW, destSplitY,
+    );
+
+    // Left half of lower body steps forward/back.
+    ctx.drawImage(
+      this.goblinImage,
+      0, splitY, splitX, sourceH - splitY,
+      -drawW / 2 + legShift, -drawH + destSplitY,
+      destSplitX, drawH - destSplitY,
+    );
+
+    // Right half moves in the opposite direction.
+    ctx.drawImage(
+      this.goblinImage,
+      splitX, splitY, sourceW - splitX, sourceH - splitY,
+      0 + oppositeShift, -drawH + destSplitY,
+      drawW - destSplitX, drawH - destSplitY,
+    );
+
     ctx.restore();
   }
 
@@ -178,7 +220,8 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    if (snake.facing < 0) ctx.scale(-1, 1);
+    // Snake source frames face left, so flip when moving right.
+    if (snake.facing > 0) ctx.scale(-1, 1);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
