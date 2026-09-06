@@ -223,49 +223,71 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const ability = escapeHtml(item.intrinsicAbility?.description ?? '固有能力なし');
   const statLabel = item.category === 'weapon' ? '攻撃力' : '防御力';
   const statValue = item.category === 'weapon' ? item.attack : item.defense;
-  const weaponCodes = {"鉄の剣":"WPN-001","山賊の剣":"WPN-002","古びた長剣":"WPN-003","青鋼の剣":"WPN-004","黒鉄の剣":"WPN-005","錆喰いの剣":"WPN-006","洞窟刀":"WPN-007","月影の短剣":"WPN-008","火打ちの剣":"WPN-009","骨断ち":"WPN-010","風切丸":"WPN-011","泥濘の刃":"WPN-012","赤銅の長剣":"WPN-013","白銀の小剣":"WPN-014","影縫い":"WPN-015","雷鳴の剣":"WPN-016","苔むす剣":"WPN-017","深層の刃":"WPN-018","血煙丸":"WPN-019","岩砕き":"WPN-020","狩人の曲刀":"WPN-021","亡者の剣":"WPN-022","星屑の剣":"WPN-023","夜渡り":"WPN-024","燐光剣":"WPN-025","黒曜の刃":"WPN-026","朽王の剣":"WPN-027","竜骨剣":"WPN-028","鉱夫の鉈":"WPN-029","迷宮の剣":"WPN-030","霧裂き":"WPN-031","紅蓮の短剣":"WPN-032","氷脈の剣":"WPN-033","紫電の刃":"WPN-034","鬼灯丸":"WPN-035","夢喰い":"WPN-036","蟲狩りの剣":"WPN-037","蛇殺し":"WPN-038","蝙蝠切り":"WPN-039","晶砕き":"WPN-040","影子守":"WPN-041","断層剣":"WPN-042","墓守の剣":"WPN-043","祈り砕き":"WPN-044","灰冠の剣":"WPN-045","金喰いの刃":"WPN-046","幽世の剣":"WPN-047","月蝕刀":"WPN-048","黒薔薇":"WPN-049","太古の剣":"WPN-050","深淵の牙":"WPN-051","旅人の名剣":"WPN-052","迷い星":"WPN-053","終夜の剣":"WPN-054"} as const;
-  const armorCodes = {"革の鎧":"ARM-001","鉄の胸当て":"ARM-002","探索者の鎧":"ARM-003","青鋼の鎧":"ARM-004","黒革の鎧":"ARM-005","錆鉄の鎧":"ARM-006","苔衣":"ARM-007","鉱夫の胸当て":"ARM-008","月影の外套":"ARM-009","骨組み鎧":"ARM-010","風除けのコート":"ARM-011","泥壁の鎧":"ARM-012","赤銅の胸甲":"ARM-013","白銀の鎧":"ARM-014","影縫いの衣":"ARM-015","雷除け胴":"ARM-016","深層探索服":"ARM-017","血染めの鎧":"ARM-018","岩殻の鎧":"ARM-019","狩人の胴衣":"ARM-020","亡者の鎧":"ARM-021","星屑の外套":"ARM-022","夜渡りの服":"ARM-023","燐光の鎧":"ARM-024","黒曜の鎧":"ARM-025","朽王の外套":"ARM-026","竜骨鎧":"ARM-027","坑道作業服":"ARM-028","迷宮騎士鎧":"ARM-029","霧衣":"ARM-030","紅蓮の胸甲":"ARM-031","氷脈の鎧":"ARM-032","紫電の外套":"ARM-033","鬼灯の鎧":"ARM-034","夢守りの衣":"ARM-035","蟲殻の鎧":"ARM-036","蛇革の胴衣":"ARM-037","蝙蝠羽の外套":"ARM-038","晶殻鎧":"ARM-039","影子守の衣":"ARM-040","断層の鎧":"ARM-041","墓守の鎧":"ARM-042","祈祷師の法衣":"ARM-043","灰冠の鎧":"ARM-044","金継ぎの鎧":"ARM-045","幽世の衣":"ARM-046","月蝕の鎧":"ARM-047","黒薔薇のドレス":"ARM-048","太古の甲冑":"ARM-049","深淵の鎧":"ARM-050","旅人の外套":"ARM-051","迷い星の鎧":"ARM-052","終夜の外套":"ARM-053","王墓の甲冑":"ARM-054"} as const;
-  const code = item.category === 'weapon'
-    ? weaponCodes[item.name as keyof typeof weaponCodes]
-    : armorCodes[item.name as keyof typeof armorCodes];
+  const weaponCodes: Record<string, string> = {"鉄の剣":"WPN-001","山賊の剣":"WPN-002","古びた長剣":"WPN-003","青鋼の剣":"WPN-004","黒鉄の剣":"WPN-005","錆喰いの剣":"WPN-006","洞窟刀":"WPN-007","月影の短剣":"WPN-008","火打ちの剣":"WPN-009","骨断ち":"WPN-010","風切丸":"WPN-011","泥濘の刃":"WPN-012","赤銅の長剣":"WPN-013","白銀の小剣":"WPN-014","影縫い":"WPN-015","雷鳴の剣":"WPN-016","苔むす剣":"WPN-017","深層の刃":"WPN-018","血煙丸":"WPN-019","岩砕き":"WPN-020","狩人の曲刀":"WPN-021","亡者の剣":"WPN-022","星屑の剣":"WPN-023","夜渡り":"WPN-024","燐光剣":"WPN-025","黒曜の刃":"WPN-026","朽王の剣":"WPN-027","竜骨剣":"WPN-028","鉱夫の鉈":"WPN-029","迷宮の剣":"WPN-030","霧裂き":"WPN-031","紅蓮の短剣":"WPN-032","氷脈の剣":"WPN-033","紫電の刃":"WPN-034","鬼灯丸":"WPN-035","夢喰い":"WPN-036","蟲狩りの剣":"WPN-037","蛇殺し":"WPN-038","蝙蝠切り":"WPN-039","晶砕き":"WPN-040","影子守":"WPN-041","断層剣":"WPN-042","墓守の剣":"WPN-043","祈り砕き":"WPN-044","灰冠の剣":"WPN-045","金喰いの刃":"WPN-046","幽世の剣":"WPN-047","月蝕刀":"WPN-048","黒薔薇":"WPN-049","太古の剣":"WPN-050","深淵の牙":"WPN-051","旅人の名剣":"WPN-052","迷い星":"WPN-053","終夜の剣":"WPN-054"};
+  const armorCodes: Record<string, string> = {"革の鎧":"ARM-001","鉄の胸当て":"ARM-002","探索者の鎧":"ARM-003","青鋼の鎧":"ARM-004","黒革の鎧":"ARM-005","錆鉄の鎧":"ARM-006","苔衣":"ARM-007","鉱夫の胸当て":"ARM-008","月影の外套":"ARM-009","骨組み鎧":"ARM-010","風除けのコート":"ARM-011","泥壁の鎧":"ARM-012","赤銅の胸甲":"ARM-013","白銀の鎧":"ARM-014","影縫いの衣":"ARM-015","雷除け胴":"ARM-016","深層探索服":"ARM-017","血染めの鎧":"ARM-018","岩殻の鎧":"ARM-019","狩人の胴衣":"ARM-020","亡者の鎧":"ARM-021","星屑の外套":"ARM-022","夜渡りの服":"ARM-023","燐光の鎧":"ARM-024","黒曜の鎧":"ARM-025","朽王の外套":"ARM-026","竜骨鎧":"ARM-027","坑道作業服":"ARM-028","迷宮騎士鎧":"ARM-029","霧衣":"ARM-030","紅蓮の胸甲":"ARM-031","氷脈の鎧":"ARM-032","紫電の外套":"ARM-033","鬼灯の鎧":"ARM-034","夢守りの衣":"ARM-035","蟲殻の鎧":"ARM-036","蛇革の胴衣":"ARM-037","蝙蝠羽の外套":"ARM-038","晶殻鎧":"ARM-039","影子守の衣":"ARM-040","断層の鎧":"ARM-041","墓守の鎧":"ARM-042","祈祷師の法衣":"ARM-043","灰冠の鎧":"ARM-044","金継ぎの鎧":"ARM-045","幽世の衣":"ARM-046","月蝕の鎧":"ARM-047","黒薔薇のドレス":"ARM-048","太古の甲冑":"ARM-049","深淵の鎧":"ARM-050","旅人の外套":"ARM-051","迷い星の鎧":"ARM-052","終夜の外套":"ARM-053","王墓の甲冑":"ARM-054"};
+  const code = item.category === 'weapon' ? weaponCodes[item.name] : armorCodes[item.name];
   const imgSrc = code ? `/v45_icons/${item.category === 'weapon' ? 'weapons' : 'armors'}/${code}.png` : '';
   const accent = palette.accent;
-  const frameGlow = rarity === '伝説級' ? 'rgba(255,215,120,.45)' : rarity === '激レア' ? 'rgba(201,117,255,.42)' : rarity === '希少' ? 'rgba(108,214,255,.36)' : 'rgba(160,188,225,.24)';
-  const flavor = escapeHtml(item.category === 'weapon' ? '闇深い迷宮で見つかる異形の武器。' : '迷宮の瘴気と加護をまとった防具。');
-  const artBlock = imgSrc
-    ? `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:282px;border-radius:20px;border:1px solid ${palette.border};background:radial-gradient(circle at 50% 32%, ${frameGlow}, rgba(255,255,255,0) 46%),radial-gradient(circle at 50% 68%, rgba(255,255,255,.06), rgba(255,255,255,0) 56%),linear-gradient(180deg, rgba(20,26,38,.96), rgba(9,12,19,.98));box-shadow: inset 0 0 42px rgba(0,0,0,.48), 0 0 24px rgba(0,0,0,.24);overflow:hidden;">
-         <div style="position:absolute;inset:16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);"></div>
-         <div style="position:absolute;width:210px;height:210px;border-radius:50%;border:1px solid rgba(255,255,255,.08);box-shadow:0 0 28px ${frameGlow}, inset 0 0 28px rgba(255,255,255,.03);"></div>
-         <img src="${imgSrc}" alt="${label}" style="position:relative;z-index:2;width:224px;height:224px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 14px 16px rgba(0,0,0,.55)) drop-shadow(0 0 18px ${frameGlow});" />
-         <div style="position:absolute;left:18px;bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(8,12,18,.72);border:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.82);letter-spacing:.06em;">${label}</div>
-       </div>`
-    : `<div style="display:flex;align-items:center;justify-content:center;min-height:282px;border-radius:20px;border:1px solid ${palette.border};background:linear-gradient(180deg, rgba(20,26,38,.96), rgba(9,12,19,.98));color:rgba(255,255,255,.45);font-size:12px;">NO IMAGE</div>`;
+  const border = palette.border;
+  const chips = [
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);font-size:12px;color:rgba(255,255,255,.9);"><b style="color:${accent};">${statLabel}</b><span>${escapeHtml(String(statValue))}</span></span>`,
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);font-size:12px;color:rgba(255,255,255,.9);"><b style="color:${accent};">分類</b><span>${item.category === 'weapon' ? '武器' : '防具'}</span></span>`,
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;border:1px solid ${border};background:rgba(255,255,255,.035);font-size:12px;color:rgba(255,255,255,.9);"><b style="color:${accent};">レア度</b><span>${escapeHtml(rarity)}</span></span>`,
+  ].join('');
 
-  return `<span class="equipment-preview" style="display:block;margin-top:14px;padding:16px;border:1px solid ${palette.border};border-radius:22px;background:radial-gradient(circle at 82% 18%, rgba(255,255,255,.06), rgba(255,255,255,0) 24%),linear-gradient(135deg, rgba(13,18,28,.98), rgba(18,14,27,.98));box-shadow:inset 0 0 55px rgba(0,0,0,.46),0 12px 28px rgba(0,0,0,.24);">
-    <span style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
-      <span style="display:flex;flex-direction:column;gap:4px;">
-        <span style="font-size:12px;letter-spacing:.1em;color:rgba(255,255,255,.58);">EQUIPMENT VISION</span>
-        <span style="font-size:25px;font-weight:800;line-height:1.1;color:rgba(255,255,255,.98);">${label}</span>
+  let motif = '迷宮の奥で見つかる古びた装備。';
+  if (/月|夜|影|終夜|月影/.test(item.name)) motif = '月光と夜気をまとった、静かな気配の装備。';
+  else if (/炎|火|紅|焦/.test(item.name)) motif = '熱と火花を帯び、攻め気を感じさせる装備。';
+  else if (/氷|雪|霜|凍/.test(item.name)) motif = '冷気がにじむ、鋭く張りつめた印象の装備。';
+  else if (/雷|紫電/.test(item.name)) motif = '紫電の走る、瞬発力を感じさせる装備。';
+  else if (/毒|蛇|蟲|苔/.test(item.name)) motif = '毒気や湿りを感じる、異質な生態系の装備。';
+  else if (/骨|骸|墓/.test(item.name)) motif = '死骸や遺物の意匠がにじむ、不穏な装備。';
+  else if (/聖|天使|光/.test(item.name)) motif = '清浄な光の加護を帯びた神聖な装備。';
+  else if (/竜|龍/.test(item.name)) motif = '竜の威圧感を思わせる重厚な装備。';
+
+  const artBlock = imgSrc
+    ? `<div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:20px;border:1px solid ${border};background:linear-gradient(180deg, rgba(15,20,31,.98), rgba(8,11,17,.98));box-shadow:inset 0 0 40px rgba(0,0,0,.5), 0 10px 24px rgba(0,0,0,.24);min-height:316px;">
+         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+           <span style="font-size:12px;letter-spacing:.14em;color:rgba(255,255,255,.56);">SYMBOL</span>
+           <span style="font-size:11px;color:${accent};letter-spacing:.14em;">${escapeHtml(rarity)}</span>
+         </div>
+         <div style="position:relative;display:flex;align-items:center;justify-content:center;flex:1;min-height:226px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.08), rgba(255,255,255,0) 38%), radial-gradient(circle at 50% 50%, rgba(41,92,135,.18), rgba(255,255,255,0) 64%), linear-gradient(180deg, rgba(10,14,22,.96), rgba(18,23,34,.94));overflow:hidden;">
+           <div style="position:absolute;inset:14px;border-radius:14px;border:1px solid rgba(255,255,255,.05);"></div>
+           <div style="position:absolute;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle, rgba(95,123,170,.24), rgba(255,255,255,0) 68%);"></div>
+           <img src="${imgSrc}" alt="${label}" style="position:relative;z-index:2;max-width:172px;max-height:172px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55));" />
+         </div>
+         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;">
+           <div>
+             <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,.95);">${label}</div>
+             <div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,.58);">装備固有の意匠表示</div>
+           </div>
+           <div style="font-size:11px;letter-spacing:.12em;color:rgba(255,255,255,.34);">DEEP LOOT</div>
+         </div>
+       </div>`
+    : `<div style="display:flex;align-items:center;justify-content:center;padding:14px;border-radius:20px;border:1px solid ${border};background:linear-gradient(180deg, rgba(15,20,31,.98), rgba(8,11,17,.98));min-height:316px;color:rgba(255,255,255,.4);font-size:12px;">IMAGE NOT FOUND</div>`;
+
+  return `<span class="equipment-preview" style="display:block;margin-top:14px;padding:16px;border-radius:24px;border:1px solid ${border};background:radial-gradient(circle at 82% 18%, rgba(255,255,255,.06), rgba(255,255,255,0) 24%), linear-gradient(135deg, rgba(9,13,21,.99), rgba(18,13,25,.98));box-shadow:inset 0 0 56px rgba(0,0,0,.48), 0 14px 30px rgba(0,0,0,.24);">
+    <span style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px;">
+      <span>
+        <span style="display:block;font-size:12px;letter-spacing:.16em;color:rgba(255,255,255,.56);margin-bottom:4px;">EQUIPMENT DOSSIER</span>
+        <span style="display:block;font-size:27px;line-height:1.1;font-weight:800;color:rgba(255,255,255,.98);">${label}</span>
       </span>
-      <span style="display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;border:1px solid ${palette.border};color:${accent};background:rgba(255,255,255,.03);font-size:12px;font-weight:700;">${escapeHtml(rarity)}</span>
+      <span style="display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;border:1px solid ${border};background:rgba(255,255,255,.035);color:${accent};font-size:12px;font-weight:700;">${escapeHtml(rarity)}</span>
     </span>
-    <span style="display:grid;grid-template-columns:minmax(0,1.12fr) minmax(260px,.88fr);gap:16px;align-items:stretch;">
-      <span style="display:flex;flex-direction:column;justify-content:space-between;padding:16px 17px;border-radius:18px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));min-height:282px;">
+    <span style="display:grid;grid-template-columns:minmax(0,1.24fr) minmax(260px,.76fr);gap:16px;align-items:stretch;">
+      <span style="display:flex;flex-direction:column;justify-content:space-between;padding:16px 18px;border-radius:20px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.012));min-height:316px;">
         <span>
-          <span style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
-            <span style="display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;color:rgba(255,255,255,.88);"><b style="color:${accent};">${statLabel}</b><span>${escapeHtml(String(statValue))}</span></span>
-            <span style="display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;color:rgba(255,255,255,.88);"><b style="color:${accent};">分類</b><span>${item.category === 'weapon' ? '武器' : '防具'}</span></span>
-          </span>
-          <span style="display:block;font-size:12px;letter-spacing:.12em;color:rgba(255,255,255,.52);margin-bottom:7px;">固有能力</span>
-          <span style="display:block;font-size:20px;line-height:1.18;font-weight:800;color:${palette.glow};margin-bottom:8px;">${abilityName}</span>
-          <span style="display:block;font-size:14px;line-height:1.7;color:rgba(255,255,255,.9);margin-bottom:14px;">${ability}</span>
-          <span style="display:block;height:1px;background:linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0));margin:10px 0 14px;"></span>
-          <span style="display:block;font-size:12px;letter-spacing:.12em;color:rgba(255,255,255,.52);margin-bottom:7px;">装備解説</span>
-          <span style="display:block;font-size:13px;line-height:1.7;color:rgba(255,255,255,.76);">${flavor}</span>
+          <span style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">${chips}</span>
+          <span style="display:block;font-size:12px;letter-spacing:.14em;color:rgba(255,255,255,.52);margin-bottom:7px;">固有能力</span>
+          <span style="display:block;font-size:20px;line-height:1.2;font-weight:800;color:${palette.glow};margin-bottom:9px;">${abilityName}</span>
+          <span style="display:block;font-size:14px;line-height:1.72;color:rgba(255,255,255,.9);margin-bottom:16px;">${ability}</span>
+          <span style="display:block;height:1px;background:linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0));margin:6px 0 15px;"></span>
+          <span style="display:block;font-size:12px;letter-spacing:.14em;color:rgba(255,255,255,.52);margin-bottom:7px;">装備解説</span>
+          <span style="display:block;font-size:13px;line-height:1.7;color:rgba(255,255,255,.74);">${escapeHtml(motif)}</span>
         </span>
-        <span style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:14px;">
-          <span style="font-size:11px;line-height:1.6;color:rgba(255,255,255,.45);">名前・レア度・固有能力に合わせて装備絵を個別表示。</span>
-          <span style="font-size:11px;letter-spacing:.12em;color:${accent};">DEEP LOOT</span>
+        <span style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:16px;">
+          <span style="font-size:11px;line-height:1.65;color:rgba(255,255,255,.42);">簡易アイコンをヒーローアート扱いせず、右側は装備固有の識別意匠として表示。</span>
+          <span style="font-size:11px;letter-spacing:.14em;color:${accent};">LOOT ARCHIVE</span>
         </span>
       </span>
       ${artBlock}
