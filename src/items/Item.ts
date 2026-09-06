@@ -1,13 +1,41 @@
 export type ItemCategory = 'weapon' | 'armor' | 'consumable';
+export type ItemRarity = '通常' | '上質' | '希少' | '激レア' | '伝説級';
+export type DesignRarity = ItemRarity;
+export type StatusKind = 'poison' | 'paralysis' | 'sleep' | 'blind' | 'silence' | 'seal' | 'slow' | 'freeze';
 
-export type WeaponAbilityKind = 'power' | 'impact' | 'leech';
-export type ArmorAbilityKind = 'vitality' | 'guard' | 'fortress';
+export interface EquipmentEffect {
+  type: string;
+  amount?: number;
+  multiplier?: number;
+  chance?: number;
+  ratio?: number;
+  status?: StatusKind | null;
+  statusChance?: number | null;
+  statusDuration?: number | null;
+  duration?: number;
+  statuses?: StatusKind[];
+  resistance?: number;
+  magic?: string;
+  targets?: string[];
+  bonus?: number;
+  threshold?: number;
+  scope?: string;
+  reduction?: number;
+  interval?: number;
+  pauseAfterHit?: number;
+  chargesPerFloor?: number;
+  text?: string;
+}
+
+export type WeaponAbilityKind = 'power' | 'impact' | 'leech' | 'special';
+export type ArmorAbilityKind = 'vitality' | 'guard' | 'fortress' | 'special';
 
 export interface WeaponAbility {
   kind: WeaponAbilityKind;
   name: string;
   description: string;
   value: number;
+  effect?: EquipmentEffect;
 }
 
 export interface ArmorAbility {
@@ -15,13 +43,15 @@ export interface ArmorAbility {
   name: string;
   description: string;
   value: number;
+  effect?: EquipmentEffect;
 }
 
 export interface BaseItem {
   id: string;
   category: ItemCategory;
   name: string;
-  rarity: '通常' | '上質' | '希少';
+  rarity: ItemRarity;
+  designRarity?: DesignRarity;
 }
 
 export interface WeaponItem extends BaseItem {
@@ -48,7 +78,6 @@ export interface ConsumableItem extends BaseItem {
 export type Item = WeaponItem | ArmorItem | ConsumableItem;
 
 let nextItemId = 1;
-
 const EQUIPMENT_SLOT_COUNT = 8;
 
 const weaponAbilities: WeaponAbility[] = [
@@ -66,127 +95,129 @@ const armorAbilities: ArmorAbility[] = [
 interface WeaponDefinition {
   name: string;
   attackOffset: number;
+  designRarity: DesignRarity;
   intrinsicAbility: WeaponAbility | null;
 }
 
 interface ArmorDefinition {
   name: string;
   defenseOffset: number;
+  designRarity: DesignRarity;
   intrinsicAbility: ArmorAbility | null;
 }
 
 const weaponDefinitions: readonly WeaponDefinition[] = [
-  { name: '鉄の剣', attackOffset: 0, intrinsicAbility: { kind: 'power', name: '鉄の力', description: '攻撃 +1', value: 1 } },
-  { name: '山賊の剣', attackOffset: 0, intrinsicAbility: { kind: 'impact', name: '荒押し', description: 'ノックバック +18%', value: 1.18 } },
-  { name: '古びた長剣', attackOffset: 0, intrinsicAbility: null },
-  { name: '青鋼の剣', attackOffset: 1, intrinsicAbility: { kind: 'power', name: '青鋼', description: '攻撃 +2', value: 2 } },
-  { name: "黒鉄の剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "黒鉄の力", description: "攻撃 +2", value: 2 } },
-  { name: "錆喰いの剣", attackOffset: 0, intrinsicAbility: { kind: "leech", name: "錆喰い", description: "敵撃破時 HP +2", value: 2 } },
-  { name: "洞窟刀", attackOffset: 0, intrinsicAbility: { kind: "impact", name: "岩返し", description: "ノックバック +18%", value: 1.18 } },
-  { name: "月影の短剣", attackOffset: 0, intrinsicAbility: { kind: "power", name: "月影", description: "攻撃 +1", value: 1 } },
-  { name: "火打ちの剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "火花", description: "攻撃 +2", value: 2 } },
-  { name: "骨断ち", attackOffset: 1, intrinsicAbility: { kind: "impact", name: "骨砕き", description: "ノックバック +28%", value: 1.28 } },
-  { name: "風切丸", attackOffset: 0, intrinsicAbility: { kind: "impact", name: "風切り", description: "ノックバック +22%", value: 1.22 } },
-  { name: "泥濘の刃", attackOffset: 0, intrinsicAbility: { kind: "leech", name: "泥吸い", description: "敵撃破時 HP +2", value: 2 } },
-  { name: "赤銅の長剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "赤銅の重み", description: "攻撃 +2", value: 2 } },
-  { name: "白銀の小剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "白銀光", description: "攻撃 +2", value: 2 } },
-  { name: "影縫い", attackOffset: 0, intrinsicAbility: { kind: "impact", name: "影留め", description: "ノックバック +20%", value: 1.2 } },
-  { name: "雷鳴の剣", attackOffset: 2, intrinsicAbility: { kind: "power", name: "雷鳴", description: "攻撃 +3", value: 3 } },
-  { name: "苔むす剣", attackOffset: 0, intrinsicAbility: { kind: "leech", name: "苔の息吹", description: "敵撃破時 HP +3", value: 3 } },
-  { name: "深層の刃", attackOffset: 2, intrinsicAbility: { kind: "power", name: "深層圧", description: "攻撃 +3", value: 3 } },
-  { name: "血煙丸", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "血煙", description: "敵撃破時 HP +4", value: 4 } },
-  { name: "岩砕き", attackOffset: 1, intrinsicAbility: { kind: "impact", name: "岩砕", description: "ノックバック +38%", value: 1.38 } },
-  { name: "狩人の曲刀", attackOffset: 1, intrinsicAbility: { kind: "power", name: "狩人の勘", description: "攻撃 +2", value: 2 } },
-  { name: "亡者の剣", attackOffset: 0, intrinsicAbility: { kind: "leech", name: "亡者喰い", description: "敵撃破時 HP +3", value: 3 } },
-  { name: "星屑の剣", attackOffset: 2, intrinsicAbility: { kind: "power", name: "星屑", description: "攻撃 +3", value: 3 } },
-  { name: "夜渡り", attackOffset: 1, intrinsicAbility: { kind: "impact", name: "夜駆け", description: "ノックバック +26%", value: 1.26 } },
-  { name: "燐光剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "燐光", description: "攻撃 +2", value: 2 } },
-  { name: "黒曜の刃", attackOffset: 2, intrinsicAbility: { kind: "impact", name: "黒曜衝", description: "ノックバック +42%", value: 1.42 } },
-  { name: "朽王の剣", attackOffset: 2, intrinsicAbility: { kind: "leech", name: "朽王の徴収", description: "敵撃破時 HP +5", value: 5 } },
-  { name: "竜骨剣", attackOffset: 3, intrinsicAbility: { kind: "power", name: "竜骨力", description: "攻撃 +4", value: 4 } },
-  { name: "鉱夫の鉈", attackOffset: 0, intrinsicAbility: { kind: "impact", name: "採掘打ち", description: "ノックバック +24%", value: 1.24 } },
-  { name: "迷宮の剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "迷宮慣れ", description: "攻撃 +2", value: 2 } },
-  { name: "霧裂き", attackOffset: 1, intrinsicAbility: { kind: "impact", name: "霧裂", description: "ノックバック +30%", value: 1.3 } },
-  { name: "紅蓮の短剣", attackOffset: 2, intrinsicAbility: { kind: "power", name: "紅蓮", description: "攻撃 +3", value: 3 } },
-  { name: "氷脈の剣", attackOffset: 2, intrinsicAbility: { kind: "power", name: "氷脈", description: "攻撃 +3", value: 3 } },
-  { name: "紫電の刃", attackOffset: 2, intrinsicAbility: { kind: "impact", name: "紫電衝", description: "ノックバック +36%", value: 1.36 } },
-  { name: "鬼灯丸", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "鬼灯吸い", description: "敵撃破時 HP +4", value: 4 } },
-  { name: "夢喰い", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "夢喰い", description: "敵撃破時 HP +4", value: 4 } },
-  { name: "蟲狩りの剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "蟲狩り", description: "攻撃 +2", value: 2 } },
-  { name: "蛇殺し", attackOffset: 1, intrinsicAbility: { kind: "impact", name: "蛇打ち", description: "ノックバック +30%", value: 1.3 } },
-  { name: "蝙蝠切り", attackOffset: 0, intrinsicAbility: { kind: "power", name: "空裂き", description: "攻撃 +2", value: 2 } },
-  { name: "晶砕き", attackOffset: 2, intrinsicAbility: { kind: "impact", name: "晶砕", description: "ノックバック +45%", value: 1.45 } },
-  { name: "影子守", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "影子守", description: "敵撃破時 HP +3", value: 3 } },
-  { name: "断層剣", attackOffset: 2, intrinsicAbility: { kind: "impact", name: "断層衝", description: "ノックバック +40%", value: 1.4 } },
-  { name: "墓守の剣", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "墓守の息", description: "敵撃破時 HP +3", value: 3 } },
-  { name: "祈り砕き", attackOffset: 2, intrinsicAbility: { kind: "power", name: "祈り砕き", description: "攻撃 +3", value: 3 } },
-  { name: "灰冠の剣", attackOffset: 2, intrinsicAbility: { kind: "power", name: "灰冠", description: "攻撃 +3", value: 3 } },
-  { name: "金喰いの刃", attackOffset: 0, intrinsicAbility: { kind: "leech", name: "金喰い", description: "敵撃破時 HP +2", value: 2 } },
-  { name: "幽世の剣", attackOffset: 2, intrinsicAbility: { kind: "leech", name: "幽世吸い", description: "敵撃破時 HP +5", value: 5 } },
-  { name: "月蝕刀", attackOffset: 3, intrinsicAbility: { kind: "power", name: "月蝕", description: "攻撃 +4", value: 4 } },
-  { name: "黒薔薇", attackOffset: 1, intrinsicAbility: { kind: "leech", name: "黒薔薇", description: "敵撃破時 HP +4", value: 4 } },
-  { name: "太古の剣", attackOffset: 3, intrinsicAbility: { kind: "impact", name: "太古の重圧", description: "ノックバック +45%", value: 1.45 } },
-  { name: "深淵の牙", attackOffset: 3, intrinsicAbility: { kind: "power", name: "深淵牙", description: "攻撃 +4", value: 4 } },
-  { name: "旅人の名剣", attackOffset: 1, intrinsicAbility: { kind: "power", name: "旅人の技", description: "攻撃 +2", value: 2 } },
-  { name: "迷い星", attackOffset: 2, intrinsicAbility: { kind: "impact", name: "星流し", description: "ノックバック +34%", value: 1.34 } },
-  { name: "終夜の剣", attackOffset: 3, intrinsicAbility: { kind: "leech", name: "終夜", description: "敵撃破時 HP +5", value: 5 } },
+  { name: "鉄の剣", attackOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "山賊の剣", attackOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "古びた長剣", attackOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "青鋼の剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "青鋼穿ち", description: "攻撃時15%で敵防御の20%を無視", value: 0, effect: { type: "armorPen", chance: 0.15, ratio: 0.2 } } },
+  { name: "黒鉄の剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'impact', name: "黒鉄の重撃", description: "ノックバック +25%", value: 1.25, effect: { type: "knockback", multiplier: 1.25 } } },
+  { name: "錆喰いの剣", attackOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'leech', name: "錆喰い", description: "敵撃破時 HP +3", value: 3, effect: { type: "killHeal", amount: 3 } } },
+  { name: "洞窟刀", attackOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "月影の短剣", attackOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "月影連刃", description: "攻撃時8%で威力50%の追撃を1回", value: 0, effect: { type: "echo", chance: 0.08, ratio: 0.5 } } },
+  { name: "火打ちの剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "火花術", description: "攻撃時10%でファイアーボールを発射", value: 0, effect: { type: "magicProc", magic: "fireball", chance: 0.1 } } },
+  { name: "骨断ち", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "骨断ち", description: "骨・亡者系へのダメージ +25%", value: 0, effect: { type: "slayer", targets: ["骨", "亡者系"], multiplier: 1.25 } } },
+  { name: "風切丸", attackOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "風刃", description: "攻撃時9%で前方へ貫通する風刃を発射", value: 0, effect: { type: "magicProc", magic: "windBlade", chance: 0.09 } } },
+  { name: "泥濘の刃", attackOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "赤銅の長剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'power', name: "赤銅の重み", description: "攻撃 +2", value: 2, effect: { type: "attackBonus", amount: 2 } } },
+  { name: "白銀の小剣", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "銀祓い", description: "亡者・幽霊系へのダメージ +25%", value: 0, effect: { type: "slayer", targets: ["亡者", "幽霊系"], multiplier: 1.25 } } },
+  { name: "影縫い", attackOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "影縫い", description: "攻撃時15%で鈍足（移動速度-40%・3秒）", value: 0, effect: { type: "statusProc", status: "slow", chance: 0.15, duration: 3.0, multiplier: 0.6 } } },
+  { name: "雷鳴の剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "雷招", description: "攻撃時10%でチェインライトニングを発動", value: 0, effect: { type: "magicProc", magic: "chainLightning", chance: 0.1 } } },
+  { name: "苔むす剣", attackOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "苔毒", description: "攻撃時12%で毒（4秒）", value: 0, effect: { type: "statusProc", status: "poison", chance: 0.12, duration: 4.0 } } },
+  { name: "深層の刃", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "深層侵食", description: "攻撃時12%で敵防御の30%を無視", value: 0, effect: { type: "armorPen", chance: 0.12, ratio: 0.3 } } },
+  { name: "血煙丸", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "血吸い", description: "攻撃時5%で与ダメージの25%をHP回復", value: 0, effect: { type: "lifeSteal", chance: 0.05, ratio: 0.25 } } },
+  { name: "岩砕き", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "岩砕", description: "岩・晶石・装甲系へのダメージ +30%", value: 0, effect: { type: "slayer", targets: ["岩", "晶石", "装甲系"], multiplier: 1.3 } } },
+  { name: "狩人の曲刀", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "狩人の眼", description: "獣・蟲・飛行系へのダメージ +20%", value: 0, effect: { type: "slayer", targets: ["獣", "蟲", "飛行系"], multiplier: 1.2 } } },
+  { name: "亡者の剣", attackOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'leech', name: "亡者喰い", description: "敵撃破時 HP +4", value: 4, effect: { type: "killHeal", amount: 4 } } },
+  { name: "星屑の剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "星落とし", description: "攻撃時7%で敵位置へ小型の流星を落とす", value: 0, effect: { type: "magicProc", magic: "meteor", chance: 0.07 } } },
+  { name: "夜渡り", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "闇討ち", description: "HP100%の敵への初撃ダメージ +20%", value: 0, effect: { type: "firstStrike", multiplier: 2.0 } } },
+  { name: "燐光剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "閃光", description: "攻撃時10%で暗闇（3秒）", value: 0, effect: { type: "statusProc", status: "blind", chance: 0.1, duration: 3.0 } } },
+  { name: "黒曜の刃", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "黒曜穿ち", description: "攻撃時15%で敵防御の30%を無視", value: 0, effect: { type: "armorPen", chance: 0.15, ratio: 0.3 } } },
+  { name: "朽王の剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "朽毒", description: "攻撃時14%で毒（5秒）", value: 0, effect: { type: "statusProc", status: "poison", chance: 0.14, duration: 5.0 } } },
+  { name: "竜骨剣", attackOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "竜骨圧", description: "大型・ボスへのダメージ +18%", value: 0, effect: { type: "slayer", targets: ["大型", "ボス"], multiplier: 1.18 } } },
+  { name: "鉱夫の鉈", attackOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "採掘刃", description: "岩・晶石系へのダメージ +35%", value: 0, effect: { type: "slayer", targets: ["岩", "晶石系"], multiplier: 1.35 } } },
+  { name: "迷宮の剣", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "迷宮勘", description: "アイテムドロップ率 +6%", value: 0, effect: { type: "dropRate", bonus: 0.06 } } },
+  { name: "霧裂き", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "霧裂き", description: "攻撃時12%で暗闇（3秒）", value: 0, effect: { type: "statusProc", status: "blind", chance: 0.12, duration: 3.0 } } },
+  { name: "紅蓮の短剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "紅蓮術", description: "攻撃時12%でファイアーボールを発射", value: 0, effect: { type: "magicProc", magic: "fireball", chance: 0.12 } } },
+  { name: "氷脈の剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "氷槍術", description: "攻撃時12%でフリーズランサーを発動。命中時20%で凍結（0.8秒）", value: 0, effect: { type: "magicProc", magic: "freezeLancer", chance: 0.12, status: "freeze", statusChance: 0.2, statusDuration: 0.8 } } },
+  { name: "紫電の刃", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "紫電連鎖", description: "攻撃時11%でチェインライトニングを発動。命中時15%で麻痺（0.7秒）", value: 0, effect: { type: "magicProc", magic: "chainLightning", chance: 0.11, status: "paralysis", statusChance: 0.15, statusDuration: 0.7 } } },
+  { name: "鬼灯丸", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "鬼火", description: "攻撃時10%で追尾する鬼火を1発放つ", value: 0, effect: { type: "magicProc", magic: "willOWisp", chance: 0.1 } } },
+  { name: "夢喰い", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "夢喰い", description: "攻撃時12%で睡眠（1.5秒）。ボスには鈍足（-30%・2秒）", value: 0, effect: { type: "statusProc", status: "sleep", chance: 0.12, duration: 1.5 } } },
+  { name: "蟲狩りの剣", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "蟲狩り", description: "蟲系へのダメージ +35%", value: 0, effect: { type: "slayer", targets: ["蟲系"], multiplier: 1.35 } } },
+  { name: "蛇殺し", attackOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "蛇殺し", description: "蛇系へのダメージ +40%", value: 0, effect: { type: "slayer", targets: ["蛇系"], multiplier: 1.4 } } },
+  { name: "蝙蝠切り", attackOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "空裂き", description: "飛行系へのダメージ +35%", value: 0, effect: { type: "slayer", targets: ["飛行系"], multiplier: 1.35 } } },
+  { name: "晶砕き", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "晶砕", description: "岩・晶石・装甲系へのダメージ +35%", value: 0, effect: { type: "slayer", targets: ["岩", "晶石", "装甲系"], multiplier: 1.35 } } },
+  { name: "影子守", attackOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "影分身", description: "攻撃時6%で同じ攻撃を威力50%でもう1回発生", value: 0, effect: { type: "echo", chance: 0.06, ratio: 0.5 } } },
+  { name: "断層剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "地裂波", description: "攻撃時8%で地面を走る衝撃波を発射", value: 0, effect: { type: "magicProc", magic: "earthWave", chance: 0.08 } } },
+  { name: "墓守の剣", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "墓守の祓い", description: "亡者・幽霊系へのダメージ +30%", value: 0, effect: { type: "slayer", targets: ["亡者", "幽霊系"], multiplier: 1.3 } } },
+  { name: "祈り砕き", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "祈り砕き", description: "攻撃時10%で沈黙（3秒）", value: 0, effect: { type: "statusProc", status: "silence", chance: 0.1, duration: 3.0 } } },
+  { name: "灰冠の剣", attackOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "灰火球", description: "攻撃時9%でファイアーボールを発射", value: 0, effect: { type: "magicProc", magic: "fireball", chance: 0.09 } } },
+  { name: "金喰いの刃", attackOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "金喰い", description: "敵撃破時のゴールド獲得量 +20%", value: 0, effect: { type: "goldGain", multiplier: 1.2 } } },
+  { name: "幽世の剣", attackOffset: 2, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "幽体刃", description: "攻撃時15%で敵防御の30%を無視", value: 0, effect: { type: "armorPen", chance: 0.15, ratio: 0.3 } } },
+  { name: "月蝕刀", attackOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "月蝕", description: "攻撃時8%で闇弾または聖光弾を1発放つ", value: 0, effect: { type: "magicProc", magic: "darkBolt", chance: 0.08 } } },
+  { name: "黒薔薇", attackOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "黒薔薇毒", description: "攻撃時18%で毒（5秒）", value: 0, effect: { type: "statusProc", status: "poison", chance: 0.18, duration: 5.0 } } },
+  { name: "太古の剣", attackOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "太古の波動", description: "攻撃時8%で周囲へ衝撃波を発生し大きく押し返す", value: 0, effect: { type: "magicProc", magic: "shockwave", chance: 0.08 } } },
+  { name: "深淵の牙", attackOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "深淵牙", description: "HP25%以下の敵へのダメージ +20%", value: 0, effect: { type: "execute", threshold: 0.25, multiplier: 1.2 } } },
+  { name: "旅人の名剣", attackOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "旅人の手際", description: "アイテムドロップ率 +8%", value: 0, effect: { type: "dropRate", bonus: 0.08 } } },
+  { name: "迷い星", attackOffset: 2, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "流星刃", description: "攻撃時9%で貫通する星弾を発射。撃破時20%で再発射", value: 0, effect: { type: "magicProc", magic: "starBolt", chance: 0.09 } } },
+  { name: "終夜の剣", attackOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "終夜", description: "攻撃時12%で闇の魔弾を発射", value: 0, effect: { type: "magicProc", magic: "darkBolt", chance: 0.12 } } },
 ];
 
 const armorDefinitions: readonly ArmorDefinition[] = [
-  { name: '革の鎧', defenseOffset: 0, intrinsicAbility: { kind: 'vitality', name: '革の粘り', description: '最大HP +6', value: 6 } },
-  { name: '鉄の胸当て', defenseOffset: 0, intrinsicAbility: { kind: 'guard', name: '鉄板', description: '被ダメージ -1', value: 1 } },
-  { name: '探索者の鎧', defenseOffset: 0, intrinsicAbility: { kind: 'vitality', name: '探索慣れ', description: '最大HP +8', value: 8 } },
-  { name: '青鋼の鎧', defenseOffset: 1, intrinsicAbility: { kind: 'fortress', name: '青鋼壁', description: '防御 +2', value: 2 } },
-  { name: "黒革の鎧", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "黒革の粘り", description: "最大HP +8", value: 8 } },
-  { name: "錆鉄の鎧", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "錆鉄板", description: "防御 +2", value: 2 } },
-  { name: "苔衣", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "苔の生命", description: "最大HP +10", value: 10 } },
-  { name: "鉱夫の胸当て", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "坑道守り", description: "被ダメージ -1", value: 1 } },
-  { name: "月影の外套", defenseOffset: 0, intrinsicAbility: { kind: "guard", name: "月影避け", description: "被ダメージ -1", value: 1 } },
-  { name: "骨組み鎧", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "骨組み", description: "防御 +2", value: 2 } },
-  { name: "風除けのコート", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "風耐え", description: "最大HP +8", value: 8 } },
-  { name: "泥壁の鎧", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "泥壁", description: "被ダメージ -1", value: 1 } },
-  { name: "赤銅の胸甲", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "赤銅板", description: "防御 +2", value: 2 } },
-  { name: "白銀の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "白銀壁", description: "防御 +3", value: 3 } },
-  { name: "影縫いの衣", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "影の余命", description: "最大HP +10", value: 10 } },
-  { name: "雷除け胴", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "雷除け", description: "被ダメージ -1", value: 1 } },
-  { name: "深層探索服", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "深層肺", description: "最大HP +12", value: 12 } },
-  { name: "血染めの鎧", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "血気", description: "最大HP +14", value: 14 } },
-  { name: "岩殻の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "岩殻", description: "防御 +3", value: 3 } },
-  { name: "狩人の胴衣", defenseOffset: 0, intrinsicAbility: { kind: "guard", name: "身かわし", description: "被ダメージ -1", value: 1 } },
-  { name: "亡者の鎧", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "亡者の執念", description: "最大HP +12", value: 12 } },
-  { name: "星屑の外套", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "星守り", description: "被ダメージ -1", value: 1 } },
-  { name: "夜渡りの服", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "夜歩き", description: "最大HP +9", value: 9 } },
-  { name: "燐光の鎧", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "燐光膜", description: "防御 +2", value: 2 } },
-  { name: "黒曜の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "黒曜壁", description: "防御 +4", value: 4 } },
-  { name: "朽王の外套", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "朽王の庇護", description: "被ダメージ -2", value: 2 } },
-  { name: "竜骨鎧", defenseOffset: 3, intrinsicAbility: { kind: "fortress", name: "竜骨壁", description: "防御 +4", value: 4 } },
-  { name: "坑道作業服", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "坑道慣れ", description: "最大HP +10", value: 10 } },
-  { name: "迷宮騎士鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "迷宮守護", description: "防御 +3", value: 3 } },
-  { name: "霧衣", defenseOffset: 0, intrinsicAbility: { kind: "guard", name: "霧隠れ", description: "被ダメージ -1", value: 1 } },
-  { name: "紅蓮の胸甲", defenseOffset: 2, intrinsicAbility: { kind: "vitality", name: "紅蓮心", description: "最大HP +14", value: 14 } },
-  { name: "氷脈の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "氷脈壁", description: "防御 +3", value: 3 } },
-  { name: "紫電の外套", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "紫電かわし", description: "被ダメージ -2", value: 2 } },
-  { name: "鬼灯の鎧", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "鬼灯命", description: "最大HP +13", value: 13 } },
-  { name: "夢守りの衣", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "夢守り", description: "最大HP +12", value: 12 } },
-  { name: "蟲殻の鎧", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "蟲殻", description: "防御 +2", value: 2 } },
-  { name: "蛇革の胴衣", defenseOffset: 0, intrinsicAbility: { kind: "guard", name: "蛇抜け", description: "被ダメージ -1", value: 1 } },
-  { name: "蝙蝠羽の外套", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "夜翼", description: "最大HP +9", value: 9 } },
-  { name: "晶殻鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "晶殻", description: "防御 +4", value: 4 } },
-  { name: "影子守の衣", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "影守り", description: "被ダメージ -2", value: 2 } },
-  { name: "断層の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "断層壁", description: "防御 +3", value: 3 } },
-  { name: "墓守の鎧", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "墓守の執念", description: "最大HP +14", value: 14 } },
-  { name: "祈祷師の法衣", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "祈り", description: "最大HP +11", value: 11 } },
-  { name: "灰冠の鎧", defenseOffset: 2, intrinsicAbility: { kind: "guard", name: "灰冠守り", description: "被ダメージ -2", value: 2 } },
-  { name: "金継ぎの鎧", defenseOffset: 1, intrinsicAbility: { kind: "fortress", name: "金継ぎ", description: "防御 +3", value: 3 } },
-  { name: "幽世の衣", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "幽世命", description: "最大HP +15", value: 15 } },
-  { name: "月蝕の鎧", defenseOffset: 2, intrinsicAbility: { kind: "guard", name: "月蝕守り", description: "被ダメージ -2", value: 2 } },
-  { name: "黒薔薇のドレス", defenseOffset: 1, intrinsicAbility: { kind: "vitality", name: "黒薔薇命", description: "最大HP +14", value: 14 } },
-  { name: "太古の甲冑", defenseOffset: 3, intrinsicAbility: { kind: "fortress", name: "太古壁", description: "防御 +4", value: 4 } },
-  { name: "深淵の鎧", defenseOffset: 3, intrinsicAbility: { kind: "guard", name: "深淵守り", description: "被ダメージ -3", value: 3 } },
-  { name: "旅人の外套", defenseOffset: 0, intrinsicAbility: { kind: "vitality", name: "旅慣れ", description: "最大HP +10", value: 10 } },
-  { name: "迷い星の鎧", defenseOffset: 2, intrinsicAbility: { kind: "fortress", name: "星殻", description: "防御 +3", value: 3 } },
-  { name: "終夜の外套", defenseOffset: 1, intrinsicAbility: { kind: "guard", name: "終夜守り", description: "被ダメージ -2", value: 2 } },
-  { name: "王墓の甲冑", defenseOffset: 3, intrinsicAbility: { kind: "vitality", name: "王墓の命脈", description: "最大HP +18", value: 18 } },
+  { name: "革の鎧", defenseOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "鉄の胸当て", defenseOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "探索者の鎧", defenseOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "探索慣れ", description: "毒・鈍足：弱防御（付与率25%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "slow"], resistance: 0.25 } } },
+  { name: "青鋼の鎧", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "青鋼耐寒", description: "凍結：弱防御（付与率25%軽減）", value: 0, effect: { type: "statusResist", statuses: ["freeze"], resistance: 0.25 } } },
+  { name: "黒革の鎧", defenseOffset: 0, designRarity: "通常", intrinsicAbility: null },
+  { name: "錆鉄の鎧", defenseOffset: 1, designRarity: "通常", intrinsicAbility: null },
+  { name: "苔衣", defenseOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "苔の防毒", description: "毒：強防御（付与率60%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 0.6 } } },
+  { name: "鉱夫の胸当て", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "坑道の目", description: "暗闇：弱防御（付与率25%軽減）", value: 0, effect: { type: "statusResist", statuses: ["blind"], resistance: 0.25 } } },
+  { name: "月影の外套", defenseOffset: 0, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "月影歩法", description: "移動速度 +10%", value: 0, effect: { type: "moveSpeed", multiplier: 1.1 } } },
+  { name: "骨組み鎧", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "骨組み", description: "近接ダメージ -8%", value: 0, effect: { type: "damageReduction", scope: "melee", reduction: 0.08 } } },
+  { name: "風除けのコート", defenseOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "風抜け", description: "鈍足：完全無効", value: 0, effect: { type: "statusResist", statuses: ["slow"], resistance: 1.0 } } },
+  { name: "泥壁の鎧", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "泥壁", description: "ノックバックを35%軽減", value: 0, effect: { type: "knockbackResist", multiplier: 0.65 } } },
+  { name: "赤銅の胸甲", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'fortress', name: "赤銅板", description: "防御 +2", value: 2, effect: { type: "defenseBonus", amount: 2 } } },
+  { name: "白銀の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "白銀の護り", description: "亡者・幽霊系から受けるダメージ -15%", value: 0, effect: { type: "raceResist", targets: ["亡者", "幽霊系"], multiplier: 0.85 } } },
+  { name: "影縫いの衣", defenseOffset: 0, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "影縫い歩法", description: "移動速度 +12%", value: 0, effect: { type: "moveSpeed", multiplier: 1.12 } } },
+  { name: "雷除け胴", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "雷断", description: "麻痺：完全無効", value: 0, effect: { type: "statusResist", statuses: ["paralysis"], resistance: 1.0 } } },
+  { name: "深層探索服", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "深層適応", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：弱防御（付与率20%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 0.2 } } },
+  { name: "血染めの鎧", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "血気", description: "HP30%以下で防御 +2", value: 0, effect: { type: "lowHpDefense", threshold: 0.3, amount: 2 } } },
+  { name: "岩殻の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "岩殻", description: "ノックバックを50%軽減", value: 0, effect: { type: "knockbackResist", multiplier: 0.5 } } },
+  { name: "狩人の胴衣", defenseOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "狩人の身かわし", description: "獣・蟲・飛行系から受けるダメージ -10%", value: 0, effect: { type: "raceResist", targets: ["獣", "蟲", "飛行系"], multiplier: 0.9 } } },
+  { name: "亡者の鎧", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "亡者の肉体", description: "毒：完全無効", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 1.0 } } },
+  { name: "星屑の外套", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "星守り", description: "魔法・飛び道具ダメージ -12%", value: 0, effect: { type: "damageReduction", scope: "projectile", reduction: 0.12 } } },
+  { name: "夜渡りの服", defenseOffset: 0, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "夜渡り", description: "移動速度 +15%", value: 0, effect: { type: "moveSpeed", multiplier: 1.15 } } },
+  { name: "燐光の鎧", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "燐光", description: "暗闇：完全無効", value: 0, effect: { type: "statusResist", statuses: ["blind"], resistance: 1.0 } } },
+  { name: "黒曜の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "黒曜膜", description: "飛び道具ダメージ -12%", value: 0, effect: { type: "damageReduction", scope: "projectile", reduction: 0.12 } } },
+  { name: "朽王の外套", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "朽王の防毒", description: "毒：完全無効", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 1.0 } } },
+  { name: "竜骨鎧", defenseOffset: 3, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "竜骨の威圧", description: "大型・ボスから受けるダメージ -15%", value: 0, effect: { type: "raceResist", targets: ["大型", "ボス"], multiplier: 0.85 } } },
+  { name: "坑道作業服", defenseOffset: 0, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "坑道慣れ", description: "暗闇・鈍足：弱防御（付与率25%軽減）", value: 0, effect: { type: "statusResist", statuses: ["blind", "slow"], resistance: 0.25 } } },
+  { name: "迷宮騎士鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "迷宮騎士の加護", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：弱防御（付与率25%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 0.25 } } },
+  { name: "霧衣", defenseOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "霧隠れ", description: "6%で被ダメージを無効化", value: 0, effect: { type: "evasion", chance: 0.06 } } },
+  { name: "紅蓮の胸甲", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "紅蓮の熱", description: "凍結：強防御（付与率60%軽減）", value: 0, effect: { type: "statusResist", statuses: ["freeze"], resistance: 0.6 } } },
+  { name: "氷脈の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "氷脈断ち", description: "凍結：完全無効", value: 0, effect: { type: "statusResist", statuses: ["freeze"], resistance: 1.0 } } },
+  { name: "紫電の外套", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "紫電断ち", description: "麻痺：完全無効", value: 0, effect: { type: "statusResist", statuses: ["paralysis"], resistance: 1.0 } } },
+  { name: "鬼灯の鎧", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "鬼灯の光", description: "暗闇：完全無効", value: 0, effect: { type: "statusResist", statuses: ["blind"], resistance: 1.0 } } },
+  { name: "夢守りの衣", defenseOffset: 0, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "夢守り", description: "睡眠：完全無効", value: 0, effect: { type: "statusResist", statuses: ["sleep"], resistance: 1.0 } } },
+  { name: "蟲殻の鎧", defenseOffset: 1, designRarity: "上質", intrinsicAbility: { kind: 'special', name: "蟲殻防毒", description: "毒：強防御（付与率60%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 0.6 } } },
+  { name: "蛇革の胴衣", defenseOffset: 0, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "蛇革防毒", description: "毒：完全無効", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 1.0 } } },
+  { name: "蝙蝠羽の外套", defenseOffset: 0, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "夜翼", description: "移動速度 +15%", value: 0, effect: { type: "moveSpeed", multiplier: 1.15 } } },
+  { name: "晶殻鎧", defenseOffset: 2, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "晶殻", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：強防御（付与率50%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 0.5 } } },
+  { name: "影子守の衣", defenseOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "影再生", description: "3秒ごとにHP +1。被ダメージ後3秒は回復停止", value: 0, effect: { type: "regen", interval: 3.0, amount: 1, pauseAfterHit: 3.0 } } },
+  { name: "断層の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "断層不動", description: "ノックバック：完全無効", value: 0, effect: { type: "knockbackResist", multiplier: 0 } } },
+  { name: "墓守の鎧", defenseOffset: 1, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "墓守", description: "亡者・幽霊系から受けるダメージ -15%", value: 0, effect: { type: "raceResist", targets: ["亡者", "幽霊系"], multiplier: 0.85 } } },
+  { name: "祈祷師の法衣", defenseOffset: 0, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "祈りの再生", description: "3秒ごとにHP +1。被ダメージ後3秒は回復停止", value: 0, effect: { type: "regen", interval: 3.0, amount: 1, pauseAfterHit: 3.0 } } },
+  { name: "灰冠の鎧", defenseOffset: 2, designRarity: "希少", intrinsicAbility: { kind: 'special', name: "灰冠守り", description: "遠距離ダメージ -12%", value: 0, effect: { type: "damageReduction", scope: "ranged", reduction: 0.12 } } },
+  { name: "金継ぎの鎧", defenseOffset: 1, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "金継ぎ", description: "致死ダメージを1フロア1回だけHP1で耐える", value: 0, effect: { type: "lastStand", chargesPerFloor: 1 } } },
+  { name: "幽世の衣", defenseOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "幽世耐性", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：強防御（付与率60%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 0.6 } } },
+  { name: "月蝕の鎧", defenseOffset: 2, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "月蝕の加護", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：完全無効", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 1.0 } } },
+  { name: "黒薔薇のドレス", defenseOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "黒薔薇の防毒", description: "毒：完全無効", value: 0, effect: { type: "statusResist", statuses: ["poison"], resistance: 1.0 } } },
+  { name: "太古の甲冑", defenseOffset: 3, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "太古の護り", description: "毒・麻痺・睡眠・暗闇・沈黙・封印・鈍足・凍結：強防御（付与率60%軽減）", value: 0, effect: { type: "statusResist", statuses: ["poison", "paralysis", "sleep", "blind", "silence", "seal", "slow", "freeze"], resistance: 0.6 } } },
+  { name: "深淵の鎧", defenseOffset: 3, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "深淵再生", description: "2秒ごとにHP +1。被ダメージ後4秒は回復停止", value: 0, effect: { type: "regen", interval: 2.0, amount: 1, pauseAfterHit: 4.0 } } },
+  { name: "旅人の外套", defenseOffset: 0, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "旅人の足", description: "移動速度 +10%", value: 0, effect: { type: "moveSpeed", multiplier: 1.1 } } },
+  { name: "迷い星の鎧", defenseOffset: 2, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "流星守り", description: "飛び道具ダメージ -15%", value: 0, effect: { type: "damageReduction", scope: "projectile", reduction: 0.15 } } },
+  { name: "終夜の外套", defenseOffset: 1, designRarity: "激レア", intrinsicAbility: { kind: 'special', name: "終夜の守り", description: "暗闇・睡眠：完全無効", value: 0, effect: { type: "statusResist", statuses: ["sleep", "blind"], resistance: 1.0 } } },
+  { name: "王墓の甲冑", defenseOffset: 3, designRarity: "伝説級", intrinsicAbility: { kind: 'special', name: "王墓の命脈", description: "3秒ごとにHP +2。被ダメージ後3秒は回復停止", value: 0, effect: { type: "regen", interval: 3.0, amount: 2, pauseAfterHit: 3.0 } } },
 ];
 
 export function createRandomItem(floor: number): Item {
@@ -198,34 +229,36 @@ export function createRandomItem(floor: number): Item {
 
 function createWeapon(floor: number): WeaponItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
-  const definition = weaponDefinitions[Math.floor(Math.random() * weaponDefinitions.length)] ?? weaponDefinitions[0]!;
+  const definition = pickDefinition(weaponDefinitions, floor);
   const attack = Math.max(1, 1 + tier + Math.floor(Math.random() * 3) + definition.attackOffset);
-  const rarity = rarityForFloor(floor);
+  const rarity = definition.designRarity;
 
   return {
     id: `weapon-${nextItemId++}`,
     category: 'weapon',
     name: definition.name,
     rarity,
+    designRarity: definition.designRarity,
     attack,
-    intrinsicAbility: definition.intrinsicAbility ? { ...definition.intrinsicAbility } : null,
+    intrinsicAbility: definition.intrinsicAbility ? cloneAbility(definition.intrinsicAbility) : null,
     abilitySlots: createAbilitySlots(weaponAbilities, floor, rarity),
   };
 }
 
 function createArmor(floor: number): ArmorItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
-  const definition = armorDefinitions[Math.floor(Math.random() * armorDefinitions.length)] ?? armorDefinitions[0]!;
+  const definition = pickDefinition(armorDefinitions, floor);
   const defense = Math.max(1, 1 + tier + Math.floor(Math.random() * 2) + definition.defenseOffset);
-  const rarity = rarityForFloor(floor);
+  const rarity = definition.designRarity;
 
   return {
     id: `armor-${nextItemId++}`,
     category: 'armor',
     name: definition.name,
     rarity,
+    designRarity: definition.designRarity,
     defense,
-    intrinsicAbility: definition.intrinsicAbility ? { ...definition.intrinsicAbility } : null,
+    intrinsicAbility: definition.intrinsicAbility ? cloneAbility(definition.intrinsicAbility) : null,
     abilitySlots: createAbilitySlots(armorAbilities, floor, rarity),
   };
 }
@@ -267,29 +300,60 @@ export function createRemedy(): ConsumableItem {
   };
 }
 
+function cloneAbility<T extends WeaponAbility | ArmorAbility>(ability: T): T {
+  return {
+    ...ability,
+    effect: ability.effect ? {
+      ...ability.effect,
+      statuses: ability.effect.statuses ? [...ability.effect.statuses] : undefined,
+      targets: ability.effect.targets ? [...ability.effect.targets] : undefined,
+    } : undefined,
+  } as T;
+}
+
 function createAbilitySlots<T extends WeaponAbility | ArmorAbility>(
   pool: readonly T[],
   floor: number,
-  rarity: BaseItem['rarity'],
+  rarity: ItemRarity,
 ): Array<T | null> {
   const slots: Array<T | null> = Array.from({ length: EQUIPMENT_SLOT_COUNT }, () => null);
-
-  // 最低1つは能力を付ける。階層・レアリティに応じて2～3枠目が埋まることがある。
   let filled = 1;
   if (floor >= 3 || rarity !== '通常') filled += Math.random() < 0.55 ? 1 : 0;
-  if (floor >= 7 || rarity === '希少') filled += Math.random() < 0.4 ? 1 : 0;
+  if (floor >= 7 || rarity === '希少' || rarity === '激レア' || rarity === '伝説級') filled += Math.random() < 0.4 ? 1 : 0;
+  if ((rarity === '激レア' || rarity === '伝説級') && floor >= 6) filled += Math.random() < 0.22 ? 1 : 0;
 
   for (let i = 0; i < filled && i < EQUIPMENT_SLOT_COUNT; i += 1) {
     const ability = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
-    slots[i] = ability ? { ...ability } as T : null;
+    slots[i] = ability ? cloneAbility(ability) : null;
   }
   return slots;
 }
 
+function pickDefinition<T extends { designRarity: DesignRarity }>(definitions: readonly T[], floor: number): T {
+  const available = definitions.filter((definition) => floor >= minFloorFor(definition.designRarity));
+  const pool = available.length > 0 ? available : definitions;
+  const weights = pool.map((definition) => rarityWeight(definition.designRarity, floor));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < pool.length; i += 1) {
+    roll -= weights[i] ?? 0;
+    if (roll <= 0) return pool[i] ?? pool[0]!;
+  }
+  return pool[pool.length - 1] ?? definitions[0]!;
+}
 
-function rarityForFloor(floor: number): BaseItem['rarity'] {
-  const roll = Math.random() + Math.min(0.25, floor * 0.015);
-  if (roll > 1.05) return '希少';
-  if (roll > 0.72) return '上質';
-  return '通常';
+function minFloorFor(rarity: DesignRarity): number {
+  if (rarity === '伝説級') return 7;
+  if (rarity === '激レア') return 4;
+  if (rarity === '希少') return 2;
+  return 1;
+}
+
+function rarityWeight(rarity: DesignRarity, floor: number): number {
+  const floorBoost = 1 + Math.max(0, floor - 1) * 0.035;
+  if (rarity === '伝説級') return 0.04 * floorBoost;
+  if (rarity === '激レア') return 0.12 * floorBoost;
+  if (rarity === '希少') return 0.36 * floorBoost;
+  if (rarity === '上質') return 0.72;
+  return 1.0;
 }
