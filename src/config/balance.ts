@@ -16,6 +16,7 @@ export const BALANCE = {
   bomb: enemyData.bomb,
   caterpillar: enemyData.caterpillar,
   frostMite: enemyData.frostMite,
+  crystalEye: enemyData.crystalEye,
   fireball: enemyData.fireball,
   thunder: enemyData.thunder,
   enemyKnockback: enemyData.knockback,

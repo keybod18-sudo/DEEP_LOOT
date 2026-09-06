@@ -16,6 +16,7 @@ import { SkeletonArcher } from '../enemies/SkeletonArcher';
 import { Bomb } from '../enemies/Bomb';
 import { Caterpillar } from '../enemies/Caterpillar';
 import { FrostMite } from '../enemies/FrostMite';
+import { CrystalEye } from '../enemies/CrystalEye';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
@@ -90,6 +91,7 @@ export class Game {
     await Promise.all([
       this.playerRenderer.load(),
       this.enemyRenderer.load(),
+      CrystalEye.loadAssets(),
       TreasureChest.loadAssets(),
       Fireball.loadAssets(),
     ]);
@@ -608,6 +610,10 @@ export class Game {
       new Caterpillar(caterpillar1.x, caterpillar1.y),
       new Caterpillar(caterpillar2.x, caterpillar2.y),
       new FrostMite(frostMite1.x, frostMite1.y),
+      new CrystalEye(
+        Math.min(this.stage.width - 140, this.stage.spawn.x + 720 + Math.random() * 220),
+        190 + Math.random() * 170,
+      ),
     ];
 
     const chestPlatforms = shuffle(groundPlatforms)
@@ -722,7 +728,8 @@ export class Game {
     for (const arrow of this.skeletonArrows) arrow.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
-      if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
+      if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
+      else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
       else this.enemyRenderer.draw(this.ctx, enemy);
     }
     this.player.draw(this.ctx);
@@ -808,6 +815,7 @@ export class Game {
         enemy.type === 'bomb' ? 38 :
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
+        enemy.type === 'crystalEye' ? 50 :
         36;
 
       const y =
@@ -823,6 +831,7 @@ export class Game {
         enemy.type === 'bomb' ? enemy.y - 20 :
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
+        enemy.type === 'crystalEye' ? enemy.y - 30 :
         enemy.y - 16;
 
       this.drawHpBar(

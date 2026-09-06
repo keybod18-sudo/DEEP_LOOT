@@ -206,5 +206,22 @@
     "shardDamage": 9,
     "shardFreezeDuration": 2.8,
     "recoverDuration": 0.42
+  },
+  "crystalEye": {
+    "maxHp": 80,
+    "hoverSpeed": 0.72,
+    "hoverRange": 190,
+    "attackRange": 450,
+    "attackCooldown": 1.75,
+    "beamCharge": 0.86,
+    "beamDuration": 0.32,
+    "beamDamage": 14,
+    "beamRadius": 12,
+    "orbCharge": 0.62,
+    "orbSpeed": 4.6,
+    "orbHoming": 0.055,
+    "orbLife": 3.2,
+    "orbDamage": 10,
+    "recoverDuration": 0.42
   }
 }

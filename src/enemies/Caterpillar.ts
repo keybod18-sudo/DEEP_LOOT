@@ -173,12 +173,48 @@ export class Caterpillar extends Enemy {
     this.keepButterflyInStage(context);
 
     if (!this.ramHit && intersects(this, context.player)) {
-      context.hurtPlayer(BALANCE.caterpillar.ramDamage, this.x + this.w / 2);
+      const hit = context.hurtPlayer(BALANCE.caterpillar.ramDamage, this.x + this.w / 2);
+      if (hit) this.applyRamStatuses(context);
       this.ramHit = true;
     }
 
     if (this.attackTime < BALANCE.caterpillar.ramDuration) return;
     this.finishButterflyAttack();
+  }
+
+  private applyRamStatuses(context: EnemyContext): void {
+    let slow = Math.random() < BALANCE.caterpillar.slowChance;
+    let paralysis = Math.random() < BALANCE.caterpillar.paralysisChance;
+    let poison = Math.random() < BALANCE.caterpillar.poisonChance;
+    let seal = Math.random() < BALANCE.caterpillar.sealChance;
+    let silence = Math.random() < BALANCE.caterpillar.silenceChance;
+    let blind = Math.random() < BALANCE.caterpillar.blindChance;
+    let sleep = Math.random() < BALANCE.caterpillar.sleepChance;
+
+    if (!slow && !paralysis && !poison && !seal && !silence && !blind && !sleep) {
+      const forced = Math.floor(Math.random() * 7);
+      slow = forced === 0;
+      paralysis = forced === 1;
+      poison = forced === 2;
+      seal = forced === 3;
+      silence = forced === 4;
+      blind = forced === 5;
+      sleep = forced === 6;
+    }
+
+    if (slow) context.slowPlayer(BALANCE.caterpillar.slowDuration);
+    if (paralysis) context.paralyzePlayer(BALANCE.caterpillar.paralysisDuration);
+    if (poison) {
+      context.poisonPlayer(
+        BALANCE.caterpillar.poisonDuration,
+        BALANCE.caterpillar.poisonTickInterval,
+        BALANCE.caterpillar.poisonDamage,
+      );
+    }
+    if (seal) context.sealPlayer(BALANCE.caterpillar.sealDuration);
+    if (silence) context.silencePlayer(BALANCE.caterpillar.silenceDuration);
+    if (blind) context.blindPlayer(BALANCE.caterpillar.blindDuration);
+    if (sleep) context.sleepPlayer(BALANCE.caterpillar.sleepDuration);
   }
 
   private updatePowder(dt: number, context: EnemyContext): void {

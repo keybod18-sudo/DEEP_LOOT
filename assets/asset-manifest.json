@@ -1,5 +1,5 @@
 {
-  "version": "v35-real-cave-tiles",
+  "version": "v37-crystal-eye-glass",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -147,6 +147,14 @@
     "assets/monsters/caterpillar/pupa/pupa_03.png": "029f0226f81506cf76b025831be29cf3de6439ab36b59185f3f50259f9b201bd",
     "assets/monsters/caterpillar/pupa/pupa_04.png": "808bf7506794ee92a4ed5f649cb07f7b660c9b40e54a541721ccd2fc3b72aa7e",
     "assets/stage/mine_atlas.png": "5e071e33ebe4e754aecb78341f97ae738183c0c8fe1699077e0428654a7f5b9a",
-    "assets/stage/jungle_atlas.png": "22b7f1d6dd32444b18ecbb42ab96bd0cedcc53944c17569afdde3a33f553df32"
+    "assets/stage/jungle_atlas.png": "22b7f1d6dd32444b18ecbb42ab96bd0cedcc53944c17569afdde3a33f553df32",
+    "assets/monsters/crystal_eye/idle_01.png": "6ff3fe7fa68f39a2e2d6931c5e7a52df82c8533e152bf4cf68fe9be3225e5e45",
+    "assets/monsters/crystal_eye/idle_02.png": "4c5462e863843894e840049f0ce2c2ded243c6ca3694be79a0221bffe1bd4048",
+    "assets/monsters/crystal_eye/idle_03.png": "aafba0b1b5f1509236b676360069638e54641023f87d5d610462b9b7d7e94d3d",
+    "assets/monsters/crystal_eye/idle_04.png": "618be608793ff6dc0d03d7604b5ab39880c4a3a7733443158f305bffc3aadebb",
+    "assets/monsters/crystal_eye/idle_05.png": "8e30345bf4945a73e76336b9e4a9ede35dc4e7b4962b9aae1eb3485ce1ed5460",
+    "assets/monsters/crystal_eye/idle_06.png": "e89e238e6230d54103e540e89945f6428bd36f83a117a07d83f9d68a7e57f548",
+    "assets/monsters/crystal_eye/idle_07.png": "dc781459b66016880992701ef39db1041b85c617c0bd2b7a8375b2fda888682c",
+    "assets/monsters/crystal_eye/idle_08.png": "a76e00f0d743d3cc9b8cd1c47e7039647ad391d1993059cf215095dabdc66340"
   }
 }
