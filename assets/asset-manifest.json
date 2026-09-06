@@ -1,5 +1,5 @@
 {
-  "version": "v29-caterpillar-toxic-statuses",
+  "version": "v35-real-cave-tiles",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -145,6 +145,8 @@
     "assets/monsters/caterpillar/pupa/pupa_01.png": "02d13f9c8f1fdcf91460be64088972ef70cc6718e29aab2b8b8bf15f2db5a7ee",
     "assets/monsters/caterpillar/pupa/pupa_02.png": "bc2b046be3717d47e3d3f6f1786ad80df7fee5574640832f630e344a8ac37c7a",
     "assets/monsters/caterpillar/pupa/pupa_03.png": "029f0226f81506cf76b025831be29cf3de6439ab36b59185f3f50259f9b201bd",
-    "assets/monsters/caterpillar/pupa/pupa_04.png": "808bf7506794ee92a4ed5f649cb07f7b660c9b40e54a541721ccd2fc3b72aa7e"
+    "assets/monsters/caterpillar/pupa/pupa_04.png": "808bf7506794ee92a4ed5f649cb07f7b660c9b40e54a541721ccd2fc3b72aa7e",
+    "assets/stage/mine_atlas.png": "5e071e33ebe4e754aecb78341f97ae738183c0c8fe1699077e0428654a7f5b9a",
+    "assets/stage/jungle_atlas.png": "22b7f1d6dd32444b18ecbb42ab96bd0cedcc53944c17569afdde3a33f553df32"
   }
 }

@@ -36,7 +36,7 @@ export function createDungeonStage(
       const x = 34 + Math.floor(rng() * (WORLD_WIDTH - w - 68));
       const layer = i % 3;
       const py = y - 46 - layer * 43 - Math.floor(rng() * 24);
-      platforms.push({ x, y: py, w, h: 18 + Math.floor(rng() * 10) });
+      platforms.push({ x, y: py, w, h: 30 + Math.floor(rng() * 18) });
     }
 
     const roomCount = 4 + Math.floor(rng() * 2);
@@ -57,9 +57,9 @@ export function createDungeonStage(
   platforms.push({ x: 0, y: WORLD_HEIGHT - 24, w: WORLD_WIDTH, h: 24 });
 
   // Short stepping platforms near the alternating shafts to prevent soft-locks.
-  platforms.push({ x: 1160, y: 292, w: 170, h: 14 });
-  platforms.push({ x: 55, y: 472, w: 180, h: 14 });
-  platforms.push({ x: 1160, y: 652, w: 180, h: 14 });
+  platforms.push({ x: 1160, y: 292, w: 170, h: 26 });
+  platforms.push({ x: 55, y: 472, w: 180, h: 26 });
+  platforms.push({ x: 1160, y: 652, w: 180, h: 26 });
 
   const spawn = { x: 44, y: bandY[0]! - 36 };
   const staircase = { x: 76, y: bandY[3]! - 34 };
@@ -82,12 +82,12 @@ function addFloorWithGaps(
   let cursor = 0;
   for (const gap of gaps) {
     if (gap.start - cursor > 55) {
-      platforms.push({ x: cursor, y, w: gap.start - cursor, h: 18 });
+      platforms.push({ x: cursor, y, w: gap.start - cursor, h: 34 });
     }
     cursor = Math.max(cursor, gap.end);
   }
   if (WORLD_WIDTH - cursor > 55) {
-    platforms.push({ x: cursor, y, w: WORLD_WIDTH - cursor, h: 18 });
+    platforms.push({ x: cursor, y, w: WORLD_WIDTH - cursor, h: 34 });
   }
 }
 
