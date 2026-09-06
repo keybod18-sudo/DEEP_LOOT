@@ -19,6 +19,7 @@ export class Player implements PhysicsBody {
   hp: number = BALANCE.player.maxHp;
   invulnerability = 0;
   readonly attack = new PlayerAttack();
+  walkTime = 0;
 
   constructor(private readonly renderer: PlayerRenderer) {}
 
@@ -29,6 +30,7 @@ export class Player implements PhysicsBody {
     this.attack.timer = 0;
     this.attack.cooldown = 0;
     this.attack.hitConsumed = false;
+    this.walkTime = 0;
   }
 
   resetPosition(): void {
@@ -38,6 +40,7 @@ export class Player implements PhysicsBody {
     this.vy = 0;
     this.grounded = false;
     this.facing = 1;
+    this.walkTime = 0;
   }
 
   update(dt: number, input: Input, stage: Stage): void {
@@ -68,6 +71,9 @@ export class Player implements PhysicsBody {
 
     this.attack.update(dt);
     this.invulnerability = Math.max(0, this.invulnerability - dt);
+
+    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0;
+    if (movingOnGround) this.walkTime += dt;
 
     const previousY = this.y;
     this.vy += GRAVITY;
@@ -108,6 +114,8 @@ export class Player implements PhysicsBody {
       this.facing,
       this.attack.frame,
       this.invulnerability,
+      this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0,
+      this.walkTime,
     );
   }
 }

@@ -1,14 +1,14 @@
 import type { Facing } from '../game/types';
 
-const frameUrls = [1, 2, 3, 4, 5].map((index) =>
+const attackFrameUrls = [1, 2, 3, 4, 5].map((index) =>
   new URL(`../../assets/player/attack/attack_0${index}.png`, import.meta.url).href,
 );
 
 export class PlayerRenderer {
-  private readonly frames: HTMLImageElement[] = [];
+  private readonly attackFrames: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
-    this.frames.push(...await Promise.all(frameUrls.map(loadImage)));
+    this.attackFrames.push(...await Promise.all(attackFrameUrls.map(loadImage)));
   }
 
   draw(
@@ -20,25 +20,38 @@ export class PlayerRenderer {
     facing: Facing,
     frame: number,
     invulnerability: number,
+    moving: boolean,
+    walkTime: number,
   ): void {
-    const image = this.frames[frame] ?? this.frames[0];
+    const image = this.attackFrames[frame] ?? this.attackFrames[0];
     if (!image) return;
 
-    const drawW = 88;
-    const drawH = 88;
-    const drawX = x + w / 2 - drawW / 2;
-    const drawY = y + h - drawH + 6;
+    const attacking = frame > 0;
+    const phase = moving && !attacking ? Math.sin(walkTime * 14) : 0;
+    const bob = moving && !attacking ? Math.abs(phase) * 2.2 : 0;
+    const tilt = moving && !attacking ? phase * 0.035 : 0;
+    const squashX = moving && !attacking ? 1 + Math.abs(phase) * 0.035 : 1;
+    const squashY = moving && !attacking ? 1 - Math.abs(phase) * 0.025 : 1;
+
+    // Attack frame 4 has a large slash arc. Use its full aspect ratio so no part is clipped.
+    const baseH = attacking ? 92 : 88;
+    const aspect = image.naturalWidth / image.naturalHeight;
+    const baseW = attacking ? Math.round(baseH * aspect) : 88;
+    const drawW = baseW * squashX;
+    const drawH = baseH * squashY;
+    const centerX = x + w / 2;
+    const footY = y + h + 6 - bob;
 
     ctx.save();
-    if (facing < 0) {
-      ctx.translate(x + w / 2, 0);
-      ctx.scale(-1, 1);
-      ctx.translate(-(x + w / 2), 0);
-    }
+    ctx.translate(centerX, footY);
+    if (facing < 0) ctx.scale(-1, 1);
+    ctx.rotate(tilt);
+
     if (invulnerability > 0 && Math.floor(invulnerability * 14) % 2 === 0) {
       ctx.globalAlpha = 0.35;
     }
-    ctx.drawImage(image, drawX, drawY, drawW, drawH);
+
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
 }

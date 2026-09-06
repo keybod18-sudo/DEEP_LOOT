@@ -38,26 +38,30 @@ export class EnemyRenderer {
     let drawW = 46;
     let drawH = 30;
     let drawY = slime.y + slime.h - drawH;
+    let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
       drawW = 42;
       drawH = 28;
       drawY = slime.y - 1;
-    }
-    if (slime.state === 'pounce') {
+    } else if (slime.state === 'pounce') {
       drawW = 50;
       drawH = 30;
       drawY = slime.y + slime.h - drawH;
+    } else {
+      // Crawl motion: squash/stretch plus a tiny side-to-side body shift.
+      crawlPhase = Math.sin(slime.actionTime * 11);
+      drawW *= 1 + Math.abs(crawlPhase) * 0.12;
+      drawH *= 1 - Math.abs(crawlPhase) * 0.10;
+      drawY = slime.y + slime.h - drawH + Math.max(0, crawlPhase) * 1.5;
     }
 
     ctx.save();
-    if (slime.facing < 0) {
-      ctx.translate(slime.x + slime.w / 2, 0);
-      ctx.scale(-1, 1);
-      ctx.translate(-(slime.x + slime.w / 2), 0);
-    }
-    ctx.drawImage(image, slime.x - (drawW - slime.w) / 2, drawY, drawW, drawH);
+    const centerX = slime.x + slime.w / 2 + crawlPhase * 1.2;
+    ctx.translate(centerX, 0);
+    if (slime.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
     ctx.restore();
   }
 
@@ -67,11 +71,21 @@ export class EnemyRenderer {
     const centerY = goblin.y + goblin.h;
     ctx.translate(centerX, centerY);
 
-    // 採用元画像は右向き/左向きの基準が逆なので、現行版と同じ反転条件を維持。
+    // Keep the adopted goblin facing rule.
     if (goblin.facing > 0) ctx.scale(-1, 1);
 
     let rotation = 0;
     let offsetY = 0;
+    let scaleX = 1;
+    let scaleY = 1;
+
+    if (goblin.state === 'walk') {
+      const step = Math.sin(goblin.actionTime * 12);
+      offsetY = -Math.abs(step) * 2;
+      rotation = step * 0.035;
+      scaleX = 1 + Math.abs(step) * 0.035;
+      scaleY = 1 - Math.abs(step) * 0.025;
+    }
     if (goblin.state === 'swing') {
       rotation = Math.sin(Math.min(1, goblin.actionTime / 0.42) * Math.PI) * -0.20;
     }
@@ -86,22 +100,52 @@ export class EnemyRenderer {
 
     ctx.translate(0, offsetY);
     ctx.rotate(rotation);
+    ctx.scale(scaleX, scaleY);
     ctx.drawImage(this.goblinImage, -34, -67, 68, 67);
     ctx.restore();
   }
 
   private drawAhriman(ctx: CanvasRenderingContext2D, ahriman: Ahriman): void {
     const drawW = 76;
-    const flap = Math.sin(ahriman.actionTime * 12);
-    const drawH = 40 + flap * 2.2;
+    const drawH = 40;
+    const flap = Math.sin(ahriman.actionTime * 13);
     const centerX = ahriman.x + ahriman.w / 2;
     const centerY = ahriman.y + ahriman.h / 2;
 
     ctx.save();
     ctx.translate(centerX, centerY);
     if (ahriman.facing < 0) ctx.scale(-1, 1);
-    ctx.rotate(flap * 0.025);
-    ctx.drawImage(this.ahrimanImage, -drawW / 2, -drawH / 2, drawW, drawH);
+
+    // Split the sprite into left wing / eye / right wing so the wings visibly flap.
+    const sourceW = this.ahrimanImage.naturalWidth;
+    const sourceH = this.ahrimanImage.naturalHeight;
+    const wingW = Math.floor(sourceW * 0.34);
+    const bodyW = sourceW - wingW * 2;
+    const wingLift = flap * 5;
+    const wingScaleY = 0.78 + (flap + 1) * 0.18;
+
+    ctx.save();
+    ctx.translate(-drawW / 2, wingLift * -0.45);
+    ctx.scale(1, wingScaleY);
+    ctx.drawImage(this.ahrimanImage, 0, 0, wingW, sourceH, 0, -drawH / 2, drawW * 0.34, drawH);
+    ctx.restore();
+
+    ctx.drawImage(
+      this.ahrimanImage,
+      wingW, 0, bodyW, sourceH,
+      -drawW * 0.16, -drawH / 2, drawW * 0.32, drawH,
+    );
+
+    ctx.save();
+    ctx.translate(drawW * 0.16, wingLift * -0.45);
+    ctx.scale(1, wingScaleY);
+    ctx.drawImage(
+      this.ahrimanImage,
+      wingW + bodyW, 0, wingW, sourceH,
+      0, -drawH / 2, drawW * 0.34, drawH,
+    );
+    ctx.restore();
+
     ctx.restore();
   }
 }
