@@ -62,3 +62,13 @@
 - Added CONNECT_GITHUB.bat / UPDATE.bat.
 - START_LOCAL.bat now pulls from GitHub automatically when connected.
 - Portable Git bootstrap added; no global Git installation required.
+
+
+- v9: 主人公とモンスターの頭上に赤色HPゲージを表示。
+
+
+## v13 dungeon overhaul
+- 主人公6フレーム歩行PNGへ変更。
+- ゴブリン歩行6 / 棍棒5 / 飛び掛かり3 / 叩きつけ4フレームを実画像化。
+- 宝箱を各階に配置し、E/Enterで装備またはアイテム＋Gを取得。
+- ワールドを1472x840へ拡張し、カメラ追従＋4層の分岐/落下ルートを持つダンジョンを自動生成。

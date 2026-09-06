@@ -3,12 +3,21 @@ import type { Facing } from '../game/types';
 const attackFrameUrls = [1, 2, 3, 4, 5].map((index) =>
   new URL(`../../assets/player/attack/attack_0${index}.png`, import.meta.url).href,
 );
+const walkFrameUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/player/walk/walk_0${index}.png`, import.meta.url).href,
+);
 
 export class PlayerRenderer {
   private readonly attackFrames: HTMLImageElement[] = [];
+  private readonly walkFrames: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
-    this.attackFrames.push(...await Promise.all(attackFrameUrls.map(loadImage)));
+    const [attack, walk] = await Promise.all([
+      Promise.all(attackFrameUrls.map(loadImage)),
+      Promise.all(walkFrameUrls.map(loadImage)),
+    ]);
+    this.attackFrames.push(...attack);
+    this.walkFrames.push(...walk);
   }
 
   draw(
@@ -23,34 +32,29 @@ export class PlayerRenderer {
     moving: boolean,
     walkTime: number,
   ): void {
-    const image = this.attackFrames[frame] ?? this.attackFrames[0];
+    const attacking = frame > 0;
+    const image = attacking
+      ? (this.attackFrames[frame] ?? this.attackFrames[0])
+      : moving
+        ? (this.walkFrames[Math.floor(walkTime * 11) % this.walkFrames.length] ?? this.walkFrames[0])
+        : this.attackFrames[0];
     if (!image) return;
 
-    const attacking = frame > 0;
-    const phase = moving && !attacking ? Math.sin(walkTime * 14) : 0;
-    const bob = moving && !attacking ? Math.abs(phase) * 2.2 : 0;
-    const tilt = moving && !attacking ? phase * 0.035 : 0;
-    const squashX = moving && !attacking ? 1 + Math.abs(phase) * 0.035 : 1;
-    const squashY = moving && !attacking ? 1 - Math.abs(phase) * 0.025 : 1;
-
-    // Attack frame 4 has a large slash arc. Use its full aspect ratio so no part is clipped.
-    const baseH = attacking ? 92 : 88;
-    const aspect = image.naturalWidth / image.naturalHeight;
-    const baseW = attacking ? Math.round(baseH * aspect) : 88;
-    const drawW = baseW * squashX;
-    const drawH = baseH * squashY;
     const centerX = x + w / 2;
-    const footY = y + h + 6 - bob;
+    const footY = y + h + 6;
 
     ctx.save();
     ctx.translate(centerX, footY);
     if (facing < 0) ctx.scale(-1, 1);
-    ctx.rotate(tilt);
 
     if (invulnerability > 0 && Math.floor(invulnerability * 14) % 2 === 0) {
       ctx.globalAlpha = 0.35;
     }
 
+    // Dedicated walking PNG frames are used here: no fake bob/squash animation.
+    const drawH = attacking ? 92 : 88;
+    const aspect = image.naturalWidth / image.naturalHeight;
+    const drawW = Math.round(drawH * aspect);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }

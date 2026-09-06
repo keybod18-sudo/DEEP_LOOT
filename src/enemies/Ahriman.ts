@@ -1,5 +1,4 @@
 import { BALANCE } from '../config/balance';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config/constants';
 import { intersects } from '../game/Collision';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
@@ -22,15 +21,15 @@ export class Ahriman extends Enemy {
     this.vy = 0;
   }
 
-  protected updateKnockback(dt: number, _stage: Stage): void {
+  protected updateKnockback(dt: number, stage: Stage): void {
     this.knockbackTime = Math.max(0, this.knockbackTime - dt);
     this.x += this.vx;
     this.y += this.vy;
     this.vx *= BALANCE.enemyKnockback.friction;
     this.vy *= BALANCE.enemyKnockback.friction;
 
-    this.x = clamp(this.x, 8, GAME_WIDTH - this.w - 8);
-    this.y = clamp(this.y, 48, GAME_HEIGHT - 120);
+    this.x = clamp(this.x, 8, stage.width - this.w - 8);
+    this.y = clamp(this.y, 48, stage.height - 120);
 
     if (this.knockbackTime <= 0) this.onKnockbackEnd();
   }
@@ -47,14 +46,14 @@ export class Ahriman extends Enemy {
 
     const targetY = clamp(
       player.y - BALANCE.ahriman.hoverAbovePlayer + Math.sin(this.actionTime * BALANCE.ahriman.bobSpeed) * BALANCE.ahriman.bobAmplitude,
-      BALANCE.ahriman.minY,
-      BALANCE.ahriman.maxY,
+      70,
+      context.stage.height - 140,
     );
     const deltaY = targetY - this.y;
     this.y += clamp(deltaY * BALANCE.ahriman.verticalTracking, -BALANCE.ahriman.maxVerticalSpeed, BALANCE.ahriman.maxVerticalSpeed);
 
-    this.x = clamp(this.x, 8, GAME_WIDTH - this.w - 8);
-    this.y = clamp(this.y, BALANCE.ahriman.minY, BALANCE.ahriman.maxY);
+    this.x = clamp(this.x, 8, context.stage.width - this.w - 8);
+    this.y = clamp(this.y, 70, context.stage.height - 120);
 
     if (intersects(player, this)) {
       context.hurtPlayer(BALANCE.ahriman.contactDamage, this.x);

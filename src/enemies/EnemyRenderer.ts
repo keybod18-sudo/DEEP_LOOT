@@ -7,7 +7,6 @@ import type { Bat } from './Bat';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
-const goblinUrl = new URL('../../assets/monsters/goblin/base.png', import.meta.url).href;
 const ahrimanUrl = new URL('../../assets/monsters/ahriman/base.png', import.meta.url).href;
 const snakeUrls = [1, 2, 3].map((index) =>
   new URL(`../../assets/monsters/snake/move_0${index}.png`, import.meta.url).href,
@@ -15,38 +14,58 @@ const snakeUrls = [1, 2, 3].map((index) =>
 const batUrls = [1, 2, 3].map((index) =>
   new URL(`../../assets/monsters/bat/fly_0${index}.png`, import.meta.url).href,
 );
+const goblinWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/goblin/walk_0${index}.png`, import.meta.url).href,
+);
+const goblinSwingUrls = [1, 2, 3, 4, 5].map((index) =>
+  new URL(`../../assets/monsters/goblin/swing_0${index}.png`, import.meta.url).href,
+);
+const goblinLeapUrls = [1, 2, 3].map((index) =>
+  new URL(`../../assets/monsters/goblin/leap_0${index}.png`, import.meta.url).href,
+);
+const goblinSmashUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/goblin/smash_0${index}.png`, import.meta.url).href,
+);
 
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
-  private goblinImage!: HTMLImageElement;
   private ahrimanImage!: HTMLImageElement;
   private readonly snakeImages: HTMLImageElement[] = [];
   private readonly batImages: HTMLImageElement[] = [];
+  private readonly goblinWalkImages: HTMLImageElement[] = [];
+  private readonly goblinSwingImages: HTMLImageElement[] = [];
+  private readonly goblinLeapImages: HTMLImageElement[] = [];
+  private readonly goblinSmashImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
-    [this.slimeImage, this.clingImage, this.goblinImage, this.ahrimanImage] = await Promise.all([
+    [this.slimeImage, this.clingImage, this.ahrimanImage] = await Promise.all([
       loadImage(slimeUrl),
       loadImage(clingUrl),
-      loadImage(goblinUrl),
       loadImage(ahrimanUrl),
     ]);
-    this.snakeImages.push(...await Promise.all(snakeUrls.map(loadImage)));
-    this.batImages.push(...await Promise.all(batUrls.map(loadImage)));
+    const [snake, bat, walk, swing, leap, smash] = await Promise.all([
+      Promise.all(snakeUrls.map(loadImage)),
+      Promise.all(batUrls.map(loadImage)),
+      Promise.all(goblinWalkUrls.map(loadImage)),
+      Promise.all(goblinSwingUrls.map(loadImage)),
+      Promise.all(goblinLeapUrls.map(loadImage)),
+      Promise.all(goblinSmashUrls.map(loadImage)),
+    ]);
+    this.snakeImages.push(...snake);
+    this.batImages.push(...bat);
+    this.goblinWalkImages.push(...walk);
+    this.goblinSwingImages.push(...swing);
+    this.goblinLeapImages.push(...leap);
+    this.goblinSmashImages.push(...smash);
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
-    if (enemy.type === 'slime') {
-      this.drawSlime(ctx, enemy as Slime);
-    } else if (enemy.type === 'goblin') {
-      this.drawGoblin(ctx, enemy as Goblin);
-    } else if (enemy.type === 'ahriman') {
-      this.drawAhriman(ctx, enemy as Ahriman);
-    } else if (enemy.type === 'snake') {
-      this.drawSnake(ctx, enemy as Snake);
-    } else {
-      this.drawBat(ctx, enemy as Bat);
-    }
+    if (enemy.type === 'slime') this.drawSlime(ctx, enemy as Slime);
+    else if (enemy.type === 'goblin') this.drawGoblin(ctx, enemy as Goblin);
+    else if (enemy.type === 'ahriman') this.drawAhriman(ctx, enemy as Ahriman);
+    else if (enemy.type === 'snake') this.drawSnake(ctx, enemy as Snake);
+    else this.drawBat(ctx, enemy as Bat);
   }
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
@@ -66,7 +85,6 @@ export class EnemyRenderer {
       drawH = 30;
       drawY = slime.y + slime.h - drawH;
     } else {
-      // Crawl motion: squash/stretch plus a tiny side-to-side body shift.
       crawlPhase = Math.sin(slime.actionTime * 11);
       drawW *= 1 + Math.abs(crawlPhase) * 0.12;
       drawH *= 1 - Math.abs(crawlPhase) * 0.10;
@@ -82,84 +100,33 @@ export class EnemyRenderer {
   }
 
   private drawGoblin(ctx: CanvasRenderingContext2D, goblin: Goblin): void {
-    ctx.save();
-    const centerX = goblin.x + goblin.w / 2;
-    const centerY = goblin.y + goblin.h;
-    ctx.translate(centerX, centerY);
+    let images: HTMLImageElement[] = this.goblinWalkImages;
+    let index = Math.floor(goblin.actionTime * 10) % Math.max(1, images.length);
 
-    // Keep the adopted goblin facing rule.
-    if (goblin.facing > 0) ctx.scale(-1, 1);
-
-    if (goblin.state === 'walk') {
-      this.drawGoblinWalkCycle(ctx, goblin);
-      ctx.restore();
-      return;
-    }
-
-    let rotation = 0;
-    let offsetY = 0;
     if (goblin.state === 'swing') {
-      rotation = Math.sin(Math.min(1, goblin.actionTime / 0.42) * Math.PI) * -0.20;
+      images = this.goblinSwingImages;
+      index = Math.min(images.length - 1, Math.floor((goblin.actionTime / 0.42) * images.length));
+    } else if (goblin.state === 'leap') {
+      images = this.goblinLeapImages;
+      index = Math.min(images.length - 1, Math.floor(goblin.actionTime * 6));
+    } else if (goblin.state === 'smash') {
+      images = this.goblinSmashImages;
+      index = Math.min(images.length - 1, Math.floor((goblin.actionTime / 0.38) * images.length));
     }
-    if (goblin.state === 'leap') {
-      rotation = -0.10;
-      offsetY = -4;
-    }
-    if (goblin.state === 'smash') {
-      rotation = 0.14;
-      offsetY = 2;
-    }
 
-    ctx.translate(0, offsetY);
-    ctx.rotate(rotation);
-    ctx.drawImage(this.goblinImage, -30, -59, 60, 59);
-    ctx.restore();
-  }
+    const image = images[index] ?? images[0];
+    if (!image) return;
 
-  private drawGoblinWalkCycle(ctx: CanvasRenderingContext2D, goblin: Goblin): void {
-    const sourceW = this.goblinImage.naturalWidth;
-    const sourceH = this.goblinImage.naturalHeight;
-    const splitX = Math.floor(sourceW / 2);
-    const splitY = Math.floor(sourceH * 0.61);
-
-    const drawW = 60;
-    const drawH = 59;
-    const destSplitX = drawW / 2;
-    const destSplitY = drawH * 0.61;
-
-    const phase = Math.floor(goblin.actionTime * 10) % 4;
-    const legShift = [0, 4, 0, -4][phase] ?? 0;
-    const oppositeShift = -legShift;
-    const bodyBob = phase === 1 || phase === 3 ? -2 : 0;
-    const bodyLean = [0.02, -0.045, -0.02, 0.045][phase] ?? 0;
+    const centerX = goblin.x + goblin.w / 2;
+    const footY = goblin.y + goblin.h + 2;
+    const drawH = 82;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
 
     ctx.save();
-    ctx.translate(0, bodyBob);
-    ctx.rotate(bodyLean);
-
-    // Upper body stays coherent while the legs alternate.
-    ctx.drawImage(
-      this.goblinImage,
-      0, 0, sourceW, splitY,
-      -drawW / 2, -drawH, drawW, destSplitY,
-    );
-
-    // Left half of lower body steps forward/back.
-    ctx.drawImage(
-      this.goblinImage,
-      0, splitY, splitX, sourceH - splitY,
-      -drawW / 2 + legShift, -drawH + destSplitY,
-      destSplitX, drawH - destSplitY,
-    );
-
-    // Right half moves in the opposite direction.
-    ctx.drawImage(
-      this.goblinImage,
-      splitX, splitY, sourceW - splitX, sourceH - splitY,
-      0 + oppositeShift, -drawH + destSplitY,
-      drawW - destSplitX, drawH - destSplitY,
-    );
-
+    ctx.translate(centerX, footY);
+    // Existing adopted orientation: frames face the opposite logical direction.
+    if (goblin.facing > 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
 
@@ -174,7 +141,6 @@ export class EnemyRenderer {
     ctx.translate(centerX, centerY);
     if (ahriman.facing < 0) ctx.scale(-1, 1);
 
-    // Split the sprite into left wing / eye / right wing so the wings visibly flap.
     const sourceW = this.ahrimanImage.naturalWidth;
     const sourceH = this.ahrimanImage.naturalHeight;
     const wingW = Math.floor(sourceW * 0.34);
@@ -188,39 +154,26 @@ export class EnemyRenderer {
     ctx.drawImage(this.ahrimanImage, 0, 0, wingW, sourceH, 0, -drawH / 2, drawW * 0.34, drawH);
     ctx.restore();
 
-    ctx.drawImage(
-      this.ahrimanImage,
-      wingW, 0, bodyW, sourceH,
-      -drawW * 0.16, -drawH / 2, drawW * 0.32, drawH,
-    );
+    ctx.drawImage(this.ahrimanImage, wingW, 0, bodyW, sourceH, -drawW * 0.16, -drawH / 2, drawW * 0.32, drawH);
 
     ctx.save();
     ctx.translate(drawW * 0.16, wingLift * -0.45);
     ctx.scale(1, wingScaleY);
-    ctx.drawImage(
-      this.ahrimanImage,
-      wingW + bodyW, 0, wingW, sourceH,
-      0, -drawH / 2, drawW * 0.34, drawH,
-    );
+    ctx.drawImage(this.ahrimanImage, wingW + bodyW, 0, wingW, sourceH, 0, -drawH / 2, drawW * 0.34, drawH);
     ctx.restore();
-
     ctx.restore();
   }
+
   private drawSnake(ctx: CanvasRenderingContext2D, snake: Snake): void {
-    const frame = snake.state === 'strike'
-      ? 2
-      : Math.floor(snake.actionTime * 8) % this.snakeImages.length;
+    const frame = snake.state === 'strike' ? 2 : Math.floor(snake.actionTime * 8) % this.snakeImages.length;
     const image = this.snakeImages[frame] ?? this.snakeImages[0];
     if (!image) return;
-
     const drawW = snake.state === 'strike' ? 58 : 52;
     const drawH = snake.state === 'strike' ? 34 : 30;
     const centerX = snake.x + snake.w / 2;
     const footY = snake.y + snake.h + 2;
-
     ctx.save();
     ctx.translate(centerX, footY);
-    // Snake source frames face left, so flip when moving right.
     if (snake.facing > 0) ctx.scale(-1, 1);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
@@ -230,12 +183,10 @@ export class EnemyRenderer {
     const frame = Math.floor(bat.actionTime * 10) % this.batImages.length;
     const image = this.batImages[frame] ?? this.batImages[0];
     if (!image) return;
-
     const drawW = 50;
     const drawH = 28;
     const centerX = bat.x + bat.w / 2;
     const centerY = bat.y + bat.h / 2;
-
     ctx.save();
     ctx.translate(centerX, centerY);
     if (bat.facing < 0) ctx.scale(-1, 1);

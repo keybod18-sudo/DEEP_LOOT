@@ -1,4 +1,3 @@
-import { GAME_WIDTH } from '../config/constants';
 import type { PhysicsBody, Rect } from './types';
 
 export function intersects(a: Rect, b: Rect): boolean {
@@ -8,7 +7,7 @@ export function intersects(a: Rect, b: Rect): boolean {
     a.y + a.h > b.y;
 }
 
-export function resolveFloor(body: PhysicsBody, previousY: number, platforms: readonly Rect[]): void {
+export function resolveFloor(body: PhysicsBody, previousY: number, platforms: readonly Rect[], maxWidth = 736): void {
   body.grounded = false;
 
   for (const platform of platforms) {
@@ -22,5 +21,5 @@ export function resolveFloor(body: PhysicsBody, previousY: number, platforms: re
     }
   }
 
-  body.x = Math.max(0, Math.min(GAME_WIDTH - body.w, body.x));
+  body.x = Math.max(0, Math.min(maxWidth - body.w, body.x));
 }

@@ -13,10 +13,12 @@ import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
 import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
-import { createStage01 } from '../stage/Stage01';
+import { createDungeonStage } from '../stage/DungeonGenerator';
 import { GameLoop } from './GameLoop';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
+import { TreasureChest } from '../items/TreasureChest';
+import type { Platform } from '../stage/Platform';
 
 export interface HudElements {
   floor: HTMLElement;
@@ -29,7 +31,7 @@ export interface HudElements {
 export class Game {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly input = new Input();
-  private readonly stage = createStage01();
+  private stage = createDungeonStage(1);
   private readonly playerRenderer = new PlayerRenderer();
   private readonly enemyRenderer = new EnemyRenderer();
   private readonly player = new Player(this.playerRenderer);
@@ -38,6 +40,9 @@ export class Game {
   private readonly menu: MenuUI;
   private enemies: Enemy[] = [];
   private loot: LootDrop[] = [];
+  private chests: TreasureChest[] = [];
+  private cameraX = 0;
+  private cameraY = 0;
   private gold = 0;
   private floor = 1;
   private notice = '';
@@ -65,6 +70,7 @@ export class Game {
     await Promise.all([
       this.playerRenderer.load(),
       this.enemyRenderer.load(),
+      TreasureChest.loadAssets(),
     ]);
     this.reset();
     this.loop.start();
@@ -75,7 +81,11 @@ export class Game {
     this.floor = 1;
     this.gold = 0;
     this.loot = [];
-    this.spawnEnemies();
+    this.stage = createDungeonStage(this.floor);
+    this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
+    this.cameraX = 0;
+    this.cameraY = 0;
+    this.spawnStageContents();
     this.setMenuOpen(false);
     this.showNotice('探索開始');
     this.refreshUi();
@@ -119,7 +129,9 @@ export class Game {
 
     for (const drop of this.loot) drop.update(dt, this.stage);
     this.collectLoot();
+    this.checkChestInteraction();
     this.checkStaircase();
+    this.updateCamera();
   }
 
   private resolvePlayerAttack(): void {
@@ -169,31 +181,100 @@ export class Game {
     if (!intersects(this.player, this.stage.staircase)) return;
     if (!this.input.consumePress('e', 'enter')) return;
     this.floor += 1;
-    this.player.resetPosition();
     this.loot = [];
-    this.spawnEnemies();
+    this.stage = createDungeonStage(this.floor);
+    this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
+    this.cameraX = 0;
+    this.cameraY = 0;
+    this.spawnStageContents();
     this.showNotice(`地下 ${this.floor} 階へ`);
     this.refreshUi();
   }
 
-  private spawnEnemies(): void {
-    const groundSpots = shuffle([95, 190, 285, 390, 500, 575]);
-    const slimeX = groundSpots[0] ?? 95;
-    const goblinX1 = groundSpots[1] ?? 190;
-    const goblinX2 = groundSpots[2] ?? 470;
-    const ahrimanX = shuffle([260, 330, 430, 560])[0] ?? 430;
-    const snakeX = shuffle([125, 245, 355, 525])[0] ?? 355;
-    const batX = shuffle([220, 340, 455, 590])[0] ?? 455;
+  private spawnStageContents(): void {
+    const groundPlatforms = this.stage.platforms
+      .filter((platform) => platform.w >= 120 && platform.y > 180 && platform.y < this.stage.height - 30);
+    const upperPlatforms = this.stage.platforms
+      .filter((platform) => platform.w >= 110 && platform.y > 120 && platform.y < this.stage.height - 140);
+
+    const chosen = shuffle(groundPlatforms).slice(0, 9);
+    const point = (platform: Platform | undefined, h: number, fallbackX: number, fallbackY: number) => {
+      if (!platform) return { x: fallbackX, y: fallbackY };
+      const margin = Math.min(50, Math.max(18, platform.w * 0.2));
+      const usable = Math.max(1, platform.w - margin * 2 - 42);
+      return {
+        x: platform.x + margin + Math.random() * usable,
+        y: platform.y - h,
+      };
+    };
+
+    const slime1 = point(chosen[0], 25, 260, 345);
+    const slime2 = point(chosen[4], 25, 1060, 525);
+    const gob1 = point(chosen[1], 38, 520, 342);
+    const gob2 = point(chosen[2], 38, 900, 522);
+    const gob3 = point(chosen[5], 38, 1180, 702);
+    const snake1 = point(chosen[3], 18, 780, 532);
+    const snake2 = point(chosen[6], 18, 360, 712);
+
+    const clingPlatform = shuffle(upperPlatforms)[0];
+    const clingX = clingPlatform ? clingPlatform.x + clingPlatform.w * 0.5 - 17 : 680;
+    const clingY = clingPlatform ? clingPlatform.y + clingPlatform.h : 285;
 
     this.enemies = [
-      new Slime(slimeX, 355, 'crawl'),
-      new Slime(410, 129, 'cling'),
-      new Goblin(goblinX1, 342, 1, 0.8),
-      new Goblin(goblinX2, 342, -1, 0.5),
-      new Ahriman(ahrimanX, 165),
-      new Snake(snakeX, 362),
-      new Bat(batX, 125),
+      new Slime(slime1.x, slime1.y, 'crawl'),
+      new Slime(slime2.x, slime2.y, 'crawl'),
+      new Slime(clingX, clingY, 'cling'),
+      new Goblin(gob1.x, gob1.y, 1, 0.8),
+      new Goblin(gob2.x, gob2.y, -1, 0.5),
+      new Goblin(gob3.x, gob3.y, 1, 1.1),
+      new Ahriman(630 + Math.random() * 470, 220 + Math.random() * 360),
+      new Snake(snake1.x, snake1.y),
+      new Snake(snake2.x, snake2.y),
+      new Bat(390 + Math.random() * 720, 170 + Math.random() * 400),
+      new Bat(250 + Math.random() * 900, 220 + Math.random() * 370),
     ];
+
+    const chestPlatforms = shuffle(groundPlatforms)
+      .filter((platform) => Math.abs(platform.x - this.stage.spawn.x) > 180)
+      .slice(0, 3);
+    this.chests = chestPlatforms.map((platform, index) => {
+      const x = platform.x + 34 + ((index * 97 + this.floor * 53) % Math.max(50, platform.w - 80));
+      return new TreasureChest(x, platform.y - 28);
+    });
+  }
+
+  private checkChestInteraction(): void {
+    const chest = this.chests.find((candidate) => !candidate.opened && intersects(this.player, {
+      x: candidate.x - 12,
+      y: candidate.y - 10,
+      w: candidate.w + 24,
+      h: candidate.h + 18,
+    }));
+    if (!chest || !this.input.consumePress('e', 'enter')) return;
+
+    chest.opened = true;
+    const goldReward = 12 + Math.floor(Math.random() * 19) + this.floor * 2;
+    this.gold += goldReward;
+    const item = createRandomItem(this.floor + 1);
+    if (this.inventory.add(item)) {
+      this.showNotice(`宝箱: ${item.name} / ${goldReward}G`);
+    } else {
+      this.loot.push(new LootDrop(chest.x + 8, chest.y - 5, item));
+      this.showNotice(`宝箱: ${goldReward}G（アイテムは床へ）`);
+    }
+    this.refreshUi();
+  }
+
+  private updateCamera(): void {
+    const canvas = this.ctx.canvas;
+    const targetX = this.player.x + this.player.w / 2 - canvas.width / 2;
+    const targetY = this.player.y + this.player.h / 2 - canvas.height / 2;
+    const maxX = Math.max(0, this.stage.width - canvas.width);
+    const maxY = Math.max(0, this.stage.height - canvas.height);
+    const clampedX = Math.max(0, Math.min(maxX, targetX));
+    const clampedY = Math.max(0, Math.min(maxY, targetY));
+    this.cameraX += (clampedX - this.cameraX) * 0.14;
+    this.cameraY += (clampedY - this.cameraY) * 0.14;
   }
 
   private equipWeapon(index: number): void {
@@ -222,8 +303,11 @@ export class Game {
   }
 
   private draw(): void {
+    this.ctx.save();
+    this.ctx.translate(-Math.round(this.cameraX), -Math.round(this.cameraY));
     this.stage.draw(this.ctx);
 
+    for (const chest of this.chests) chest.draw(this.ctx);
     for (const drop of this.loot) drop.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
@@ -231,7 +315,9 @@ export class Game {
     this.player.draw(this.ctx);
     this.drawEnemyHpBars();
     this.drawPlayerHpBar();
-    this.drawStairPrompt();
+    this.ctx.restore();
+
+    this.drawInteractionPrompt();
     this.drawNotice();
   }
 
@@ -305,14 +391,27 @@ export class Game {
     this.ctx.restore();
   }
 
-  private drawStairPrompt(): void {
-    if (!intersects(this.player, this.stage.staircase)) return;
+  private drawInteractionPrompt(): void {
+    let text = '';
+    if (intersects(this.player, this.stage.staircase)) {
+      text = 'E / Enter：次の階へ';
+    } else {
+      const chest = this.chests.find((candidate) => !candidate.opened && intersects(this.player, {
+        x: candidate.x - 12,
+        y: candidate.y - 10,
+        w: candidate.w + 24,
+        h: candidate.h + 18,
+      }));
+      if (chest) text = 'E / Enter：宝箱を開ける';
+    }
+    if (!text) return;
+
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.86)';
-    this.ctx.fillRect(570, 305, 145, 28);
+    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.88)';
+    this.ctx.fillRect(498, 350, 220, 30);
     this.ctx.fillStyle = '#f0e3c2';
     this.ctx.font = '14px system-ui';
-    this.ctx.fillText('E / Enter：次の階へ', 580, 324);
+    this.ctx.fillText(text, 510, 370);
     this.ctx.restore();
   }
 

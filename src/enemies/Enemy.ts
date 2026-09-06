@@ -60,7 +60,7 @@ export abstract class Enemy implements PhysicsBody {
     this.x += this.vx;
     this.y += this.vy;
     this.vx *= BALANCE.enemyKnockback.friction;
-    resolveFloor(this, previousY, stage.platforms);
+    resolveFloor(this, previousY, stage.platforms, stage.width);
 
     if (this.knockbackTime <= 0) {
       this.onKnockbackEnd();

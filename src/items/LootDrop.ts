@@ -27,7 +27,7 @@ export class LootDrop implements PhysicsBody {
     this.x += this.vx;
     this.y += this.vy;
     this.vx *= 0.94;
-    resolveFloor(this, previousY, stage.platforms);
+    resolveFloor(this, previousY, stage.platforms, stage.width);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {

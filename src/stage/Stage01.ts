@@ -1,6 +1,6 @@
-import stageData from '../../data/stages/stage01.json';
-import { Stage } from './Stage';
+import { createDungeonStage } from './DungeonGenerator';
+import type { Stage } from './Stage';
 
 export function createStage01(): Stage {
-  return new Stage(stageData.platforms);
+  return createDungeonStage(1);
 }

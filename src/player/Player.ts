@@ -41,9 +41,9 @@ export class Player implements PhysicsBody {
     this.poisonDamage = 0;
   }
 
-  resetPosition(): void {
-    this.x = 30;
-    this.y = 330;
+  resetPosition(x = 30, y = 330): void {
+    this.x = x;
+    this.y = y;
     this.vx = 0;
     this.vy = 0;
     this.grounded = false;
@@ -88,7 +88,7 @@ export class Player implements PhysicsBody {
     this.vy += GRAVITY;
     this.x += this.vx;
     this.y += this.vy;
-    resolveFloor(this, previousY, stage.platforms);
+    resolveFloor(this, previousY, stage.platforms, stage.width);
   }
 
   applyPoison(duration: number, tickInterval: number, damage: number): void {

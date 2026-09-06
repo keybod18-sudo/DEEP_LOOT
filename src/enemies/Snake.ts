@@ -65,7 +65,7 @@ export class Snake extends Enemy {
     const previousY = this.y;
     this.vy += GRAVITY;
     this.y += this.vy;
-    resolveFloor(this, previousY, context.stage.platforms);
+    resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
 
     if (distance <= BALANCE.snake.strikeDistance && this.cooldown <= 0) {
       this.state = 'strike';

@@ -39,7 +39,7 @@ export class Goblin extends Enemy {
       const previousY = this.y;
       this.vy += GRAVITY;
       this.y += this.vy;
-      resolveFloor(this, previousY, context.stage.platforms);
+      resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
 
       if (distance < 48 && this.cooldown <= 0) {
         this.state = 'swing';
@@ -80,7 +80,7 @@ export class Goblin extends Enemy {
       this.vy += 0.5;
       this.x += this.vx;
       this.y += this.vy;
-      resolveFloor(this, previousY, context.stage.platforms);
+      resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
 
       if (intersects(player, this)) {
         context.hurtPlayer(BALANCE.goblin.leapContactDamage, this.x);

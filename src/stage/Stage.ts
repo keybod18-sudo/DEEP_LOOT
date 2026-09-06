@@ -1,33 +1,79 @@
 import type { Platform } from './Platform';
 import { Staircase } from './Staircase';
 
-export class Stage {
-  readonly staircase = new Staircase(690, 346);
+export interface StagePoint {
+  x: number;
+  y: number;
+}
 
-  constructor(public readonly platforms: readonly Platform[]) {}
+export interface StageRoom {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  tone: number;
+}
+
+export class Stage {
+  readonly staircase: Staircase;
+
+  constructor(
+    public readonly width: number,
+    public readonly height: number,
+    public readonly platforms: readonly Platform[],
+    public readonly spawn: StagePoint,
+    staircase: StagePoint,
+    public readonly rooms: readonly StageRoom[],
+    public readonly seed: number,
+  ) {
+    this.staircase = new Staircase(staircase.x, staircase.y);
+  }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = '#1c252f';
-    ctx.fillRect(0, 0, 736, 420);
+    ctx.fillStyle = '#151d25';
+    ctx.fillRect(0, 0, this.width, this.height);
 
-    ctx.fillStyle = '#2a343e';
-    const dots: ReadonlyArray<readonly [number, number]> = [
-      [27, 154], [162, 13], [353, 8], [547, 56], [707, 19],
-      [111, 266], [581, 178], [680, 258], [322, 220],
-    ];
-    for (const [x, y] of dots) ctx.fillRect(x, y, 2, 2);
+    // Large room blocks and shafts make each floor read as a dungeon rather than floating shelves.
+    for (const room of this.rooms) {
+      const c = 24 + room.tone * 3;
+      ctx.fillStyle = `rgb(${c}, ${c + 8}, ${c + 14})`;
+      ctx.fillRect(room.x, room.y, room.w, room.h);
+      ctx.strokeStyle = '#34424d';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(room.x + 1, room.y + 1, room.w - 2, room.h - 2);
+    }
+
+    // Deterministic brick texture based on world coordinates + floor seed.
+    for (let y = 18; y < this.height; y += 32) {
+      const offset = ((y / 32) & 1) * 18;
+      for (let x = -offset; x < this.width; x += 72) {
+        const noise = hash2(x, y, this.seed) % 4;
+        ctx.fillStyle = noise === 0 ? '#222e38' : '#1d2932';
+        ctx.fillRect(x, y, 36, 4);
+      }
+    }
 
     for (const platform of this.platforms) {
-      ctx.fillStyle = '#59636e';
+      ctx.fillStyle = '#4d5862';
       ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
-      ctx.fillStyle = '#77818b';
+      ctx.fillStyle = '#7a858e';
       ctx.fillRect(platform.x, platform.y, platform.w, 3);
-      ctx.fillStyle = '#36404a';
-      for (let x = platform.x + 30; x < platform.x + platform.w; x += 32) {
-        ctx.fillRect(x, platform.y + 4, 3, platform.h - 4);
+      ctx.fillStyle = '#303a43';
+      for (let x = platform.x + 28; x < platform.x + platform.w; x += 32) {
+        ctx.fillRect(x, platform.y + 4, 3, Math.max(2, platform.h - 4));
+      }
+      if (platform.h >= 18) {
+        ctx.fillStyle = '#3e4851';
+        ctx.fillRect(platform.x, platform.y + platform.h - 4, platform.w, 4);
       }
     }
 
     this.staircase.draw(ctx);
   }
+}
+
+function hash2(x: number, y: number, seed: number): number {
+  let n = (x * 374761393 + y * 668265263 + seed * 1442695041) | 0;
+  n = (n ^ (n >>> 13)) * 1274126177;
+  return (n ^ (n >>> 16)) >>> 0;
 }
