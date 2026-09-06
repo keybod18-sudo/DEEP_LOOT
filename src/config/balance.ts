@@ -8,5 +8,10 @@ export const BALANCE = {
   ahriman: enemyData.ahriman,
   snake: enemyData.snake,
   bat: enemyData.bat,
+  roper: enemyData.roper,
+  slug: enemyData.slug,
+  rat: enemyData.rat,
+  skeleton: enemyData.skeleton,
+  fireball: enemyData.fireball,
   enemyKnockback: enemyData.knockback,
 } as const;

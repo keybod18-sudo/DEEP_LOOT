@@ -72,3 +72,13 @@
 - ゴブリン歩行6 / 棍棒5 / 飛び掛かり3 / 叩きつけ4フレームを実画像化。
 - 宝箱を各階に配置し、E/Enterで装備またはアイテム＋Gを取得。
 - ワールドを1472x840へ拡張し、カメラ追従＋4層の分岐/落下ルートを持つダンジョンを自動生成。
+
+## v14
+- Removed the large rectangular room-outline decoration that looked like a UI window.
+- Bat HP reduced to 13.
+- HP bars moved above each visible sprite head.
+- Added K-key fireball projectile with 8-frame animation.
+- Added Roper with 4-frame idle / 4-frame tentacle attack.
+- Added small Slug with 6-frame crawl.
+- Added small Rat with 6-frame run / bite animation.
+- Added Skeleton with 6-frame walk / 4-frame sword attack.

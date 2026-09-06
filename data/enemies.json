@@ -57,12 +57,49 @@
     "poisonDamage": 2
   },
   "bat": {
-    "maxHp": 24,
+    "maxHp": 13,
     "flightSpeed": 1.15,
     "verticalSpeed": 0.85,
     "contactDamage": 7,
     "hitCooldown": 0.85,
     "minY": 75,
     "maxY": 300
+  },
+  "roper": {
+    "maxHp": 55,
+    "attackDamage": 12,
+    "attackRange": 135,
+    "attackDuration": 0.62,
+    "hitTime": 0.28,
+    "cooldown": 1.45
+  },
+  "slug": {
+    "maxHp": 16,
+    "crawlSpeed": 0.24,
+    "contactDamage": 4
+  },
+  "rat": {
+    "maxHp": 18,
+    "runSpeed": 0.82,
+    "biteDamage": 5,
+    "biteRange": 42,
+    "biteDuration": 0.34,
+    "hitTime": 0.14,
+    "cooldown": 0.75
+  },
+  "skeleton": {
+    "maxHp": 52,
+    "walkSpeed": 0.34,
+    "swordDamage": 14,
+    "attackRange": 50,
+    "attackDuration": 0.48,
+    "hitTime": 0.22,
+    "cooldown": 1.05
+  },
+  "fireball": {
+    "damage": 14,
+    "speed": 8.0,
+    "cooldown": 0.55,
+    "life": 1.7
   }
 }

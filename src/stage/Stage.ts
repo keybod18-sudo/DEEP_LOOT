@@ -33,14 +33,12 @@ export class Stage {
     ctx.fillStyle = '#151d25';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // Large room blocks and shafts make each floor read as a dungeon rather than floating shelves.
+    // Room zones are kept for generation only.
+    // Do not draw the old rectangular outline: it looked like an unintended UI window.
     for (const room of this.rooms) {
-      const c = 24 + room.tone * 3;
-      ctx.fillStyle = `rgb(${c}, ${c + 8}, ${c + 14})`;
+      const c = 24 + room.tone * 2;
+      ctx.fillStyle = `rgba(${c}, ${c + 7}, ${c + 12}, 0.22)`;
       ctx.fillRect(room.x, room.y, room.w, room.h);
-      ctx.strokeStyle = '#34424d';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(room.x + 1, room.y + 1, room.w - 2, room.h - 2);
     }
 
     // Deterministic brick texture based on world coordinates + floor seed.

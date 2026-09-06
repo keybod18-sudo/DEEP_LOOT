@@ -8,6 +8,11 @@ import { Slime } from '../enemies/Slime';
 import { Ahriman } from '../enemies/Ahriman';
 import { Snake } from '../enemies/Snake';
 import { Bat } from '../enemies/Bat';
+import { Roper } from '../enemies/Roper';
+import { Slug } from '../enemies/Slug';
+import { Rat } from '../enemies/Rat';
+import { Skeleton } from '../enemies/Skeleton';
+import { Fireball } from '../combat/Fireball';
 import { Inventory } from '../items/Inventory';
 import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
@@ -41,6 +46,8 @@ export class Game {
   private enemies: Enemy[] = [];
   private loot: LootDrop[] = [];
   private chests: TreasureChest[] = [];
+  private fireballs: Fireball[] = [];
+  private fireballCooldown = 0;
   private cameraX = 0;
   private cameraY = 0;
   private gold = 0;
@@ -71,6 +78,7 @@ export class Game {
       this.playerRenderer.load(),
       this.enemyRenderer.load(),
       TreasureChest.loadAssets(),
+      Fireball.loadAssets(),
     ]);
     this.reset();
     this.loop.start();
@@ -81,6 +89,8 @@ export class Game {
     this.floor = 1;
     this.gold = 0;
     this.loot = [];
+    this.fireballs = [];
+    this.fireballCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -107,7 +117,14 @@ export class Game {
     const hpBeforeUpdate = this.player.hp;
     this.player.update(dt, this.input, this.stage);
     if (this.player.hp !== hpBeforeUpdate) this.refreshUi();
+
+    this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
+    if (this.input.consumePress('k') && this.fireballCooldown <= 0) {
+      this.castFireball();
+    }
+
     this.resolvePlayerAttack();
+    this.updateFireballs(dt);
 
     for (const enemy of this.enemies) {
       enemy.update(dt, {
@@ -150,13 +167,69 @@ export class Game {
       this.player.attack.consumeHit();
 
       if (killed) {
-        this.gold += 5;
-        if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
-        this.loot.push(new LootDrop(enemy.x + enemy.w / 2 - 7, enemy.y + enemy.h / 2 - 7, createRandomItem(this.floor)));
+        this.handleEnemyKilled(enemy);
       }
       this.refreshUi();
       break;
     }
+  }
+
+  private castFireball(): void {
+    const facing = this.player.facing;
+    const x = facing > 0
+      ? this.player.x + this.player.w + 8
+      : this.player.x - 36;
+    const y = this.player.y + 7;
+
+    this.fireballs.push(new Fireball(
+      x,
+      y,
+      facing * BALANCE.fireball.speed,
+      facing,
+      BALANCE.fireball.life,
+    ));
+    this.fireballCooldown = BALANCE.fireball.cooldown;
+  }
+
+  private updateFireballs(dt: number): void {
+    for (const fireball of this.fireballs) {
+      fireball.update(dt);
+      if (!fireball.alive) continue;
+
+      for (const enemy of this.enemies) {
+        if (!enemy.alive || !intersects(fireball.rect, enemy)) continue;
+
+        const killed = damageEnemy(
+          enemy,
+          BALANCE.fireball.damage,
+          fireball.x + fireball.w / 2,
+          0.8,
+        );
+        fireball.alive = false;
+
+        if (killed) {
+          this.handleEnemyKilled(enemy);
+        }
+        this.refreshUi();
+        break;
+      }
+    }
+
+    this.fireballs = this.fireballs.filter((fireball) =>
+      fireball.alive &&
+      fireball.x > -80 &&
+      fireball.x < this.stage.width + 80
+    );
+  }
+
+  private handleEnemyKilled(enemy: Enemy): void {
+    this.gold += 5;
+    if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
+    this.loot.push(new LootDrop(
+      enemy.x + enemy.w / 2 - 7,
+      enemy.y + enemy.h / 2 - 7,
+      createRandomItem(this.floor),
+    ));
   }
 
   private collectLoot(): void {
@@ -182,6 +255,8 @@ export class Game {
     if (!this.input.consumePress('e', 'enter')) return;
     this.floor += 1;
     this.loot = [];
+    this.fireballs = [];
+    this.fireballCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -215,6 +290,10 @@ export class Game {
     const gob3 = point(chosen[5], 38, 1180, 702);
     const snake1 = point(chosen[3], 18, 780, 532);
     const snake2 = point(chosen[6], 18, 360, 712);
+    const roper1 = point(chosen[7], 58, 980, 672);
+    const slug1 = point(chosen[8], 11, 640, 719);
+    const rat1 = point(chosen[0], 14, 310, 356);
+    const skeleton1 = point(chosen[5], 42, 1120, 688);
 
     const clingPlatform = shuffle(upperPlatforms)[0];
     const clingX = clingPlatform ? clingPlatform.x + clingPlatform.w * 0.5 - 17 : 680;
@@ -232,6 +311,10 @@ export class Game {
       new Snake(snake2.x, snake2.y),
       new Bat(390 + Math.random() * 720, 170 + Math.random() * 400),
       new Bat(250 + Math.random() * 900, 220 + Math.random() * 370),
+      new Roper(roper1.x, roper1.y),
+      new Slug(slug1.x, slug1.y),
+      new Rat(rat1.x, rat1.y),
+      new Skeleton(skeleton1.x, skeleton1.y),
     ];
 
     const chestPlatforms = shuffle(groundPlatforms)
@@ -309,6 +392,7 @@ export class Game {
 
     for (const chest of this.chests) chest.draw(this.ctx);
     for (const drop of this.loot) drop.draw(this.ctx);
+    for (const fireball of this.fireballs) fireball.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
     }
@@ -323,7 +407,8 @@ export class Game {
 
   private drawPlayerHpBar(): void {
     const centerX = this.player.x + this.player.w / 2;
-    const topY = this.player.y - 13;
+    // Player sprite is much taller than its collision box; place the bar above the visible head.
+    const topY = this.player.y - 62;
     const width = 44;
 
     this.drawHpBar(centerX, topY, width, this.player.hp, this.maxHp);
@@ -356,8 +441,26 @@ export class Game {
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
 
-      const width = enemy.type === 'ahriman' ? 48 : enemy.type === 'goblin' ? 42 : enemy.type === 'snake' ? 40 : 38;
-      const y = enemy.type === 'ahriman' ? enemy.y - 12 : enemy.y - 10;
+      const width =
+        enemy.type === 'ahriman' ? 48 :
+        enemy.type === 'goblin' ? 42 :
+        enemy.type === 'skeleton' ? 44 :
+        enemy.type === 'roper' ? 44 :
+        enemy.type === 'snake' ? 40 :
+        36;
+
+      // These offsets follow each sprite's visible top, not the smaller collision box.
+      const y =
+        enemy.type === 'goblin' ? enemy.y - 50 :
+        enemy.type === 'skeleton' ? enemy.y - 34 :
+        enemy.type === 'roper' ? enemy.y - 32 :
+        enemy.type === 'ahriman' ? enemy.y - 18 :
+        enemy.type === 'bat' ? enemy.y - 16 :
+        enemy.type === 'snake' ? enemy.y - 22 :
+        enemy.type === 'slug' ? enemy.y - 15 :
+        enemy.type === 'rat' ? enemy.y - 17 :
+        enemy.y - 16;
+
       this.drawHpBar(
         enemy.x + enemy.w / 2,
         y,

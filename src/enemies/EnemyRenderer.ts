@@ -4,6 +4,10 @@ import type { Slime } from './Slime';
 import type { Ahriman } from './Ahriman';
 import type { Snake } from './Snake';
 import type { Bat } from './Bat';
+import type { Roper } from './Roper';
+import type { Slug } from './Slug';
+import type { Rat } from './Rat';
+import type { Skeleton } from './Skeleton';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
@@ -27,6 +31,28 @@ const goblinSmashUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/goblin/smash_0${index}.png`, import.meta.url).href,
 );
 
+const roperIdleUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/roper/idle_0${index}.png`, import.meta.url).href,
+);
+const roperAttackUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/roper/attack_0${index}.png`, import.meta.url).href,
+);
+const slugMoveUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/slug/move_0${index}.png`, import.meta.url).href,
+);
+const ratRunUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/rat/run_0${index}.png`, import.meta.url).href,
+);
+const ratBiteUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/rat/bite_0${index}.png`, import.meta.url).href,
+);
+const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/skeleton/walk_0${index}.png`, import.meta.url).href,
+);
+const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
+);
+
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
@@ -37,6 +63,13 @@ export class EnemyRenderer {
   private readonly goblinSwingImages: HTMLImageElement[] = [];
   private readonly goblinLeapImages: HTMLImageElement[] = [];
   private readonly goblinSmashImages: HTMLImageElement[] = [];
+  private readonly roperIdleImages: HTMLImageElement[] = [];
+  private readonly roperAttackImages: HTMLImageElement[] = [];
+  private readonly slugMoveImages: HTMLImageElement[] = [];
+  private readonly ratRunImages: HTMLImageElement[] = [];
+  private readonly ratBiteImages: HTMLImageElement[] = [];
+  private readonly skeletonWalkImages: HTMLImageElement[] = [];
+  private readonly skeletonAttackImages: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
     [this.slimeImage, this.clingImage, this.ahrimanImage] = await Promise.all([
@@ -44,13 +77,20 @@ export class EnemyRenderer {
       loadImage(clingUrl),
       loadImage(ahrimanUrl),
     ]);
-    const [snake, bat, walk, swing, leap, smash] = await Promise.all([
+    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack] = await Promise.all([
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
       Promise.all(goblinSwingUrls.map(loadImage)),
       Promise.all(goblinLeapUrls.map(loadImage)),
       Promise.all(goblinSmashUrls.map(loadImage)),
+      Promise.all(roperIdleUrls.map(loadImage)),
+      Promise.all(roperAttackUrls.map(loadImage)),
+      Promise.all(slugMoveUrls.map(loadImage)),
+      Promise.all(ratRunUrls.map(loadImage)),
+      Promise.all(ratBiteUrls.map(loadImage)),
+      Promise.all(skeletonWalkUrls.map(loadImage)),
+      Promise.all(skeletonAttackUrls.map(loadImage)),
     ]);
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
@@ -58,6 +98,13 @@ export class EnemyRenderer {
     this.goblinSwingImages.push(...swing);
     this.goblinLeapImages.push(...leap);
     this.goblinSmashImages.push(...smash);
+    this.roperIdleImages.push(...roperIdle);
+    this.roperAttackImages.push(...roperAttack);
+    this.slugMoveImages.push(...slugMove);
+    this.ratRunImages.push(...ratRun);
+    this.ratBiteImages.push(...ratBite);
+    this.skeletonWalkImages.push(...skeletonWalk);
+    this.skeletonAttackImages.push(...skeletonAttack);
   }
 
   draw(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
@@ -65,7 +112,11 @@ export class EnemyRenderer {
     else if (enemy.type === 'goblin') this.drawGoblin(ctx, enemy as Goblin);
     else if (enemy.type === 'ahriman') this.drawAhriman(ctx, enemy as Ahriman);
     else if (enemy.type === 'snake') this.drawSnake(ctx, enemy as Snake);
-    else this.drawBat(ctx, enemy as Bat);
+    else if (enemy.type === 'bat') this.drawBat(ctx, enemy as Bat);
+    else if (enemy.type === 'roper') this.drawRoper(ctx, enemy as Roper);
+    else if (enemy.type === 'slug') this.drawSlug(ctx, enemy as Slug);
+    else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
+    else this.drawSkeleton(ctx, enemy as Skeleton);
   }
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
@@ -191,6 +242,80 @@ export class EnemyRenderer {
     ctx.translate(centerX, centerY);
     if (bat.facing < 0) ctx.scale(-1, 1);
     ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+  }
+
+
+  private drawRoper(ctx: CanvasRenderingContext2D, roper: Roper): void {
+    const images = roper.state === 'attack' ? this.roperAttackImages : this.roperIdleImages;
+    const speed = roper.state === 'attack' ? 8 : 5;
+    const frame = Math.floor(roper.actionTime * speed) % Math.max(1, images.length);
+    const image = images[frame] ?? images[0];
+    if (!image) return;
+
+    const drawH = roper.state === 'attack' ? 92 : 82;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = roper.x + roper.w / 2;
+    const footY = roper.y + roper.h + 2;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    if (roper.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  }
+
+  private drawSlug(ctx: CanvasRenderingContext2D, slug: Slug): void {
+    const frame = Math.floor(slug.actionTime * 9) % Math.max(1, this.slugMoveImages.length);
+    const image = this.slugMoveImages[frame] ?? this.slugMoveImages[0];
+    if (!image) return;
+
+    const drawH = 18;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = slug.x + slug.w / 2;
+    const footY = slug.y + slug.h + 1;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    if (slug.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  }
+
+  private drawRat(ctx: CanvasRenderingContext2D, rat: Rat): void {
+    const images = rat.state === 'bite' ? this.ratBiteImages : this.ratRunImages;
+    const frame = Math.floor(rat.actionTime * 12) % Math.max(1, images.length);
+    const image = images[frame] ?? images[0];
+    if (!image) return;
+
+    const drawH = rat.state === 'bite' ? 27 : 24;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = rat.x + rat.w / 2;
+    const footY = rat.y + rat.h + 1;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    if (rat.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.restore();
+  }
+
+  private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
+    const images = skeleton.state === 'attack' ? this.skeletonAttackImages : this.skeletonWalkImages;
+    const speed = skeleton.state === 'attack' ? 9 : 8;
+    const frame = Math.floor(skeleton.actionTime * speed) % Math.max(1, images.length);
+    const image = images[frame] ?? images[0];
+    if (!image) return;
+
+    const drawH = 68;
+    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const centerX = skeleton.x + skeleton.w / 2;
+    const footY = skeleton.y + skeleton.h + 1;
+
+    ctx.save();
+    ctx.translate(centerX, footY);
+    if (skeleton.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
 }
