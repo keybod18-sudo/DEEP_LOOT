@@ -447,12 +447,13 @@ export class EnemyRenderer {
 
 
   private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
-    const images = skeletonArcher.state === 'attack'
+    const attacking = skeletonArcher.state === 'attack';
+    const images = attacking
       ? this.skeletonArcherShootImages
       : this.skeletonArcherWalkImages;
     if (images.length === 0) return;
 
-    const index = skeletonArcher.state === 'attack'
+    const index = attacking
       ? Math.min(
           images.length - 1,
           Math.floor((skeletonArcher.actionTime / BALANCE.skeletonArcher.attackDuration) * images.length),
@@ -465,11 +466,98 @@ export class EnemyRenderer {
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
     const drawH = 78;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const tension = attacking && !skeletonArcher.shotReleased
+      ? Math.min(1, index / 3)
+      : 0;
+    const recoil = attacking && skeletonArcher.shotReleased
+      ? index === 4
+        ? 1
+        : index === 3
+          ? 0.58
+          : index === 2
+            ? 0.26
+            : 0.08
+      : 0;
+    const lift = attacking ? -Math.sin(Math.min(1, index / 4) * Math.PI) * 1.5 : 0;
 
     ctx.save();
-    ctx.translate(centerX, footY);
+    ctx.translate(
+      centerX - skeletonArcher.facing * recoil * 3.2,
+      footY + lift,
+    );
+    if (attacking) {
+      ctx.rotate(skeletonArcher.facing * (recoil * 0.035 - tension * 0.012));
+    }
     applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+
+    if (attacking && !skeletonArcher.shotReleased) {
+      const poison = skeletonArcher.shotType === 'poison';
+      const arrowOffsets = skeletonArcher.shotType === 'triple' ? [-5, 0, 5] : [0];
+      const tailX = 6 - tension * 5;
+      const tipX = -18 - tension * 17;
+      const arrowY = -30 + (1 - tension) * 4;
+      const shaft = poison ? '#8cff76' : '#dce2ea';
+      const outline = poison ? '#28572a' : '#29313b';
+      const fletch = poison ? '#5bdd59' : '#86562c';
+      const tip = poison ? '#c8ffaf' : '#f3f7ff';
+
+      ctx.strokeStyle = poison ? '#6ff067' : '#d8d1c6';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-10, -43);
+      ctx.lineTo(tailX, arrowY);
+      ctx.lineTo(-10, -18);
+      ctx.stroke();
+
+      for (const offsetY of arrowOffsets) {
+        const y = arrowY + offsetY;
+        if (poison) {
+          ctx.save();
+          ctx.globalAlpha = 0.22 + tension * 0.16;
+          ctx.fillStyle = '#81ff75';
+          ctx.fillRect(tipX - 2, y - 3, tailX - tipX + 4, 7);
+          ctx.restore();
+        }
+
+        ctx.fillStyle = outline;
+        ctx.fillRect(tipX, y - 2, tailX - tipX, 4);
+        ctx.fillStyle = shaft;
+        ctx.fillRect(tipX + 1, y - 1, tailX - tipX - 1, 2);
+        ctx.fillStyle = fletch;
+        ctx.fillRect(tailX - 1, y - 3, 4, 2);
+        ctx.fillRect(tailX - 1, y + 1, 4, 2);
+        ctx.fillStyle = tip;
+        ctx.beginPath();
+        ctx.moveTo(tipX - 5, y);
+        ctx.lineTo(tipX + 1, y - 4);
+        ctx.lineTo(tipX + 1, y + 4);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (attacking && skeletonArcher.shotReleased && index >= 3) {
+      const poison = skeletonArcher.shotType === 'poison';
+      ctx.save();
+      ctx.globalAlpha = index === 4 ? 0.8 : 0.36;
+      ctx.strokeStyle = poison ? '#91ff76' : '#f3eee6';
+      ctx.lineWidth = index === 4 ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(-17, -30);
+      ctx.lineTo(-34 - recoil * 7, -30);
+      ctx.stroke();
+      if (skeletonArcher.shotType === 'triple') {
+        ctx.beginPath();
+        ctx.moveTo(-16, -35);
+        ctx.lineTo(-31 - recoil * 6, -36);
+        ctx.moveTo(-16, -25);
+        ctx.lineTo(-31 - recoil * 6, -24);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 

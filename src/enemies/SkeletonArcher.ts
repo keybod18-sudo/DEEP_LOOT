@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { GRAVITY } from '../config/constants';
 import { resolveFloor } from '../game/Collision';
+import type { Facing } from '../game/types';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
@@ -13,6 +14,10 @@ export class SkeletonArcher extends Enemy {
   shotType: SkeletonArcherShot = 'normal';
   shotReleased = false;
   private shotCycle = 0;
+  private attackElapsed = 0;
+  private attackFacing: Facing = 1;
+  private lockedTargetX = 0;
+  private lockedTargetY = 0;
 
   constructor(x: number, y: number) {
     super(x, y, 28, 42, BALANCE.skeletonArcher.maxHp, BALANCE.skeletonArcher.maxHp);
@@ -22,14 +27,18 @@ export class SkeletonArcher extends Enemy {
   interruptForKnockback(): void {
     this.state = 'walk';
     this.shotReleased = false;
+    this.attackElapsed = 0;
+    this.actionTime = 0;
   }
 
   protected onKnockbackEnd(): void {
     this.state = 'walk';
     this.shotReleased = false;
+    this.attackElapsed = 0;
+    this.actionTime = 0;
   }
 
-  protected updateAi(_dt: number, context: EnemyContext): void {
+  protected updateAi(dt: number, context: EnemyContext): void {
     const player = context.player;
     const playerCenterX = player.x + player.w / 2;
     const playerCenterY = player.y + player.h / 2;
@@ -37,31 +46,24 @@ export class SkeletonArcher extends Enemy {
     const dx = playerCenterX - centerX;
     const distance = Math.abs(dx);
 
-    this.facing = dx >= 0 ? 1 : -1;
-
     if (this.state === 'attack') {
-      this.vx = 0;
-      if (!this.shotReleased && this.actionTime >= BALANCE.skeletonArcher.releaseTime) {
-        this.fireVolley(context, playerCenterX, playerCenterY);
-        this.shotReleased = true;
-      }
-
-      if (this.actionTime >= BALANCE.skeletonArcher.attackDuration) {
-        this.state = 'walk';
-        this.actionTime = 0;
-        this.cooldown = BALANCE.skeletonArcher.cooldown;
-        this.shotReleased = false;
-      }
+      this.updateAttack(dt, context);
       return;
     }
 
-    // Archer is intentionally almost stationary. It only shuffles when the player is
-    // well outside its shooting distance or extremely close.
+    this.facing = dx >= 0 ? 1 : -1;
+
+    let moved = false;
     if (distance > BALANCE.skeletonArcher.idealRange) {
       this.x += this.facing * BALANCE.skeletonArcher.walkSpeed;
+      moved = true;
     } else if (distance < 70) {
       this.x -= this.facing * (BALANCE.skeletonArcher.walkSpeed * 0.55);
+      moved = true;
     }
+
+    // Do not cycle the six-frame walk animation while the archer is standing still.
+    if (!moved) this.actionTime = 0;
 
     const previousY = this.y;
     this.vy += GRAVITY;
@@ -69,11 +71,64 @@ export class SkeletonArcher extends Enemy {
     resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
 
     if (distance <= BALANCE.skeletonArcher.attackRange && this.cooldown <= 0) {
-      this.state = 'attack';
-      this.actionTime = 0;
-      this.shotReleased = false;
-      this.shotType = this.nextShotType();
+      this.beginAttack(playerCenterX, playerCenterY);
     }
+  }
+
+  private beginAttack(targetX: number, targetY: number): void {
+    this.state = 'attack';
+    this.actionTime = 0;
+    this.attackElapsed = 0;
+    this.shotReleased = false;
+    this.shotType = this.nextShotType();
+    this.attackFacing = this.facing;
+    this.lockedTargetX = targetX;
+    this.lockedTargetY = targetY;
+  }
+
+  private updateAttack(dt: number, context: EnemyContext): void {
+    this.vx = 0;
+    this.facing = this.attackFacing;
+    this.attackElapsed += dt;
+
+    // EnemyRenderer converts actionTime to the five raster frames. Feed it a staged
+    // animation clock instead of a linear timer so the bow visibly rises, draws,
+    // holds at full tension, snaps on release, recoils, and settles back down.
+    this.actionTime = this.getAttackAnimationTime(this.attackElapsed);
+
+    if (!this.shotReleased && this.attackElapsed >= BALANCE.skeletonArcher.releaseTime) {
+      this.fireVolley(context, this.lockedTargetX, this.lockedTargetY);
+      this.shotReleased = true;
+    }
+
+    if (this.attackElapsed >= BALANCE.skeletonArcher.attackDuration) {
+      this.state = 'walk';
+      this.actionTime = 0;
+      this.attackElapsed = 0;
+      this.cooldown = BALANCE.skeletonArcher.cooldown;
+      this.shotReleased = false;
+    }
+  }
+
+  private getAttackAnimationTime(elapsed: number): number {
+    const duration = BALANCE.skeletonArcher.attackDuration;
+    const release = BALANCE.skeletonArcher.releaseTime;
+    const frameTime = (frame: number) => duration * ((frame + 0.18) / 5);
+
+    if (elapsed < release * 0.18) return frameTime(0);
+    if (elapsed < release * 0.42) return frameTime(1);
+    if (elapsed < release * 0.68) return frameTime(2);
+
+    // Triple shot gets a small extra draw pulse before the full-tension hold.
+    if (this.shotType === 'triple' && elapsed < release * 0.82) return frameTime(2);
+    if (elapsed < release) return frameTime(3);
+
+    const recovery = Math.max(0.001, duration - release);
+    const afterRelease = elapsed - release;
+    if (afterRelease < recovery * 0.24) return frameTime(4);
+    if (afterRelease < recovery * 0.52) return frameTime(3);
+    if (afterRelease < recovery * 0.78) return frameTime(2);
+    return frameTime(1);
   }
 
   private nextShotType(): SkeletonArcherShot {
@@ -88,11 +143,9 @@ export class SkeletonArcher extends Enemy {
     const originY = this.y + 14;
 
     if (this.shotType === 'triple') {
-      // Three clearly separated high arcs. They rise first, spread apart, then rain
-      // down around the player's current position.
       const targets = [
         { x: targetX - 72, frames: 58 },
-        { x: targetX,      frames: 66 },
+        { x: targetX, frames: 66 },
         { x: targetX + 72, frames: 74 },
       ] as const;
 

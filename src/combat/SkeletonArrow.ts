@@ -61,10 +61,37 @@ export class SkeletonArrow {
     const outline = this.poisoned ? '#214f22' : '#2a313a';
     const fletch = this.poisoned ? '#5ad85b' : '#7d4f24';
     const tip = this.poisoned ? '#b9ffb4' : '#eef4ff';
+    const speed = Math.max(0.001, Math.hypot(this.vx, this.vy));
+    const dirX = this.vx / speed;
+    const dirY = this.vy / speed;
+    const trailLength = Math.min(18, 5 + speed * 1.6);
+
+    // A short velocity trail makes the arc readable without turning the projectile
+    // into a large effect. Poison arrows get a second pulse so they are unmistakable.
+    ctx.save();
+    ctx.globalAlpha = this.poisoned ? 0.42 : 0.24;
+    ctx.strokeStyle = this.poisoned ? '#7dff72' : '#c9d3df';
+    ctx.lineWidth = this.poisoned ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(this.x - dirX * 5, this.y - dirY * 5);
+    ctx.lineTo(this.x - dirX * trailLength, this.y - dirY * trailLength);
+    ctx.stroke();
+    ctx.restore();
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(angle);
+
+    const flightPulse = Math.sin(this.age * 34) * 0.5;
+    ctx.translate(0, flightPulse);
+
+    if (this.poisoned) {
+      ctx.save();
+      ctx.globalAlpha = 0.16 + (Math.sin(this.age * 18) + 1) * 0.05;
+      ctx.fillStyle = '#85ff75';
+      ctx.fillRect(-8, -4, 17, 8);
+      ctx.restore();
+    }
 
     ctx.fillStyle = outline;
     ctx.fillRect(-12, -2, 20, 4);
@@ -72,8 +99,9 @@ export class SkeletonArrow {
     ctx.fillRect(-11, -1, 18, 2);
 
     ctx.fillStyle = fletch;
-    ctx.fillRect(-13, -3, 3, 2);
-    ctx.fillRect(-13, 1, 3, 2);
+    const fletchKick = Math.sin(this.age * 42) >= 0 ? 0 : 1;
+    ctx.fillRect(-13, -3 - fletchKick, 3, 2);
+    ctx.fillRect(-13, 1 + fletchKick, 3, 2);
 
     ctx.fillStyle = tip;
     ctx.beginPath();
@@ -87,6 +115,9 @@ export class SkeletonArrow {
       ctx.fillStyle = '#b5ff8b';
       ctx.fillRect(-2, -4, 4, 1);
       ctx.fillRect(2, 3, 4, 1);
+
+      const drip = Math.floor(this.age * 18) % 2;
+      ctx.fillRect(-7 + drip * 6, 4, 2, 2);
     }
 
     ctx.restore();
