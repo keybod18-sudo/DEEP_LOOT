@@ -423,9 +423,9 @@ export class Game {
 
         const killed = damageEnemy(
           enemy,
-          5,
+          35,
           orb.x + orb.w / 2,
-          0.65,
+          0.82,
         );
         orb.alive = false;
 

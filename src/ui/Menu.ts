@@ -247,38 +247,320 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const rarity = designRarityFor(item.name);
   const palette = previewPalette(item.name, rarity);
   const seed = equipmentPreviewSeed(item.name);
-  const runeX = 24 + (seed % 56);
-  const runeY = 16 + ((seed >>> 7) % 22);
-  const tilt = -28 + ((seed >>> 12) % 15);
-  const motif = item.category === 'weapon' ? weaponPreviewMotif(item.name) : armorPreviewMotif(item.name);
   const label = escapeHtml(item.name);
+  const ability = item.intrinsicAbility?.description ?? '';
+  const name = item.name;
+  const weaponMotif = item.category === 'weapon' ? weaponPreviewMotif(name) : '';
+  const armorMotif = item.category === 'armor' ? armorPreviewMotif(name) : '';
 
-  let art = '';
-  if (item.category === 'weapon') {
-    if (motif === 'dagger') art = `<g transform="translate(92 43) rotate(${tilt})"><rect x="-26" y="-4" width="22" height="8" rx="3" fill="${palette.shade}"/><path d="M-4 -3 H42 L68 0 L42 3 H-4 Z" fill="${palette.metal}"/><path d="M40 -3 L67 0 L40 3 Z" fill="${palette.accent}"/><circle cx="-5" cy="0" r="4" fill="${palette.glow}"/></g>`;
-    else if (motif === 'katana') art = `<g transform="translate(90 47) rotate(${tilt / 2})"><path d="M-58 5 Q-12 -5 40 -2 L68 0 Q48 5 40 5 Q-12 8 -58 5 Z" fill="${palette.metal}"/><rect x="-73" y="-4" width="18" height="8" rx="2" fill="${palette.shade}"/><circle cx="-55" cy="0" r="4" fill="${palette.glow}"/></g>`;
-    else if (motif === 'spear') art = `<g transform="translate(91 45) rotate(-16)"><rect x="-67" y="-2.4" width="120" height="4.8" rx="2.4" fill="${palette.shade}"/><path d="M52 0 L81 -10 L72 0 L81 10 Z" fill="${palette.metal}"/><circle cx="-45" cy="0" r="4" fill="${palette.glow}"/></g>`;
-    else if (motif === 'axe') art = `<g transform="translate(90 44) rotate(-18)"><rect x="-5" y="-30" width="10" height="64" rx="4" fill="${palette.shade}"/><path d="M3 -17 C30 -29 47 -7 35 11 C24 20 14 21 3 14 Z" fill="${palette.metal}"/><path d="M-3 -15 C-24 -24 -35 -5 -25 10 C-18 18 -10 20 -3 14 Z" fill="${palette.glow}"/></g>`;
-    else if (motif === 'bow') art = `<g transform="translate(91 44) rotate(-8)"><path d="M-20 -30 C20 -14 20 14 -20 30" fill="none" stroke="${palette.metal}" stroke-width="8" stroke-linecap="round"/><path d="M12 -28 C-24 -8 -24 8 12 28" fill="none" stroke="${palette.shade}" stroke-width="6"/><line x1="-20" y1="-30" x2="12" y2="28" stroke="${palette.accent}" stroke-width="2"/></g>`;
-    else if (motif === 'staff') art = `<g transform="translate(91 45) rotate(-20)"><rect x="-5" y="-34" width="10" height="70" rx="5" fill="${palette.shade}"/><circle cx="0" cy="-41" r="13" fill="${palette.glow}"/><circle cx="0" cy="-41" r="6" fill="${palette.accent}"/></g>`;
-    else if (motif === 'scythe') art = `<g transform="translate(92 46) rotate(-16)"><rect x="-5" y="-34" width="9" height="72" rx="4" fill="${palette.shade}"/><path d="M2 -27 C42 -37 59 -10 51 12 C34 2 18 1 2 7 Z" fill="${palette.metal}"/></g>`;
-    else if (motif === 'claw') art = `<g transform="translate(91 44) rotate(-10)"><path d="M-28 10 C-8 -16 20 -25 50 -18 C25 -10 6 2 -7 21 Z" fill="${palette.shade}"/><path d="M-12 10 C0 -18 25 -29 48 -25 C30 -14 17 2 12 20 Z" fill="${palette.metal}"/><path d="M7 12 C22 -13 42 -21 60 -18 C48 -6 40 5 36 20 Z" fill="${palette.glow}"/></g>`;
-    else art = `<g transform="translate(92 44) rotate(${tilt})"><rect x="-47" y="-4" width="18" height="8" rx="3" fill="${palette.shade}"/><path d="M-28 -3 H42 L70 0 L42 3 H-28 Z" fill="${palette.metal}"/><path d="M40 -3 L69 0 L40 3 Z" fill="${palette.accent}"/><circle cx="-28" cy="0" r="4" fill="${palette.glow}"/></g>`;
-  } else {
-    if (motif === 'cloak') art = `<g transform="translate(92 44)"><path d="M0 -29 C18 -28 32 -17 33 0 C35 19 18 31 0 36 C-18 31 -35 19 -33 0 C-32 -17 -18 -28 0 -29 Z" fill="${palette.shade}"/><path d="M-11 -24 C-6 -7 -6 18 -14 31 C-24 22 -30 10 -28 -4 C-26 -14 -19 -21 -11 -24 Z" fill="${palette.metal}"/><path d="M11 -24 C6 -7 6 18 14 31 C24 22 30 10 28 -4 C26 -14 19 -21 11 -24 Z" fill="${palette.glow}"/></g>`;
-    else if (motif === 'robe') art = `<g transform="translate(92 44)"><path d="M-25 -27 H25 L31 33 L11 33 L0 20 L-11 33 L-31 33 Z" fill="${palette.shade}"/><path d="M-14 -25 H14 L10 30 H-10 Z" fill="${palette.metal}"/><path d="M0 -24 V31" stroke="${palette.accent}" stroke-width="3"/></g>`;
-    else if (motif === 'breastplate') art = `<g transform="translate(92 44)"><path d="M-30 -23 L-8 -31 H8 L30 -23 L27 24 C19 32 10 37 0 40 C-10 37 -19 32 -27 24 Z" fill="${palette.shade}"/><path d="M-20 -17 H20 L17 20 C12 26 7 29 0 31 C-7 29 -12 26 -17 20 Z" fill="${palette.metal}"/></g>`;
-    else art = `<g transform="translate(92 44)"><path d="M-31 -25 L-13 -31 H13 L31 -25 L27 4 L20 29 C13 36 7 39 0 42 C-7 39 -13 36 -20 29 L-27 4 Z" fill="${palette.shade}"/><path d="M-20 -19 L-9 -24 H9 L20 -19 L18 5 L12 24 C8 29 4 31 0 33 C-4 31 -8 29 -12 24 L-18 5 Z" fill="${palette.metal}"/><path d="M0 -24 V32" stroke="${palette.accent}" stroke-width="3"/></g>`;
+  const rarityAura =
+    rarity === '伝説級' ? 'rgba(255,205,76,.86)' :
+    rarity === '激レア' ? 'rgba(190,98,255,.82)' :
+    rarity === '希少' ? 'rgba(78,208,255,.72)' :
+    rarity === '上質' ? 'rgba(143,198,255,.58)' :
+    'rgba(160,170,190,.34)';
+
+  const tilt = -24 + (seed % 13);
+  const gemX = 72 + ((seed >>> 5) % 34);
+  const gemY = 55 + ((seed >>> 11) % 20);
+
+  const themeParts: string[] = [];
+
+  if (/月|月蝕/.test(name)) {
+    themeParts.push(`
+      <path d="M40 38 A34 34 0 1 0 77 88 A25 25 0 1 1 40 38 Z"
+        fill="rgba(129,82,255,.22)" stroke="rgba(202,177,255,.58)" stroke-width="2"/>
+      <path d="M52 42 A25 25 0 1 0 76 80" fill="none"
+        stroke="rgba(177,128,255,.18)" stroke-width="7"/>
+    `);
+  }
+  if (/影|夜|幽|夢|深淵|終夜/.test(name)) {
+    themeParts.push(`
+      <ellipse cx="97" cy="72" rx="58" ry="34" fill="rgba(43,16,73,.22)"/>
+      <path d="M44 100 C64 80 78 104 96 82 C113 62 128 74 145 52"
+        fill="none" stroke="rgba(125,76,185,.34)" stroke-width="5" stroke-linecap="round"/>
+    `);
+  }
+  if (/火|炎|紅蓮|鬼灯/.test(name)) {
+    themeParts.push(`
+      <path d="M44 110 C32 92 51 84 43 67 C61 76 66 87 57 101 C76 90 84 104 74 120"
+        fill="rgba(255,91,43,.25)" stroke="rgba(255,151,79,.52)" stroke-width="2"/>
+      <path d="M132 104 C123 90 141 83 133 68 C151 77 155 91 145 105"
+        fill="rgba(255,103,46,.18)" stroke="rgba(255,176,88,.42)" stroke-width="2"/>
+    `);
+  }
+  if (/氷|霜|雪|凍/.test(name)) {
+    themeParts.push(`
+      <g fill="rgba(167,235,255,.22)" stroke="rgba(218,250,255,.66)" stroke-width="1.5">
+        <path d="M40 42 L49 61 L38 76 L30 57 Z"/>
+        <path d="M143 38 L152 56 L142 72 L134 53 Z"/>
+        <path d="M126 105 L135 120 L125 132 L118 117 Z"/>
+      </g>
+      <path d="M28 94 L52 84 M39 77 L43 100 M133 85 L157 76 M145 68 L147 93"
+        stroke="rgba(199,244,255,.38)" stroke-width="2"/>
+    `);
+  }
+  if (/雷|紫電/.test(name)) {
+    themeParts.push(`
+      <path d="M38 37 L56 63 L46 63 L61 91 L49 86 L61 119"
+        fill="none" stroke="rgba(255,231,82,.72)" stroke-width="4"
+        stroke-linejoin="bevel" filter="url(#glow)"/>
+      <path d="M139 45 L128 67 L138 67 L124 91"
+        fill="none" stroke="rgba(188,134,255,.54)" stroke-width="3"/>
+    `);
+  }
+  if (/苔|蟲|蛇/.test(name)) {
+    themeParts.push(`
+      <path d="M33 113 C48 96 55 119 70 101 C84 85 99 103 113 88"
+        fill="none" stroke="rgba(85,210,102,.42)" stroke-width="4" stroke-linecap="round"/>
+      <g fill="rgba(117,230,106,.34)">
+        <ellipse cx="49" cy="104" rx="5" ry="10" transform="rotate(-34 49 104)"/>
+        <ellipse cx="82" cy="103" rx="5" ry="10" transform="rotate(38 82 103)"/>
+        <ellipse cx="119" cy="87" rx="4" ry="9" transform="rotate(-30 119 87)"/>
+      </g>
+    `);
+  }
+  if (/骨|骸|墓|竜骨/.test(name)) {
+    themeParts.push(`
+      <path d="M35 112 L57 93 M33 93 L58 113 M131 43 L151 61 M150 43 L132 62"
+        stroke="rgba(235,226,207,.48)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="45" cy="103" r="4" fill="rgba(255,247,222,.44)"/>
+      <circle cx="141" cy="52" r="4" fill="rgba(255,247,222,.44)"/>
+    `);
+  }
+  if (/星|燐光|迷い星/.test(name)) {
+    themeParts.push(`
+      <g fill="rgba(255,246,178,.75)" filter="url(#glow)">
+        <path d="M42 45 L45 53 L54 56 L45 59 L42 68 L39 59 L30 56 L39 53 Z"/>
+        <path d="M143 73 L146 80 L153 83 L146 86 L143 93 L140 86 L133 83 L140 80 Z"/>
+        <circle cx="117" cy="38" r="3"/>
+      </g>
+    `);
+  }
+  if (/血|黒薔薇/.test(name)) {
+    themeParts.push(`
+      <path d="M40 42 C55 50 59 62 54 75 C49 89 53 96 47 110"
+        fill="none" stroke="rgba(176,25,55,.42)" stroke-width="5" stroke-linecap="round"/>
+      <g fill="rgba(139,21,49,.42)">
+        <circle cx="139" cy="44" r="8"/><circle cx="132" cy="51" r="6"/><circle cx="146" cy="52" r="6"/>
+      </g>
+    `);
+  }
+  if (/晶|黒曜/.test(name)) {
+    themeParts.push(`
+      <g fill="rgba(161,227,255,.18)" stroke="rgba(203,239,255,.5)" stroke-width="1.5">
+        <path d="M36 41 L46 31 L56 44 L49 61 L34 57 Z"/>
+        <path d="M142 94 L153 83 L161 98 L153 113 L138 108 Z"/>
+      </g>
+    `);
+  }
+  if (/霧/.test(name)) {
+    themeParts.push(`
+      <path d="M26 104 C50 91 64 110 84 99 C106 86 122 107 157 93"
+        fill="none" stroke="rgba(210,226,238,.22)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M38 116 C61 104 77 119 100 111 C119 104 132 112 151 105"
+        fill="none" stroke="rgba(226,236,244,.15)" stroke-width="6" stroke-linecap="round"/>
+    `);
+  }
+  if (/竜|太古|王墓|灰冠/.test(name)) {
+    themeParts.push(`
+      <path d="M39 47 C47 34 58 32 66 41 C55 39 49 47 51 58 C45 56 41 52 39 47 Z"
+        fill="rgba(214,180,115,.28)" stroke="rgba(244,216,157,.44)" stroke-width="2"/>
+      <path d="M141 48 C134 36 124 34 116 42 C126 41 132 49 130 59 C136 56 140 52 141 48 Z"
+        fill="rgba(214,180,115,.28)" stroke="rgba(244,216,157,.44)" stroke-width="2"/>
+    `);
+  }
+  if (/金継ぎ|金喰い/.test(name)) {
+    themeParts.push(`
+      <path d="M36 111 L61 87 L74 101 L96 75 L112 91 L146 57"
+        fill="none" stroke="rgba(255,214,83,.56)" stroke-width="3" filter="url(#glow)"/>
+    `);
+  }
+  if (/蝙蝠/.test(name)) {
+    themeParts.push(`
+      <path d="M34 56 C47 43 58 44 69 55 L61 61 L69 69 C57 65 47 68 34 81
+        C39 68 39 66 34 56 Z"
+        fill="rgba(95,54,135,.34)" stroke="rgba(157,103,209,.44)" stroke-width="1.5"/>
+      <path d="M147 56 C134 43 123 44 112 55 L120 61 L112 69 C124 65 134 68 147 81
+        C142 68 142 66 147 56 Z"
+        fill="rgba(95,54,135,.34)" stroke="rgba(157,103,209,.44)" stroke-width="1.5"/>
+    `);
   }
 
-  const rune = `<circle cx="${runeX}" cy="${runeY}" r="${4 + (seed % 4)}" fill="${palette.glow}" opacity=".52"/><path d="M${runeX - 8} ${runeY + 10} L${runeX} ${runeY - 4} L${runeX + 8} ${runeY + 10}" fill="none" stroke="${palette.accent}" stroke-width="1.4" opacity=".66"/>`;
+  const abilityAccent =
+    /移動速度/.test(ability) ? `<path d="M32 79 H51 M37 71 H57 M29 88 H45" stroke="${palette.accent}" stroke-width="2.5" opacity=".66"/>` :
+    /自動回復|HP/.test(ability) ? `<path d="M145 42 V61 M135 51.5 H155" stroke="rgba(132,255,161,.68)" stroke-width="5" stroke-linecap="round"/>` :
+    /完全無効|耐性|状態異常/.test(ability) ? `<path d="M140 36 L154 42 V55 C154 67 147 74 140 78 C133 74 126 67 126 55 V42 Z" fill="rgba(116,205,255,.14)" stroke="rgba(167,230,255,.58)" stroke-width="2"/>` :
+    /追撃|魔法|ファイア|フリーズ/.test(ability) ? `<circle cx="145" cy="50" r="10" fill="rgba(255,239,146,.18)" stroke="rgba(255,243,178,.58)" stroke-width="2" filter="url(#glow)"/>` :
+    '';
 
-  return `<span class="equipment-preview" style="display:block;margin-top:10px;padding:8px 10px;border:1px solid ${palette.border};border-radius:12px;background:${palette.bg};">
-    <span style="display:block;font-size:11px;opacity:.72;margin-bottom:5px;">装備イメージ</span>
-    <svg viewBox="0 0 184 88" width="100%" height="88" role="img" aria-label="${label}">
-      <rect x="1" y="1" width="182" height="86" rx="12" fill="rgba(4,8,14,.20)" stroke="${palette.border}"/>
-      ${rune}${art}
-      <text x="12" y="76" font-size="12" fill="rgba(255,255,255,.94)">${label}</text>
+  let art = '';
+
+  if (item.category === 'weapon') {
+    if (weaponMotif === 'dagger') {
+      art = `
+        <g transform="translate(95 78) rotate(${tilt})" filter="url(#shadow)">
+          <path d="M-58 -8 L-31 -8 L-23 -3 L25 -3 L58 0 L25 3 L-23 3 L-31 8 L-58 8 Z"
+            fill="${palette.shade}" stroke="rgba(12,15,22,.8)" stroke-width="2"/>
+          <path d="M-21 -4 H30 L64 0 L30 4 H-21 Z"
+            fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.6"/>
+          <path d="M26 -2 L62 0 L26 2 Z" fill="${palette.glow}" opacity=".72"/>
+          <rect x="-75" y="-6" width="18" height="12" rx="4" fill="${palette.shade}" stroke="${palette.glow}" stroke-width="1.5"/>
+          <circle cx="-28" cy="0" r="5" fill="${palette.glow}" stroke="${palette.accent}" stroke-width="1.5"/>
+        </g>`;
+    } else if (weaponMotif === 'katana') {
+      art = `
+        <g transform="translate(93 79) rotate(${tilt / 2})" filter="url(#shadow)">
+          <path d="M-72 7 Q-20 -11 45 -5 Q61 -4 73 0 Q57 6 44 8 Q-22 13 -72 7 Z"
+            fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.6"/>
+          <path d="M-70 3 Q-20 -7 43 -4" fill="none" stroke="rgba(255,255,255,.62)" stroke-width="2"/>
+          <rect x="-90" y="-6" width="20" height="12" rx="3" fill="${palette.shade}"/>
+          <rect x="-108" y="-5" width="18" height="10" rx="3" fill="${palette.glow}"/>
+          <path d="M-75 -10 L-65 0 L-75 10 L-85 0 Z" fill="${palette.accent}" opacity=".75"/>
+        </g>`;
+    } else if (weaponMotif === 'spear') {
+      art = `
+        <g transform="translate(94 79) rotate(-17)" filter="url(#shadow)">
+          <rect x="-95" y="-4" width="150" height="8" rx="4" fill="${palette.shade}" stroke="rgba(0,0,0,.55)" stroke-width="2"/>
+          <path d="M52 0 L88 -14 L77 0 L88 14 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.6"/>
+          <path d="M44 -9 L58 0 L44 9 Z" fill="${palette.glow}" opacity=".68"/>
+          <circle cx="-57" cy="0" r="5" fill="${palette.glow}"/>
+        </g>`;
+    } else if (weaponMotif === 'axe') {
+      art = `
+        <g transform="translate(92 80) rotate(-16)" filter="url(#shadow)">
+          <rect x="-7" y="-62" width="14" height="118" rx="5" fill="${palette.shade}" stroke="rgba(0,0,0,.58)" stroke-width="2"/>
+          <path d="M5 -43 C45 -60 63 -22 48 7 C35 25 19 31 5 26 Z"
+            fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/>
+          <path d="M-5 -41 C-34 -54 -51 -21 -38 6 C-28 22 -17 27 -5 24 Z"
+            fill="${palette.glow}" opacity=".7" stroke="${palette.accent}" stroke-width="1.2"/>
+          <circle cx="0" cy="-20" r="6" fill="${palette.accent}"/>
+        </g>`;
+    } else if (weaponMotif === 'bow') {
+      art = `
+        <g transform="translate(94 77) rotate(-7)" filter="url(#shadow)">
+          <path d="M-37 -57 C35 -28 35 28 -37 57" fill="none" stroke="${palette.metal}" stroke-width="12" stroke-linecap="round"/>
+          <path d="M30 -53 C-42 -23 -42 23 30 53" fill="none" stroke="${palette.shade}" stroke-width="9" stroke-linecap="round"/>
+          <line x1="-37" y1="-57" x2="30" y2="53" stroke="${palette.accent}" stroke-width="2.2"/>
+          <line x1="-15" y1="-7" x2="59" y2="-7" stroke="${palette.glow}" stroke-width="4"/>
+          <path d="M59 -7 L46 -14 L50 -7 L46 0 Z" fill="${palette.glow}"/>
+        </g>`;
+    } else if (weaponMotif === 'staff') {
+      art = `
+        <g transform="translate(92 83) rotate(-15)" filter="url(#shadow)">
+          <rect x="-8" y="-64" width="16" height="124" rx="7" fill="${palette.shade}" stroke="rgba(0,0,0,.6)" stroke-width="2"/>
+          <circle cx="0" cy="-73" r="24" fill="rgba(255,255,255,.04)" stroke="${palette.metal}" stroke-width="4"/>
+          <circle cx="0" cy="-73" r="13" fill="${palette.glow}" stroke="${palette.accent}" stroke-width="2" filter="url(#glow)"/>
+          <path d="M-24 -67 C-44 -74 -45 -93 -25 -103 M24 -67 C44 -74 45 -93 25 -103"
+            fill="none" stroke="${palette.metal}" stroke-width="5" stroke-linecap="round"/>
+        </g>`;
+    } else if (weaponMotif === 'scythe') {
+      art = `
+        <g transform="translate(91 83) rotate(-14)" filter="url(#shadow)">
+          <rect x="-7" y="-62" width="14" height="121" rx="5" fill="${palette.shade}"/>
+          <path d="M3 -54 C64 -74 89 -31 79 5 C53 -8 29 -10 3 3 Z"
+            fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/>
+          <path d="M16 -45 C47 -49 63 -35 67 -18" fill="none" stroke="${palette.glow}" stroke-width="2.5"/>
+        </g>`;
+    } else if (weaponMotif === 'claw') {
+      art = `
+        <g transform="translate(88 79) rotate(-8)" filter="url(#shadow)">
+          <path d="M-45 19 C-15 -30 27 -46 73 -31 C34 -18 7 5 -10 34 Z" fill="${palette.shade}" stroke="${palette.accent}" stroke-width="1.4"/>
+          <path d="M-20 21 C0 -30 38 -52 75 -43 C50 -24 29 4 21 36 Z" fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.4"/>
+          <path d="M10 22 C33 -22 61 -36 88 -31 C70 -12 58 9 52 36 Z" fill="${palette.glow}" opacity=".76"/>
+          <circle cx="-23" cy="18" r="7" fill="${palette.accent}"/>
+        </g>`;
+    } else {
+      art = `
+        <g transform="translate(94 79) rotate(${tilt})" filter="url(#shadow)">
+          <rect x="-88" y="-7" width="25" height="14" rx="5" fill="${palette.shade}" stroke="rgba(0,0,0,.55)" stroke-width="2"/>
+          <rect x="-65" y="-10" width="12" height="20" rx="4" fill="${palette.glow}" opacity=".82"/>
+          <path d="M-53 -7 H42 L84 0 L42 7 H-53 Z"
+            fill="${palette.metal}" stroke="${palette.accent}" stroke-width="1.8"/>
+          <path d="M-47 -4 H41 L75 0 L41 2 H-47 Z"
+            fill="rgba(255,255,255,.42)"/>
+          <path d="M42 -5 L83 0 L42 5 Z" fill="${palette.glow}" opacity=".63"/>
+          <circle cx="-56" cy="0" r="6" fill="${palette.accent}" stroke="${palette.glow}" stroke-width="2"/>
+        </g>`;
+    }
+  } else {
+    if (armorMotif === 'cloak') {
+      art = `
+        <g transform="translate(94 79)" filter="url(#shadow)">
+          <path d="M0 -58 C30 -58 50 -42 54 -13 C59 29 32 54 0 66 C-32 54 -59 29 -54 -13 C-50 -42 -30 -58 0 -58 Z"
+            fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2"/>
+          <path d="M-21 -49 C-7 -24 -9 29 -27 53 C-44 35 -50 12 -45 -16 C-42 -31 -33 -43 -21 -49 Z"
+            fill="${palette.metal}" opacity=".9"/>
+          <path d="M21 -49 C7 -24 9 29 27 53 C44 35 50 12 45 -16 C42 -31 33 -43 21 -49 Z"
+            fill="${palette.glow}" opacity=".66"/>
+          <circle cx="0" cy="-30" r="8" fill="${palette.accent}" stroke="${palette.glow}" stroke-width="2"/>
+          <path d="M-7 -58 L7 -58 L11 -40 H-11 Z" fill="${palette.metal}"/>
+        </g>`;
+    } else if (armorMotif === 'robe') {
+      art = `
+        <g transform="translate(94 80)" filter="url(#shadow)">
+          <path d="M-42 -54 H42 L52 57 L19 57 L0 32 L-19 57 L-52 57 Z"
+            fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2"/>
+          <path d="M-25 -50 H25 L18 52 H-18 Z" fill="${palette.metal}" opacity=".84"/>
+          <path d="M0 -49 V53" stroke="${palette.accent}" stroke-width="4"/>
+          <circle cx="0" cy="-25" r="8" fill="${palette.glow}" filter="url(#glow)"/>
+          <path d="M-25 -10 H25 M-21 18 H21" stroke="${palette.glow}" stroke-width="2.5" opacity=".6"/>
+        </g>`;
+    } else if (armorMotif === 'breastplate') {
+      art = `
+        <g transform="translate(94 79)" filter="url(#shadow)">
+          <path d="M-53 -48 L-15 -61 H15 L53 -48 L48 36 C35 52 18 61 0 67 C-18 61 -35 52 -48 36 Z"
+            fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2.2"/>
+          <path d="M-36 -35 H36 L31 27 C22 38 11 44 0 48 C-11 44 -22 38 -31 27 Z"
+            fill="${palette.metal}" opacity=".92"/>
+          <path d="M0 -58 V48 M-42 -8 H42" stroke="${palette.accent}" stroke-width="3" opacity=".8"/>
+          <circle cx="0" cy="-22" r="8" fill="${palette.glow}"/>
+        </g>`;
+    } else {
+      art = `
+        <g transform="translate(94 79)" filter="url(#shadow)">
+          <path d="M-57 -52 L-25 -65 H25 L57 -52 L51 -4 L39 39 C27 55 13 63 0 68 C-13 63 -27 55 -39 39 L-51 -4 Z"
+            fill="${palette.shade}" stroke="${palette.accent}" stroke-width="2.2"/>
+          <path d="M-39 -38 L-16 -48 H16 L39 -38 L35 0 L24 31 C16 40 8 45 0 48 C-8 45 -16 40 -24 31 L-35 0 Z"
+            fill="${palette.metal}" opacity=".94"/>
+          <path d="M0 -47 V48 M-37 -9 H37" stroke="${palette.glow}" stroke-width="3" opacity=".72"/>
+          <circle cx="0" cy="-22" r="9" fill="${palette.accent}" stroke="${palette.glow}" stroke-width="2"/>
+          <path d="M-50 -33 L-65 -19 L-50 -9 M50 -33 L65 -19 L50 -9"
+            fill="none" stroke="${palette.metal}" stroke-width="6" stroke-linecap="round"/>
+        </g>`;
+    }
+  }
+
+  return `<span class="equipment-preview" style="display:block;margin-top:12px;padding:10px 11px 11px;border:1px solid ${palette.border};border-radius:14px;background:${palette.bg};box-shadow:inset 0 0 28px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.025);">
+    <span style="display:flex;justify-content:space-between;align-items:center;font-size:11px;opacity:.78;margin-bottom:5px;">
+      <b style="font-weight:700;letter-spacing:.08em;">装備イメージ</b>
+      <span>${escapeHtml(rarity)}</span>
+    </span>
+    <svg viewBox="0 0 188 158" width="100%" height="158" role="img" aria-label="${label}" style="display:block;">
+      <defs>
+        <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,.78)"/>
+        </filter>
+        <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="2.4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <radialGradient id="halo" cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stop-color="${rarityAura}" stop-opacity=".28"/>
+          <stop offset="55%" stop-color="${rarityAura}" stop-opacity=".08"/>
+          <stop offset="100%" stop-color="${rarityAura}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect x="1" y="1" width="186" height="156" rx="13" fill="rgba(3,7,13,.38)" stroke="${palette.border}"/>
+      <ellipse cx="94" cy="76" rx="76" ry="61" fill="url(#halo)"/>
+      <circle cx="94" cy="76" r="50" fill="none" stroke="${rarityAura}" stroke-width="1.2" opacity=".28"/>
+      <circle cx="94" cy="76" r="39" fill="none" stroke="${rarityAura}" stroke-width=".8" opacity=".18" stroke-dasharray="4 5"/>
+      ${themeParts.join('')}
+      ${abilityAccent}
+      ${art}
+      <circle cx="${gemX}" cy="${gemY}" r="2.6" fill="${palette.glow}" opacity=".68" filter="url(#glow)"/>
+      <text x="12" y="145" font-size="12" fill="rgba(255,255,255,.96)" font-weight="700">${label}</text>
     </svg>
   </span>`;
 }
