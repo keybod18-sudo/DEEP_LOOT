@@ -16,7 +16,7 @@ export interface EnemyContext {
 }
 
 export abstract class Enemy implements PhysicsBody {
-  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat' | 'roper' | 'slug' | 'rat' | 'skeleton';
+  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat' | 'roper' | 'slug' | 'rat' | 'skeleton' | 'bomb';
 
   vx = 0;
   vy = 0;

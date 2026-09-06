@@ -122,5 +122,16 @@
     "life": 0.24,
     "beamHeight": 46,
     "range": 460
+  },
+  "bomb": {
+    "maxHp": 14,
+    "rollSpeed": 1.65,
+    "triggerRange": 76,
+    "fuseDuration": 0.7,
+    "explosionRadius": 88,
+    "explosionDamage": 20,
+    "explosionDuration": 0.42,
+    "blastKnockbackX": 9.2,
+    "blastKnockbackY": 8.6
   }
 }

@@ -13,3 +13,12 @@
 - Detect actual opaque-pixel row/column regions and crop one complete character per frame.
 - After extraction, verify transparent padding remains on all four edges of every frame.
 - Reject any frame containing a neighboring body part, detached weapon from another frame, or clipped weapon/tentacle.
+
+## Effect transparency rule
+- Projectile/effect sprites must keep a transparent background.
+- Do not add rectangular fill/glow panels behind fireballs, lightning, ice, slash effects, or monsters unless explicitly requested.
+- Before delivery, verify all four image corners are transparent for sprite/effect PNGs and inspect render code for unintended background rectangles.
+
+## Added visibility / implementation rule
+- 新規モンスター追加時は、画像や定義だけで終わらせず、必ず出現処理・当たり判定・HPバー表示まで実装する。
+- 追加直後の新規モンスターは、最初の数画面で確認できる位置へ最低1体確定配置する。

@@ -12,6 +12,7 @@ import { Roper } from '../enemies/Roper';
 import { Slug } from '../enemies/Slug';
 import { Rat } from '../enemies/Rat';
 import { Skeleton } from '../enemies/Skeleton';
+import { Bomb } from '../enemies/Bomb';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
@@ -434,10 +435,12 @@ export class Game {
     const ratPlatform = startingPlatforms[0] ?? chosen[0];
     const slugPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[1];
     const skeletonPlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
+    const bombPlatform = startingPlatforms[2] ?? midPlatforms[0] ?? chosen[8] ?? chosen[2];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
     const skeleton1 = point(skeletonPlatform, 42, 720, 498);
+    const bomb1 = point(bombPlatform, 26, 610, 356);
 
     const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
     const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
@@ -462,6 +465,7 @@ export class Game {
       new Slug(slug1.x, slug1.y),
       new Rat(rat1.x, rat1.y),
       new Skeleton(skeleton1.x, skeleton1.y),
+      new Bomb(bomb1.x, bomb1.y),
     ];
 
     const chestPlatforms = shuffle(groundPlatforms)
@@ -601,6 +605,7 @@ export class Game {
         enemy.type === 'skeleton' ? 44 :
         enemy.type === 'roper' ? 44 :
         enemy.type === 'snake' ? 40 :
+        enemy.type === 'bomb' ? 38 :
         36;
 
       const y =
@@ -612,6 +617,7 @@ export class Game {
         enemy.type === 'snake' ? enemy.y - 22 :
         enemy.type === 'slug' ? enemy.y - 15 :
         enemy.type === 'rat' ? enemy.y - 17 :
+        enemy.type === 'bomb' ? enemy.y - 20 :
         enemy.y - 16;
 
       this.drawHpBar(

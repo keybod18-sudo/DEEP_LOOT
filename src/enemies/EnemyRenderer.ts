@@ -8,6 +8,7 @@ import type { Roper } from './Roper';
 import type { Slug } from './Slug';
 import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
+import type { Bomb } from './Bomb';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
@@ -116,6 +117,7 @@ export class EnemyRenderer {
     else if (enemy.type === 'roper') this.drawRoper(ctx, enemy as Roper);
     else if (enemy.type === 'slug') this.drawSlug(ctx, enemy as Slug);
     else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
+    else if (enemy.type === 'bomb') this.drawBomb(ctx, enemy as Bomb);
     else this.drawSkeleton(ctx, enemy as Skeleton);
   }
 
@@ -269,6 +271,101 @@ export class EnemyRenderer {
     ctx.translate(centerX, centerY);
     if (bat.facing < 0) ctx.scale(-1, 1);
     ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+  }
+
+
+  private drawBomb(ctx: CanvasRenderingContext2D, bomb: Bomb): void {
+    const centerX = bomb.x + bomb.w / 2;
+    const centerY = bomb.y + bomb.h / 2;
+
+    if (bomb.state === 'explode') {
+      const radius = Math.max(14, bomb.blastRadius);
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 205, 72, 0.38)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 118, 30, 0.42)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.72, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#fff1bf';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.92, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let i = 0; i < 8; i += 1) {
+        const angle = bomb.actionTime * 10 + i * (Math.PI / 4);
+        const px = centerX + Math.cos(angle) * radius * 0.92;
+        const py = centerY + Math.sin(angle) * radius * 0.92;
+        ctx.fillStyle = i % 2 === 0 ? '#ffe07a' : '#ff7b2c';
+        ctx.fillRect(Math.round(px) - 3, Math.round(py) - 3, 6, 6);
+      }
+      ctx.restore();
+      return;
+    }
+
+    const fuseFlash = bomb.state === 'fuse' ? (Math.sin(bomb.actionTime * 18) * 0.5 + 0.5) : 0;
+    const radius = 12 + Math.sin(bomb.actionTime * 12) * 0.6;
+    const rollOffset = Math.sin(bomb.actionTime * 10) * 1.2;
+
+    ctx.save();
+    ctx.translate(centerX, centerY + rollOffset);
+
+    ctx.fillStyle = fuseFlash > 0.45 ? '#f27d34' : '#363d4e';
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = fuseFlash > 0.45 ? '#ffb347' : '#737a8f';
+    ctx.beginPath();
+    ctx.arc(-3, -4, radius * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#11151d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Rolling seam
+    ctx.save();
+    ctx.rotate(bomb.actionTime * 8 * bomb.facing);
+    ctx.strokeStyle = '#1a1f2b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.65, -0.9, 0.9);
+    ctx.stroke();
+    ctx.restore();
+
+    // Face
+    ctx.fillStyle = '#14181f';
+    ctx.fillRect(-5, -2, 3, 3);
+    ctx.fillRect(2, -2, 3, 3);
+    ctx.fillRect(-3, 5, 6, 2);
+
+    // Fuse
+    ctx.strokeStyle = '#59462a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(2, -10);
+    ctx.lineTo(8, -18);
+    ctx.stroke();
+
+    ctx.fillStyle = bomb.state === 'fuse' ? '#ffe86e' : '#ff9c3d';
+    ctx.fillRect(8, -20, 4, 4);
+    if (bomb.state === 'fuse') {
+      ctx.fillStyle = '#fff5bf';
+      ctx.fillRect(11, -23, 3, 3);
+      ctx.fillStyle = '#ffb347';
+      ctx.fillRect(13, -18, 2, 2);
+      ctx.fillRect(7, -24, 2, 2);
+    }
+
     ctx.restore();
   }
 
