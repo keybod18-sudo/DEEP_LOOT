@@ -170,7 +170,7 @@ export class EnemyRenderer {
 
     const centerX = goblin.x + goblin.w / 2;
     const footY = goblin.y + goblin.h + 2;
-    const drawH = 82;
+    const drawH = 62;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
 
     ctx.save();

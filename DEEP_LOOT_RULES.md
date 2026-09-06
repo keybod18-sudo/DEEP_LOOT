@@ -7,3 +7,9 @@
 5. 素材変更前後は `npm run verify:assets` で確認する。
 6. 正常動作版はGitでcommitしてから次の変更へ進む。
 7. 実際に確認していない項目を「確認済み」としない。
+
+## Sprite extraction validation
+- Never split generated animation sheets using equal-size grid cells unless the sheet was explicitly generated as a mathematically uniform grid.
+- Detect actual opaque-pixel row/column regions and crop one complete character per frame.
+- After extraction, verify transparent padding remains on all four edges of every frame.
+- Reject any frame containing a neighboring body part, detached weapon from another frame, or clipped weapon/tentacle.

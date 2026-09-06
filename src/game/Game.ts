@@ -451,7 +451,7 @@ export class Game {
 
       // These offsets follow each sprite's visible top, not the smaller collision box.
       const y =
-        enemy.type === 'goblin' ? enemy.y - 50 :
+        enemy.type === 'goblin' ? enemy.y - 30 :
         enemy.type === 'skeleton' ? enemy.y - 34 :
         enemy.type === 'roper' ? enemy.y - 32 :
         enemy.type === 'ahriman' ? enemy.y - 18 :
