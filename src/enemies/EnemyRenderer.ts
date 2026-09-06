@@ -185,8 +185,8 @@ export class EnemyRenderer {
     const drawW = 76;
     const drawH = 40;
     const castingKind = ahriman.castingKind;
-    const flapSpeed = castingKind ? 7.5 : 13;
-    const flapStrength = castingKind ? 2.4 : 5;
+    const flapSpeed = castingKind ? 3.8 : 13;
+    const flapStrength = castingKind ? 1.2 : 5;
     const flap = Math.sin(ahriman.actionTime * flapSpeed);
     const centerX = ahriman.x + ahriman.w / 2;
     const centerY = ahriman.y + ahriman.h / 2;
@@ -198,7 +198,7 @@ export class EnemyRenderer {
     if (castingKind) {
       const accent = castingKind === 'fireball' ? '#ff9342' : '#85f0ff';
       const accent2 = castingKind === 'fireball' ? '#6b1930' : '#265f7a';
-      const radius = 16 + Math.sin(ahriman.actionTime * 8) * 2.5;
+      const radius = 19 + Math.sin(ahriman.actionTime * 6) * 3.5;
 
       ctx.strokeStyle = accent;
       ctx.lineWidth = 2;

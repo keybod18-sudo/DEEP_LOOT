@@ -61,21 +61,24 @@ export class Ahriman extends Enemy {
     this.facing = dx >= 0 ? 1 : -1;
 
     if (this.state === 'castFireball' || this.state === 'castFreeze') {
-      const hoverY = clamp(
-        player.y - BALANCE.ahriman.hoverAbovePlayer + Math.sin(this.actionTime * 3.2) * (BALANCE.ahriman.bobAmplitude * 0.45),
-        70,
-        context.stage.height - 140,
-      );
-      this.y += clamp((hoverY - this.y) * 0.06, -0.8, 0.8);
-      this.x += clamp(dx * 0.01, -0.55, 0.55);
+      // During spellcasting, Ahriman freezes in place.
+      // It can only turn to keep facing the player.
+      this.vx = 0;
+      this.vy = 0;
 
       if (!this.spellTriggered && this.actionTime >= BALANCE.ahriman.castHitTime) {
         const castX = this.facing > 0 ? this.x + this.w + 2 : this.x - 16;
         const castY = this.y + 6;
+
         if (this.state === 'castFireball') {
           context.spawnAhrimanFireball(castX, castY, this.facing);
         } else {
-          context.spawnFreezeLancer(castX, castY + 3, this.facing);
+          context.spawnFreezeLancer(
+            castX,
+            castY + 3,
+            playerCenterX,
+            playerCenterY,
+          );
         }
         this.spellTriggered = true;
       }
@@ -86,9 +89,6 @@ export class Ahriman extends Enemy {
         this.cooldown = BALANCE.ahriman.spellCooldown;
         this.spellTriggered = false;
       }
-
-      this.x = clamp(this.x, 8, context.stage.width - this.w - 8);
-      this.y = clamp(this.y, 70, context.stage.height - 120);
 
       if (intersects(player, this)) {
         context.hurtPlayer(BALANCE.ahriman.contactDamage, this.x);

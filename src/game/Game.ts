@@ -174,12 +174,17 @@ export class Game {
             BALANCE.ahriman.fireballLife,
           ));
         },
-        spawnFreezeLancer: (x, y, facing) => {
+        spawnFreezeLancer: (x, y, targetX, targetY) => {
+          const dx = targetX - (x + 21);
+          const dy = targetY - (y + 7);
+          const distance = Math.max(1, Math.hypot(dx, dy));
+          const speed = BALANCE.ahriman.freezeSpeed;
+
           this.freezeLancers.push(new FreezeLancer(
             x,
             y,
-            facing * BALANCE.ahriman.freezeSpeed,
-            facing,
+            (dx / distance) * speed,
+            (dy / distance) * speed,
             BALANCE.ahriman.freezeLife,
           ));
         },
@@ -237,26 +242,32 @@ export class Game {
   }
 
   private castThunder(): void {
-    const centerX = this.player.facing > 0
-      ? this.player.x + this.player.w + BALANCE.thunder.range
-      : this.player.x - BALANCE.thunder.range;
+    const facing = this.player.facing;
+    const startX = facing > 0
+      ? this.player.x + this.player.w + 8
+      : this.player.x - 8;
+    const centerY = this.player.y + this.player.h * 0.48;
+
     const strike = new ThunderStrike(
-      centerX,
-      this.stage.height,
+      startX,
+      centerY,
+      facing,
+      BALANCE.thunder.range,
       BALANCE.thunder.life,
-      BALANCE.thunder.beamWidth,
+      BALANCE.thunder.beamHeight,
     );
 
     this.thunderStrikes.push(strike);
     this.thunderCooldown = BALANCE.thunder.cooldown;
     this.showNotice('サンダー');
 
+    // Piercing: every enemy intersecting the horizontal lightning takes damage.
     for (const enemy of this.enemies) {
       if (!enemy.alive || !intersects(strike.rect, enemy)) continue;
       const killed = damageEnemy(
         enemy,
         BALANCE.thunder.damage,
-        centerX,
+        this.player.x + this.player.w / 2,
         1.2,
       );
       if (killed) this.handleEnemyKilled(enemy);
@@ -411,8 +422,18 @@ export class Game {
     const snake1 = point(chosen[3], 18, 780, 532);
     const snake2 = point(chosen[6], 18, 360, 712);
     const roper1 = point(chosen[7], 58, 980, 672);
-    const slug1 = point(chosen[8], 11, 640, 719);
-    const rat1 = point(chosen[0], 14, 310, 356);
+
+    // Rat / Slug are intentionally placed on the upper starting stratum.
+    // Previously, the tiny sprites could be randomized far away and look absent.
+    const startingPlatforms = groundPlatforms
+      .filter((platform) => platform.y >= 180 && platform.y <= 390)
+      .sort((a, b) => a.x - b.x);
+    const ratPlatform = startingPlatforms[0] ?? chosen[0];
+    const slugPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[1];
+
+    const rat1 = point(ratPlatform, 14, 250, 356);
+    const slug1 = point(slugPlatform, 11, 520, 359);
+
     const skeleton1 = point(chosen[5], 42, 1120, 688);
 
     const clingPlatform = shuffle(upperPlatforms)[0];

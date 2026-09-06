@@ -1,22 +1,26 @@
-import type { Rect } from '../game/types';
+import type { Facing, Rect } from '../game/types';
 
 export class ThunderStrike {
   alive = true;
   age = 0;
 
   constructor(
-    public readonly centerX: number,
-    public readonly stageHeight: number,
+    public readonly startX: number,
+    public readonly centerY: number,
+    public readonly facing: Facing,
+    public readonly range: number,
     public life: number,
-    public readonly beamWidth: number,
+    public readonly beamHeight: number,
   ) {}
 
   get rect(): Rect {
+    const endX = this.startX + this.facing * this.range;
+    const left = Math.min(this.startX, endX);
     return {
-      x: this.centerX - this.beamWidth / 2,
-      y: 0,
-      w: this.beamWidth,
-      h: this.stageHeight,
+      x: left,
+      y: this.centerY - this.beamHeight / 2,
+      w: Math.abs(endX - this.startX),
+      h: this.beamHeight,
     };
   }
 
@@ -30,43 +34,45 @@ export class ThunderStrike {
   draw(ctx: CanvasRenderingContext2D): void {
     if (!this.alive) return;
 
-    const x = Math.round(this.centerX);
-    const phase = Math.floor(this.age * 80) % 2;
-    const points = [
-      { x, y: 0 },
-      { x: x - 10 + phase * 3, y: 60 },
-      { x: x + 6 - phase * 2, y: 120 },
-      { x: x - 12 + phase * 3, y: 180 },
-      { x: x + 8 - phase * 2, y: 240 },
-      { x: x - 4 + phase * 2, y: 300 },
-      { x: x + 10 - phase * 3, y: 360 },
-      { x: x - 6 + phase * 2, y: this.stageHeight },
-    ];
+    const dir = this.facing;
+    const phase = Math.floor(this.age * 90) % 2;
+    const segment = 55;
+    const segmentCount = Math.ceil(this.range / segment);
 
     ctx.save();
-    ctx.fillStyle = 'rgba(142, 235, 255, 0.18)';
-    ctx.fillRect(Math.round(this.centerX - this.beamWidth / 2), 0, this.beamWidth, this.stageHeight);
 
-    ctx.strokeStyle = '#7ce8ff';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(points[0]!.x, points[0]!.y);
-    for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
-    ctx.stroke();
+    // Wide electric glow around the horizontal strike.
+    const rect = this.rect;
+    ctx.fillStyle = 'rgba(126, 226, 255, 0.16)';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(points[0]!.x, points[0]!.y);
-    for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
-    ctx.stroke();
+    const drawBolt = (stroke: string, lineWidth: number): void => {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(this.startX, this.centerY);
 
-    ctx.fillStyle = '#d7ffff';
-    for (let i = 0; i < 9; i += 1) {
-      const sparkX = Math.round(this.centerX - this.beamWidth / 2 + (i * 7 % this.beamWidth));
-      const sparkY = Math.round((i / 8) * this.stageHeight);
-      ctx.fillRect(sparkX, sparkY + (phase ? 8 : 0), 2, 4);
+      for (let i = 1; i <= segmentCount; i += 1) {
+        const distance = Math.min(this.range, i * segment);
+        const x = this.startX + dir * distance;
+        const zig = ((i + phase) % 2 === 0 ? -1 : 1) * (9 + (i % 3) * 3);
+        ctx.lineTo(x, this.centerY + zig);
+      }
+
+      ctx.stroke();
+    };
+
+    drawBolt('#70dcff', 10);
+    drawBolt('#ffffff', 4);
+
+    ctx.fillStyle = '#d9fbff';
+    for (let i = 0; i < 10; i += 1) {
+      const distance = (this.range / 10) * i + (phase ? 8 : 0);
+      const x = this.startX + dir * distance;
+      const y = this.centerY + ((i % 2 === 0) ? -16 : 14);
+      ctx.fillRect(Math.round(x), Math.round(y), 4, 3);
     }
+
     ctx.restore();
   }
 }

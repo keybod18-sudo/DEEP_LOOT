@@ -1,5 +1,5 @@
 import { BALANCE } from '../config/balance';
-import type { Facing, Rect } from '../game/types';
+import type { Rect } from '../game/types';
 
 export class FreezeLancer {
   readonly w = 42;
@@ -11,7 +11,7 @@ export class FreezeLancer {
     public x: number,
     public y: number,
     public readonly vx: number,
-    public readonly facing: Facing,
+    public readonly vy: number,
     public life: number,
   ) {}
 
@@ -28,6 +28,7 @@ export class FreezeLancer {
     this.age += dt;
     this.life -= dt;
     this.x += this.vx;
+    this.y += this.vy;
     if (this.life <= 0) this.alive = false;
   }
 
@@ -36,11 +37,11 @@ export class FreezeLancer {
 
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const dir = this.facing > 0 ? 1 : -1;
+    const angle = Math.atan2(this.vy, this.vx);
 
     ctx.save();
     ctx.translate(centerX, centerY);
-    if (dir < 0) ctx.scale(-1, 1);
+    ctx.rotate(angle);
 
     ctx.fillStyle = '#76dfff';
     ctx.fillRect(-18, -2, 26, 4);
@@ -48,16 +49,17 @@ export class FreezeLancer {
 
     ctx.fillStyle = '#d8fbff';
     ctx.beginPath();
-    ctx.moveTo(8, 0);
-    ctx.lineTo(-2, -7);
-    ctx.lineTo(-2, 7);
+    ctx.moveTo(18, 0);
+    ctx.lineTo(4, -8);
+    ctx.lineTo(4, 8);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = '#c8ecff';
-    ctx.fillRect(-16, -1, 16, 2);
-    ctx.fillRect(-24, -4, 6, 2);
-    ctx.fillRect(-24, 2, 6, 2);
+    ctx.fillRect(-20, -1, 16, 2);
+    ctx.fillRect(-28, -4, 7, 2);
+    ctx.fillRect(-28, 2, 7, 2);
+
     ctx.restore();
   }
 }

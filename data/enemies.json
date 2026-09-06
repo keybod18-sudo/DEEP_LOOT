@@ -44,14 +44,14 @@
     "maxY": 285,
     "contactDamage": 10,
     "spellRange": 320,
-    "castDuration": 0.72,
-    "castHitTime": 0.34,
-    "spellCooldown": 1.25,
+    "castDuration": 1.55,
+    "castHitTime": 1.08,
+    "spellCooldown": 1.45,
     "fireballDamage": 12,
     "fireballSpeed": 5.6,
     "fireballLife": 2.2,
     "freezeDamage": 18,
-    "freezeSpeed": 7.2,
+    "freezeSpeed": 7.4,
     "freezeLife": 1.8
   },
   "snake": {
@@ -120,7 +120,7 @@
     "damage": 42,
     "cooldown": 1.1,
     "life": 0.24,
-    "beamWidth": 54,
-    "range": 96
+    "beamHeight": 46,
+    "range": 460
   }
 }

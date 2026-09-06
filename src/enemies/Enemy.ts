@@ -12,7 +12,7 @@ export interface EnemyContext {
   poisonPlayer: (duration: number, tickInterval: number, damage: number) => void;
   paralyzePlayer: (duration: number) => void;
   spawnAhrimanFireball: (x: number, y: number, facing: Facing) => void;
-  spawnFreezeLancer: (x: number, y: number, facing: Facing) => void;
+  spawnFreezeLancer: (x: number, y: number, targetX: number, targetY: number) => void;
 }
 
 export abstract class Enemy implements PhysicsBody {
