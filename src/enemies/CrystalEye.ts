@@ -3,6 +3,11 @@ import { intersects } from '../game/Collision';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
+const crystalEyeFrameUrls = Array.from({ length: 8 }, (_, index) =>
+  new URL(`../../assets/monsters/crystal_eye/frame_${String(index + 1).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const crystalEyeFrameImages: HTMLImageElement[] = [];
+
 export type CrystalEyeState = 'idle' | 'beamCharge' | 'beamFire' | 'orbCharge' | 'recover';
 
 interface CrystalOrb {
@@ -38,8 +43,8 @@ export class CrystalEye extends Enemy {
   }
 
   static async loadAssets(): Promise<void> {
-    // V38 draws the translucent crystal and organic eyeball directly.
-    // Old robot-containing Crystal Eye sprite files are intentionally unused.
+    if (crystalEyeFrameImages.length > 0) return;
+    crystalEyeFrameImages.push(...await Promise.all(crystalEyeFrameUrls.map(loadImage)));
   }
 
   interruptForKnockback(): void {
@@ -260,232 +265,43 @@ export class CrystalEye extends Enemy {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
+    let frameIndex = 0;
+    if (this.state === 'idle') {
+      frameIndex = Math.floor(this.actionTime * 2.2) % 2;
+    } else if (this.state === 'beamCharge' || this.state === 'beamFire') {
+      frameIndex = 2;
+    } else if (this.state === 'orbCharge') {
+      frameIndex = 4;
+    } else if (this.state === 'recover') {
+      frameIndex = this.stateTime < 0.16 ? 6 : 1;
+    }
+
+    const image = crystalEyeFrameImages[frameIndex] ?? crystalEyeFrameImages[0];
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const charge = this.state === 'beamCharge' || this.state === 'orbCharge'
-      ? Math.min(1, this.stateTime / Math.max(0.01, this.state === 'beamCharge' ? BALANCE.crystalEye.beamCharge : BALANCE.crystalEye.orbCharge))
-      : 0;
 
-    this.drawOrganicEye(ctx, centerX, centerY, charge);
-    this.drawCrystalShell(ctx, centerX, centerY, charge);
+    if (image) {
+      const hover = Math.sin(this.actionTime * 2.7) * 1.6;
+      const pulse = this.state === 'beamCharge' || this.state === 'orbCharge'
+        ? 1 + Math.sin(this.stateTime * 11) * 0.016
+        : 1;
+      const drawH = 160 * pulse;
+      const drawW = 128 * pulse;
+
+      ctx.save();
+      ctx.translate(centerX, centerY + hover);
+      ctx.shadowColor = this.state === 'beamCharge' || this.state === 'orbCharge'
+        ? 'rgba(189, 94, 255, 0.78)'
+        : 'rgba(104, 82, 232, 0.38)';
+      ctx.shadowBlur = this.state === 'beamCharge' || this.state === 'orbCharge' ? 14 : 6;
+      ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    }
 
     if (this.state === 'beamCharge') this.drawBeamCharge(ctx, centerX, centerY);
     if (this.state === 'beamFire') this.drawBeam(ctx, centerX, centerY);
     if (this.state === 'orbCharge') this.drawOrbCharge(ctx, centerX, centerY);
     this.drawOrbs(ctx);
-  }
-
-  private drawOrganicEye(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
-    const pulse = 1 + Math.sin(this.actionTime * 2.7) * 0.014;
-    ctx.save();
-    ctx.translate(centerX, centerY + 2);
-    ctx.scale(pulse, 1 / pulse);
-
-    // Fleshy socket behind the eyeball. The crystal shell is not touched by V39.
-    ctx.fillStyle = '#3a112c';
-    ctx.beginPath();
-    ctx.ellipse(0, 1, 30.5, 25, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(125, 32, 82, 0.82)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(0, 1, 29, 23.5, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    const sclera = ctx.createRadialGradient(-8, -8, 2, 1, 1, 31);
-    sclera.addColorStop(0, '#fffdf2');
-    sclera.addColorStop(0.55, '#e5dfcf');
-    sclera.addColorStop(0.82, '#b9a8a0');
-    sclera.addColorStop(1, '#765765');
-    ctx.fillStyle = sclera;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 27.5, 22, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bloodshot veins, closer to the reference eye: thin, branching and irregular.
-    ctx.strokeStyle = 'rgba(151, 33, 62, 0.74)';
-    ctx.lineWidth = 1.05;
-    for (let i = 0; i < 11; i += 1) {
-      const angle = i * (Math.PI * 2 / 11) + 0.18;
-      const ex = Math.cos(angle) * 25.5;
-      const ey = Math.sin(angle) * 19.5;
-      const mx = Math.cos(angle + (i % 2 ? 0.26 : -0.24)) * 16;
-      const my = Math.sin(angle + (i % 2 ? 0.26 : -0.24)) * 12;
-      const tx = this.lookX * 0.42 + Math.cos(angle) * 8;
-      const ty = this.lookY * 0.34 + Math.sin(angle) * 6;
-      ctx.beginPath();
-      ctx.moveTo(ex, ey);
-      ctx.quadraticCurveTo(mx, my, tx, ty);
-      ctx.stroke();
-      if ((i % 3) === 0) {
-        ctx.beginPath();
-        ctx.moveTo(mx, my);
-        ctx.lineTo(mx + Math.cos(angle + 0.9) * 5, my + Math.sin(angle + 0.9) * 4);
-        ctx.stroke();
-      }
-    }
-
-    const irisX = this.lookX;
-    const irisY = this.lookY;
-    const irisGlow = ctx.createRadialGradient(irisX, irisY, 1, irisX, irisY, 15);
-    irisGlow.addColorStop(0, charge > 0 ? '#fff0ff' : '#ffb7ed');
-    irisGlow.addColorStop(0.25, '#f05bd0');
-    irisGlow.addColorStop(0.58, '#a82aac');
-    irisGlow.addColorStop(1, 'rgba(63, 15, 76, 0)');
-    ctx.fillStyle = irisGlow;
-    ctx.beginPath();
-    ctx.ellipse(irisX, irisY, 11.5, 16, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Tall magenta iris and a narrow vertical pupil, matching the requested eye feel.
-    ctx.fillStyle = charge > 0 ? '#ff75e9' : '#d83ac4';
-    ctx.beginPath();
-    ctx.ellipse(irisX, irisY, 7.4, 14.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#6f1b7d';
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-
-    ctx.fillStyle = '#120813';
-    ctx.beginPath();
-    ctx.ellipse(irisX, irisY, 2.25, 10.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = 0.9;
-    ctx.beginPath();
-    ctx.ellipse(irisX - 3.7, irisY - 6.2, 1.8, 3.1, -0.25, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-
-    ctx.strokeStyle = 'rgba(80, 31, 55, 0.88)';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 27.5, 22, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  private drawCrystalShell(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
-    const pulse = 0.92 + Math.sin(this.actionTime * 2.1) * 0.015 + charge * 0.035;
-    const tilt = -0.34;
-
-    ctx.save();
-    ctx.translate(centerX + 2, centerY + 1);
-    ctx.rotate(tilt);
-    ctx.scale(pulse, pulse);
-
-    const outer = [
-      [0, -74], [21, -63], [40, -42], [51, -8], [45, 28], [27, 58], [0, 76], [-23, 61], [-41, 35], [-52, 0], [-42, -34], [-24, -61],
-    ] as const;
-    const topWindow = [[-8, -46], [6, -51], [13, -37], [1, -24], [-11, -31]] as const;
-    const midLeftWindow = [[-33, -15], [-19, -26], [-8, -7], [-23, 8], [-36, -1]] as const;
-    const midRightWindow = [[10, -9], [29, -18], [33, 1], [16, 14], [5, 1]] as const;
-    const lowerWindow = [[-7, 22], [8, 18], [15, 33], [0, 48], [-14, 34]] as const;
-
-    const outlineGlow = charge > 0 ? 26 : 18;
-    ctx.shadowColor = charge > 0 ? 'rgba(206, 155, 255, 0.9)' : 'rgba(135, 104, 255, 0.62)';
-    ctx.shadowBlur = outlineGlow;
-
-    const shellFill = ctx.createLinearGradient(-48, -72, 48, 72);
-    shellFill.addColorStop(0, 'rgba(182, 225, 255, 0.18)');
-    shellFill.addColorStop(0.18, 'rgba(86, 92, 255, 0.24)');
-    shellFill.addColorStop(0.45, 'rgba(73, 32, 168, 0.16)');
-    shellFill.addColorStop(0.72, 'rgba(123, 73, 220, 0.24)');
-    shellFill.addColorStop(1, 'rgba(220, 248, 255, 0.15)');
-    ctx.fillStyle = shellFill;
-
-    ctx.beginPath();
-    ctx.moveTo(outer[0][0], outer[0][1]);
-    for (let i = 1; i < outer.length; i += 1) ctx.lineTo(outer[i][0], outer[i][1]);
-    ctx.closePath();
-
-    const punchHole = (points: readonly (readonly [number, number])[]) => {
-      ctx.moveTo(points[0][0], points[0][1]);
-      for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
-      ctx.closePath();
-    };
-    punchHole(topWindow);
-    punchHole(midLeftWindow);
-    punchHole(midRightWindow);
-    punchHole(lowerWindow);
-    ctx.fill('evenodd');
-
-    ctx.shadowBlur = 0;
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = charge > 0 ? 'rgba(234, 211, 255, 0.98)' : 'rgba(154, 178, 255, 0.96)';
-    ctx.lineWidth = 2.8;
-    ctx.beginPath();
-    ctx.moveTo(outer[0][0], outer[0][1]);
-    for (let i = 1; i < outer.length; i += 1) ctx.lineTo(outer[i][0], outer[i][1]);
-    ctx.closePath();
-    ctx.stroke();
-
-    const frameStroke = (points: readonly (readonly [number, number])[]) => {
-      ctx.beginPath();
-      ctx.moveTo(points[0][0], points[0][1]);
-      for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
-      ctx.closePath();
-      ctx.stroke();
-    };
-    ctx.lineWidth = 1.7;
-    ctx.strokeStyle = 'rgba(123, 219, 255, 0.56)';
-    frameStroke(topWindow);
-    frameStroke(midLeftWindow);
-    frameStroke(midRightWindow);
-    frameStroke(lowerWindow);
-
-    ctx.strokeStyle = 'rgba(198, 231, 255, 0.38)';
-    ctx.lineWidth = 1.2;
-    const ribs = [
-      [0, -74, 0, -17],
-      [0, -17, 0, 76],
-      [-24, -61, -8, -22],
-      [21, -63, 8, -21],
-      [-42, -34, -12, -5],
-      [40, -42, 12, -6],
-      [-41, 35, -9, 20],
-      [45, 28, 10, 19],
-      [-23, 61, -2, 41],
-      [27, 58, 2, 39],
-      [-8, -22, 12, -6],
-      [-12, -5, 10, 19],
-      [-9, 20, 2, 39],
-    ] as const;
-    for (const [x1, y1, x2, y2] of ribs) {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-
-    ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = 'rgba(243, 249, 255, 0.72)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(-8, -57);
-    ctx.lineTo(15, -44);
-    ctx.moveTo(-23, -28);
-    ctx.lineTo(-6, -12);
-    ctx.moveTo(5, 28);
-    ctx.lineTo(21, 44);
-    ctx.stroke();
-
-    ctx.fillStyle = charge > 0 ? 'rgba(255, 209, 253, 0.85)' : 'rgba(220, 244, 255, 0.8)';
-    ctx.globalAlpha = 0.82;
-    ctx.beginPath();
-    ctx.ellipse(-15, -44, 2.8, 8.6, -0.48, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(-28, -5, 1.9, 6.2, -0.55, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(18, 33, 2.2, 7.2, -0.58, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.restore();
   }
 
   private drawBeamCharge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
@@ -576,4 +392,13 @@ function pointSegmentDistance(
   const x = ax + abx * t;
   const y = ay + aby * t;
   return Math.hypot(px - x, py - y);
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`画像を読み込めません: ${src}`));
+    image.src = src;
+  });
 }

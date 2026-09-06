@@ -93,6 +93,7 @@ export class Game {
       this.playerRenderer.load(),
       this.enemyRenderer.load(),
       CrystalEye.loadAssets(),
+      Kagenoko.loadAssets(),
       TreasureChest.loadAssets(),
       Fireball.loadAssets(),
     ]);
