@@ -260,10 +260,11 @@ export class EnemyRenderer {
     const frame = Math.floor(bat.actionTime * 10) % this.batImages.length;
     const image = this.batImages[frame] ?? this.batImages[0];
     if (!image) return;
-    const drawW = 50;
-    const drawH = 28;
+    const drawW = 44;
+    const drawH = 24;
+    const bob = Math.sin(bat.actionTime * 14) * 1.5;
     const centerX = bat.x + bat.w / 2;
-    const centerY = bat.y + bat.h / 2;
+    const centerY = bat.y + bat.h / 2 + bob;
     ctx.save();
     ctx.translate(centerX, centerY);
     if (bat.facing < 0) ctx.scale(-1, 1);

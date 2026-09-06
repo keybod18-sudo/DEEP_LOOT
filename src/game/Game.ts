@@ -227,9 +227,9 @@ export class Game {
   private castFireball(): void {
     const facing = this.player.facing;
     const x = facing > 0
-      ? this.player.x + this.player.w + 8
-      : this.player.x - BALANCE.fireball.width - 8;
-    const y = this.player.y + 4;
+      ? this.player.x + this.player.w + 10
+      : this.player.x - BALANCE.fireball.width - 10;
+    const y = this.player.y - 2;
 
     this.fireballs.push(new Fireball(
       x,
@@ -423,18 +423,24 @@ export class Game {
     const snake2 = point(chosen[6], 18, 360, 712);
     const roper1 = point(chosen[7], 58, 980, 672);
 
-    // Rat / Slug are intentionally placed on the upper starting stratum.
-    // Previously, the tiny sprites could be randomized far away and look absent.
+    // Small / newly added monsters must be visible without deep exploration.
     const startingPlatforms = groundPlatforms
       .filter((platform) => platform.y >= 180 && platform.y <= 390)
       .sort((a, b) => a.x - b.x);
+    const midPlatforms = groundPlatforms
+      .filter((platform) => platform.y > 390 && platform.y <= 560)
+      .sort((a, b) => a.x - b.x);
+
     const ratPlatform = startingPlatforms[0] ?? chosen[0];
     const slugPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[1];
+    const skeletonPlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
+    const skeleton1 = point(skeletonPlatform, 42, 720, 498);
 
-    const skeleton1 = point(chosen[5], 42, 1120, 688);
+    const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
+    const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
 
     const clingPlatform = shuffle(upperPlatforms)[0];
     const clingX = clingPlatform ? clingPlatform.x + clingPlatform.w * 0.5 - 17 : 680;
@@ -447,11 +453,11 @@ export class Game {
       new Goblin(gob1.x, gob1.y, 1, 0.8),
       new Goblin(gob2.x, gob2.y, -1, 0.5),
       new Goblin(gob3.x, gob3.y, 1, 1.1),
-      new Ahriman(630 + Math.random() * 470, 220 + Math.random() * 360),
+      new Ahriman(630 + Math.random() * 470, 220 + Math.random() * 320),
       new Snake(snake1.x, snake1.y),
       new Snake(snake2.x, snake2.y),
-      new Bat(390 + Math.random() * 720, 170 + Math.random() * 400),
-      new Bat(250 + Math.random() * 900, 220 + Math.random() * 370),
+      new Bat(batBandX1 + Math.random() * Math.max(40, batBandX2 - batBandX1), 170 + Math.random() * 120),
+      new Bat(batBandX1 + 80 + Math.random() * Math.max(40, batBandX2 - batBandX1), 220 + Math.random() * 110),
       new Roper(roper1.x, roper1.y),
       new Slug(slug1.x, slug1.y),
       new Rat(rat1.x, rat1.y),

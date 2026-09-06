@@ -50,6 +50,10 @@ export class Fireball {
     const centerY = this.y + this.h / 2;
     ctx.translate(centerX, centerY);
     if (this.facing < 0) ctx.scale(-1, 1);
+
+    ctx.fillStyle = 'rgba(255, 158, 38, 0.18)';
+    ctx.fillRect(-drawW / 2 - 6, -drawH / 2 - 6, drawW + 12, drawH + 12);
+
     ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   }

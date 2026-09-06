@@ -30,8 +30,8 @@ export class Bat extends Enemy {
     this.y += this.vy;
     this.vx *= BALANCE.enemyKnockback.friction;
     this.vy *= BALANCE.enemyKnockback.friction;
-    this.x = clamp(this.x, 8, stage.width - this.w - 8);
-    this.y = clamp(this.y, 70, stage.height - 90);
+    this.x = clamp(this.x, 24, stage.width - this.w - 24);
+    this.y = clamp(this.y, 96, stage.height - 96);
     if (this.knockbackTime <= 0) this.onKnockbackEnd();
   }
 
@@ -45,8 +45,8 @@ export class Bat extends Enemy {
     this.x += (dx / length) * BALANCE.bat.flightSpeed;
     this.y += (dy / length) * BALANCE.bat.verticalSpeed;
 
-    this.x = clamp(this.x, 8, context.stage.width - this.w - 8);
-    this.y = clamp(this.y, 70, context.stage.height - 90);
+    this.x = clamp(this.x, 24, context.stage.width - this.w - 24);
+    this.y = clamp(this.y, 96, context.stage.height - 96);
 
     if (this.impactCooldown <= 0 && intersects(player, this)) {
       const damaged = context.hurtPlayer(BALANCE.bat.contactDamage, this.x);
