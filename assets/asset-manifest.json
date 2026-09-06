@@ -98,6 +98,16 @@
     "assets/effects/fireball/fireball_05.png": "0663dc7117f72c146781f3236cd43649c2031c317ca25273fe92f03e63a754e6",
     "assets/effects/fireball/fireball_06.png": "62998da13f77bfedebd463ad3edf22e7933882dca1a1306dac7c3b7405991cd7",
     "assets/effects/fireball/fireball_07.png": "15aed08148b88f923dbee292d54c7525d3b9775df4e620b1617bb288f149b67d",
-    "assets/effects/fireball/fireball_08.png": "e704f48ddc7ae6bd561e8eb0c69a9c060a503492ce1a83a0fd91170a2123f959"
+    "assets/effects/fireball/fireball_08.png": "e704f48ddc7ae6bd561e8eb0c69a9c060a503492ce1a83a0fd91170a2123f959",
+    "assets/effects/bomb_explosion/explosion_01.png": "af1c6b285f39404f548d9328a9ca553ca43bfc21a24ddc95fbd940240677eed7",
+    "assets/effects/bomb_explosion/explosion_02.png": "d431946d768b0089a6147fcd781d3366181ed27dcec8c0359958937d3b83cdde",
+    "assets/effects/bomb_explosion/explosion_03.png": "332be4e8fab3304c21a1cc137815ccf147e3535bb368903e92f410f4f2e37768",
+    "assets/effects/bomb_explosion/explosion_04.png": "6332ecc3168fa2ba6697345e320e78c772305e3215ed509ce32fe21945984224",
+    "assets/effects/bomb_explosion/explosion_05.png": "9f609e47146568f88e1611d79af1c5b82a54269103c07a8ec653772dc9cd2a45",
+    "assets/effects/bomb_explosion/explosion_06.png": "1d71b665b8fbfbb8bd9820a03321d15e653bff3b51506b2bbbc103f799a0412e",
+    "assets/effects/bomb_explosion/explosion_07.png": "cade3618e527558fa085b739de113517748296d1126aeef13a6bce79d07d3c69",
+    "assets/effects/bomb_explosion/explosion_08.png": "83331aa2f15bc7808a8adf999c32c71e50689e9f743e1b0c989720c870f9557e",
+    "assets/effects/bomb_explosion/explosion_09.png": "60d953132fc86cf63026d7e34215e6d8caa27f77e56004bd6ff1204c61396a2c",
+    "assets/effects/bomb_explosion/explosion_10.png": "90963d225161f574c123b2205744717b4bef255375f8dc9b218b2ce696268f50"
   }
 }

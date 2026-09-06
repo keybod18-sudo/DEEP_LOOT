@@ -29,5 +29,17 @@ menuButton.addEventListener('click', () => game.toggleMenu());
 void game.start().catch((error: unknown) => {
   console.error(error);
   const message = error instanceof Error ? error.message : String(error);
-  document.body.insertAdjacentHTML('beforeend', `<pre>起動エラー: ${message}</pre>`);
+  const context = canvas.getContext('2d');
+  if (context) {
+    context.save();
+    context.fillStyle = '#151d25';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#ff7a7a';
+    context.font = 'bold 16px system-ui';
+    context.fillText('起動エラー', 24, 36);
+    context.fillStyle = '#ffffff';
+    context.font = '13px monospace';
+    context.fillText(message.slice(0, 88), 24, 62);
+    context.restore();
+  }
 });
