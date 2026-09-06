@@ -369,54 +369,122 @@ export class CrystalEye extends Enemy {
   }
 
   private drawCrystalShell(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
+    const pulse = 0.92 + Math.sin(this.actionTime * 2.1) * 0.015 + charge * 0.035;
+    const tilt = -0.34;
+
     ctx.save();
-    ctx.translate(centerX, centerY);
+    ctx.translate(centerX + 2, centerY + 1);
+    ctx.rotate(tilt);
+    ctx.scale(pulse, pulse);
 
     const outer = [
-      [0, -66], [31, -35], [42, 12], [24, 56], [0, 69], [-27, 55], [-42, 11], [-32, -36],
+      [0, -74], [21, -63], [40, -42], [51, -8], [45, 28], [27, 58], [0, 76], [-23, 61], [-41, 35], [-52, 0], [-42, -34], [-24, -61],
     ] as const;
+    const topWindow = [[-8, -46], [6, -51], [13, -37], [1, -24], [-11, -31]] as const;
+    const midLeftWindow = [[-33, -15], [-19, -26], [-8, -7], [-23, 8], [-36, -1]] as const;
+    const midRightWindow = [[10, -9], [29, -18], [33, 1], [16, 14], [5, 1]] as const;
+    const lowerWindow = [[-7, 22], [8, 18], [15, 33], [0, 48], [-14, 34]] as const;
 
-    const glass = ctx.createLinearGradient(-42, -60, 42, 62);
-    glass.addColorStop(0, 'rgba(135, 205, 255, 0.12)');
-    glass.addColorStop(0.34, 'rgba(95, 85, 255, 0.23)');
-    glass.addColorStop(0.66, 'rgba(83, 54, 200, 0.17)');
-    glass.addColorStop(1, 'rgba(180, 225, 255, 0.13)');
-    ctx.fillStyle = glass;
+    const outlineGlow = charge > 0 ? 26 : 18;
+    ctx.shadowColor = charge > 0 ? 'rgba(206, 155, 255, 0.9)' : 'rgba(135, 104, 255, 0.62)';
+    ctx.shadowBlur = outlineGlow;
+
+    const shellFill = ctx.createLinearGradient(-48, -72, 48, 72);
+    shellFill.addColorStop(0, 'rgba(182, 225, 255, 0.18)');
+    shellFill.addColorStop(0.18, 'rgba(86, 92, 255, 0.24)');
+    shellFill.addColorStop(0.45, 'rgba(73, 32, 168, 0.16)');
+    shellFill.addColorStop(0.72, 'rgba(123, 73, 220, 0.24)');
+    shellFill.addColorStop(1, 'rgba(220, 248, 255, 0.15)');
+    ctx.fillStyle = shellFill;
+
     ctx.beginPath();
     ctx.moveTo(outer[0][0], outer[0][1]);
     for (let i = 1; i < outer.length; i += 1) ctx.lineTo(outer[i][0], outer[i][1]);
     ctx.closePath();
-    ctx.fill();
 
-    ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = charge > 0 ? `rgba(225, 192, 255, ${0.78 + charge * 0.2})` : 'rgba(165, 193, 255, 0.78)';
-    ctx.lineWidth = 2.4;
+    const punchHole = (points: readonly (readonly [number, number])[]) => {
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
+      ctx.closePath();
+    };
+    punchHole(topWindow);
+    punchHole(midLeftWindow);
+    punchHole(midRightWindow);
+    punchHole(lowerWindow);
+    ctx.fill('evenodd');
+
+    ctx.shadowBlur = 0;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = charge > 0 ? 'rgba(234, 211, 255, 0.98)' : 'rgba(154, 178, 255, 0.96)';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(outer[0][0], outer[0][1]);
+    for (let i = 1; i < outer.length; i += 1) ctx.lineTo(outer[i][0], outer[i][1]);
+    ctx.closePath();
     ctx.stroke();
 
-    // Facets: deliberately sparse so the eyeball remains clearly visible through the glass.
-    ctx.lineWidth = 1.25;
-    ctx.strokeStyle = 'rgba(166, 205, 255, 0.48)';
-    const facets: ReadonlyArray<readonly [number, number, number, number]> = [
-      [0, -66, -18, -15], [0, -66, 18, -16], [-32, -36, -18, -15], [31, -35, 18, -16],
-      [-42, 11, -20, 17], [42, 12, 20, 17], [-27, 55, -19, 18], [24, 56, 19, 18],
-      [-18, -15, 0, -28], [18, -16, 0, -28], [-20, 17, 0, 30], [20, 17, 0, 30],
-      [0, 30, 0, 69],
-    ];
-    for (const [x1, y1, x2, y2] of facets) {
+    const frameStroke = (points: readonly (readonly [number, number])[]) => {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i += 1) ctx.lineTo(points[i][0], points[i][1]);
+      ctx.closePath();
+      ctx.stroke();
+    };
+    ctx.lineWidth = 1.7;
+    ctx.strokeStyle = 'rgba(123, 219, 255, 0.56)';
+    frameStroke(topWindow);
+    frameStroke(midLeftWindow);
+    frameStroke(midRightWindow);
+    frameStroke(lowerWindow);
+
+    ctx.strokeStyle = 'rgba(198, 231, 255, 0.38)';
+    ctx.lineWidth = 1.2;
+    const ribs = [
+      [0, -74, 0, -17],
+      [0, -17, 0, 76],
+      [-24, -61, -8, -22],
+      [21, -63, 8, -21],
+      [-42, -34, -12, -5],
+      [40, -42, 12, -6],
+      [-41, 35, -9, 20],
+      [45, 28, 10, 19],
+      [-23, 61, -2, 41],
+      [27, 58, 2, 39],
+      [-8, -22, 12, -6],
+      [-12, -5, 10, 19],
+      [-9, 20, 2, 39],
+    ] as const;
+    for (const [x1, y1, x2, y2] of ribs) {
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
 
-    const shimmer = Math.sin(this.actionTime * 3.6) * 0.5 + 0.5;
-    ctx.globalAlpha = 0.35 + shimmer * 0.45 + charge * 0.18;
-    ctx.fillStyle = '#e9f8ff';
-    const sparkleX = -21 + shimmer * 12;
-    const sparkleY = -43 + Math.cos(this.actionTime * 2.8) * 4;
-    ctx.fillRect(Math.round(sparkleX) - 1, Math.round(sparkleY) - 6, 2, 13);
-    ctx.fillRect(Math.round(sparkleX) - 6, Math.round(sparkleY) - 1, 13, 2);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = 'rgba(243, 249, 255, 0.72)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-8, -57);
+    ctx.lineTo(15, -44);
+    ctx.moveTo(-23, -28);
+    ctx.lineTo(-6, -12);
+    ctx.moveTo(5, 28);
+    ctx.lineTo(21, 44);
+    ctx.stroke();
 
+    ctx.fillStyle = charge > 0 ? 'rgba(255, 209, 253, 0.85)' : 'rgba(220, 244, 255, 0.8)';
+    ctx.globalAlpha = 0.82;
+    ctx.beginPath();
+    ctx.ellipse(-15, -44, 2.8, 8.6, -0.48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-28, -5, 1.9, 6.2, -0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(18, 33, 2.2, 7.2, -0.58, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
