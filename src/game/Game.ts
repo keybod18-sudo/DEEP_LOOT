@@ -34,7 +34,6 @@ import { GameLoop } from './GameLoop';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
 import { TreasureChest } from '../items/TreasureChest';
-import type { Platform } from '../stage/Platform';
 
 export interface HudElements {
   floor: HTMLElement;
@@ -610,78 +609,161 @@ export class Game {
   }
 
   private spawnStageContents(): void {
-    const groundPlatforms = this.stage.platforms
-      .filter((platform) => platform.w >= 120 && platform.y > 180 && platform.y < this.stage.height - 30);
-    const upperPlatforms = this.stage.platforms
-      .filter((platform) => platform.w >= 110 && platform.y > 120 && platform.y < this.stage.height - 140);
+    const groundPlatforms = this.stage.platforms.filter((platform) =>
+      platform.w >= 110 &&
+      platform.y > 150 &&
+      platform.y < this.stage.height - 24
+    );
+    const upperPlatforms = this.stage.platforms.filter((platform) =>
+      platform.w >= 100 &&
+      platform.y > 105 &&
+      platform.y < this.stage.height - 110
+    );
 
-    const chosen = shuffle(groundPlatforms).slice(0, 9);
-    const point = (platform: Platform | undefined, h: number, fallbackX: number, fallbackY: number) => {
-      if (!platform) return { x: fallbackX, y: fallbackY };
-      const margin = Math.min(50, Math.max(18, platform.w * 0.2));
-      const usable = Math.max(1, platform.w - margin * 2 - 42);
+    const occupied: Array<{ x: number; y: number }> = [];
+
+    const randomGroundPoint = (height: number, width = 42): { x: number; y: number } => {
+      if (!groundPlatforms.length) {
+        return {
+          x: 180 + Math.random() * Math.max(120, this.stage.width - 360),
+          y: this.stage.height - 120 - height,
+        };
+      }
+
+      let best = {
+        x: groundPlatforms[0].x + 24,
+        y: groundPlatforms[0].y - height,
+      };
+      let bestSpacing = -1;
+
+      for (let attempt = 0; attempt < 28; attempt += 1) {
+        const platform = groundPlatforms[Math.floor(Math.random() * groundPlatforms.length)];
+        const margin = Math.min(54, Math.max(16, platform.w * 0.12));
+        const usable = Math.max(1, platform.w - margin * 2 - width);
+        const x = platform.x + margin + Math.random() * usable;
+        const y = platform.y - height;
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+
+        const spawnDistance = Math.hypot(
+          centerX - (this.stage.spawn.x + 18),
+          centerY - (this.stage.spawn.y + 20),
+        );
+        const stairDistance = Math.hypot(
+          centerX - (this.stage.staircase.x + this.stage.staircase.w / 2),
+          centerY - (this.stage.staircase.y + this.stage.staircase.h / 2),
+        );
+
+        let nearest = Math.min(spawnDistance, stairDistance);
+        for (const point of occupied) {
+          nearest = Math.min(nearest, Math.hypot(centerX - point.x, centerY - point.y));
+        }
+
+        if (nearest > bestSpacing) {
+          bestSpacing = nearest;
+          best = { x, y };
+        }
+        if (nearest >= 72) break;
+      }
+
+      occupied.push({
+        x: best.x + width / 2,
+        y: best.y + height / 2,
+      });
+      return best;
+    };
+
+    const randomAirPoint = (
+      width: number,
+      height: number,
+      minY = 120,
+      maxY = Math.max(180, this.stage.height - 180),
+    ): { x: number; y: number } => {
+      const minX = Math.max(110, this.stage.spawn.x + 90);
+      const maxX = Math.max(minX + 80, this.stage.width - width - 90);
+
+      let best = { x: minX, y: minY };
+      let bestSpacing = -1;
+
+      for (let attempt = 0; attempt < 24; attempt += 1) {
+        const x = minX + Math.random() * Math.max(1, maxX - minX);
+        const y = minY + Math.random() * Math.max(1, maxY - minY);
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+
+        const spawnDistance = Math.hypot(
+          centerX - (this.stage.spawn.x + 18),
+          centerY - (this.stage.spawn.y + 20),
+        );
+
+        let nearest = spawnDistance;
+        for (const point of occupied) {
+          nearest = Math.min(nearest, Math.hypot(centerX - point.x, centerY - point.y));
+        }
+
+        if (nearest > bestSpacing) {
+          bestSpacing = nearest;
+          best = { x, y };
+        }
+        if (nearest >= 100) break;
+      }
+
+      occupied.push({
+        x: best.x + width / 2,
+        y: best.y + height / 2,
+      });
+      return best;
+    };
+
+    const randomClingPoint = (): { x: number; y: number } => {
+      const candidates = upperPlatforms.length ? upperPlatforms : groundPlatforms;
+      if (!candidates.length) return randomAirPoint(34, 25, 160, 300);
+
+      const platform = candidates[Math.floor(Math.random() * candidates.length)];
+      const margin = Math.min(42, Math.max(12, platform.w * 0.14));
+      const usable = Math.max(1, platform.w - margin * 2 - 34);
       return {
         x: platform.x + margin + Math.random() * usable,
-        y: platform.y - h,
+        y: platform.y + platform.h,
       };
     };
 
-    const slime1 = point(chosen[0], 25, 260, 345);
-    const slime2 = point(chosen[4], 25, 1060, 525);
-    const gob1 = point(chosen[1], 38, 520, 342);
-    const gob2 = point(chosen[2], 38, 900, 522);
-    const gob3 = point(chosen[5], 38, 1180, 702);
-    const snake1 = point(chosen[3], 18, 780, 532);
-    const snake2 = point(chosen[6], 18, 360, 712);
-    const roper1 = point(chosen[7], 58, 980, 672);
+    const slime1 = randomGroundPoint(25, 34);
+    const slime2 = randomGroundPoint(25, 34);
+    const goblin1 = randomGroundPoint(38, 32);
+    const goblin2 = randomGroundPoint(38, 32);
+    const goblin3 = randomGroundPoint(38, 32);
+    const snake1 = randomGroundPoint(18, 42);
+    const snake2 = randomGroundPoint(18, 42);
+    const roper1 = randomGroundPoint(58, 42);
+    const slug1 = randomGroundPoint(11, 40);
+    const rat1 = randomGroundPoint(14, 28);
+    const skeleton1 = randomGroundPoint(42, 34);
+    const skeletonArcher1 = randomGroundPoint(42, 34);
+    const bomb1 = randomGroundPoint(26, 30);
+    const caterpillar1 = randomGroundPoint(20, 42);
+    const caterpillar2 = randomGroundPoint(20, 42);
+    const frostMite1 = randomGroundPoint(24, 38);
+    const kagenoko1 = randomGroundPoint(28, 34);
 
-    // Small / newly added monsters must be visible without deep exploration.
-    const startingPlatforms = groundPlatforms
-      .filter((platform) => platform.y >= 180 && platform.y <= 390)
-      .sort((a, b) => a.x - b.x);
-    const midPlatforms = groundPlatforms
-      .filter((platform) => platform.y > 390 && platform.y <= 560)
-      .sort((a, b) => a.x - b.x);
+    const ahriman1 = randomAirPoint(42, 34, 150, Math.max(190, this.stage.height - 220));
+    const bat1 = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
+    const bat2 = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
+    const crystalEye1 = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
+    const clingSlime = randomClingPoint();
 
-    const ratPlatform = startingPlatforms[0] ?? chosen[0];
-    const slugPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[1];
-    const skeletonPlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
-    const skeletonArcherPlatform = midPlatforms[1] ?? startingPlatforms[2] ?? chosen[6];
-    const bombPlatform = startingPlatforms[2] ?? midPlatforms[0] ?? chosen[8] ?? chosen[2];
-    const caterpillarPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[0];
-    const caterpillarFarPlatform = groundPlatforms[groundPlatforms.length - 1] ?? chosen[8] ?? chosen[4];
-    const frostMitePlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
-    const kagenokoPlatform = startingPlatforms[2] ?? startingPlatforms[1] ?? midPlatforms[0] ?? chosen[2];
-
-    const rat1 = point(ratPlatform, 14, 250, 356);
-    const slug1 = point(slugPlatform, 11, 520, 359);
-    const skeleton1 = point(skeletonPlatform, 42, 720, 498);
-    const skeletonArcher1 = point(skeletonArcherPlatform, 42, 880, 476);
-    const bomb1 = point(bombPlatform, 26, 610, 356);
-    const caterpillar1 = point(caterpillarPlatform, 20, 430, 350);
-    const caterpillar2 = point(caterpillarFarPlatform, 20, this.stage.width - 260, 700);
-    const frostMite1 = point(frostMitePlatform, 24, 760, 526);
-    const kagenoko1 = point(kagenokoPlatform, 28, 650, 350);
-
-    const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
-    const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
-
-    const clingPlatform = shuffle(upperPlatforms)[0];
-    const clingX = clingPlatform ? clingPlatform.x + clingPlatform.w * 0.5 - 17 : 680;
-    const clingY = clingPlatform ? clingPlatform.y + clingPlatform.h : 285;
-
-    this.enemies = [
+    this.enemies = shuffle([
       new Slime(slime1.x, slime1.y, 'crawl'),
       new Slime(slime2.x, slime2.y, 'crawl'),
-      new Slime(clingX, clingY, 'cling'),
-      new Goblin(gob1.x, gob1.y, 1, 0.8),
-      new Goblin(gob2.x, gob2.y, -1, 0.5),
-      new Goblin(gob3.x, gob3.y, 1, 1.1),
-      new Ahriman(630 + Math.random() * 470, 220 + Math.random() * 320),
+      new Slime(clingSlime.x, clingSlime.y, 'cling'),
+      new Goblin(goblin1.x, goblin1.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
+      new Goblin(goblin2.x, goblin2.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
+      new Goblin(goblin3.x, goblin3.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
+      new Ahriman(ahriman1.x, ahriman1.y),
       new Snake(snake1.x, snake1.y),
       new Snake(snake2.x, snake2.y),
-      new Bat(batBandX1 + Math.random() * Math.max(40, batBandX2 - batBandX1), 170 + Math.random() * 120),
-      new Bat(batBandX1 + 80 + Math.random() * Math.max(40, batBandX2 - batBandX1), 220 + Math.random() * 110),
+      new Bat(bat1.x, bat1.y),
+      new Bat(bat2.x, bat2.y),
       new Roper(roper1.x, roper1.y),
       new Slug(slug1.x, slug1.y),
       new Rat(rat1.x, rat1.y),
@@ -692,20 +774,27 @@ export class Game {
       new Caterpillar(caterpillar2.x, caterpillar2.y),
       new FrostMite(frostMite1.x, frostMite1.y),
       new Kagenoko(kagenoko1.x, kagenoko1.y),
-      new CrystalEye(
-        Math.min(this.stage.width - 140, this.stage.spawn.x + 720 + Math.random() * 220),
-        190 + Math.random() * 170,
-      ),
-    ];
+      new CrystalEye(crystalEye1.x, crystalEye1.y),
+    ]);
 
-    const chestPlatforms = shuffle(groundPlatforms)
-      .filter((platform) => Math.abs(platform.x - this.stage.spawn.x) > 180)
-      .slice(0, 3);
-    this.chests = chestPlatforms.map((platform, index) => {
-      const x = platform.x + 34 + ((index * 97 + this.floor * 53) % Math.max(50, platform.w - 80));
-      return new TreasureChest(x, platform.y - 28);
+    const chestCandidates = shuffle(
+      groundPlatforms.filter((platform) =>
+        Math.abs(platform.x - this.stage.spawn.x) > 150 &&
+        Math.abs(platform.x - this.stage.staircase.x) > 90
+      )
+    ).slice(0, Math.min(3, groundPlatforms.length));
+
+    this.chests = chestCandidates.map((platform) => {
+      const margin = Math.min(44, Math.max(16, platform.w * 0.12));
+      const usable = Math.max(1, platform.w - margin * 2 - 28);
+      return new TreasureChest(
+        platform.x + margin + Math.random() * usable,
+        platform.y - 28,
+      );
     });
   }
+
+
 
   private checkChestInteraction(): void {
     const chest = this.chests.find((candidate) => !candidate.opened && intersects(this.player, {
