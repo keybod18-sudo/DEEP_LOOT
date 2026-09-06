@@ -22,3 +22,10 @@
 ## Added visibility / implementation rule
 - 新規モンスター追加時は、画像や定義だけで終わらせず、必ず出現処理・当たり判定・HPバー表示まで実装する。
 - 追加直後の新規モンスターは、最初の数画面で確認できる位置へ最低1体確定配置する。
+
+
+## Direction / attachment validation rule
+- Every directional sprite must declare the direction the source art actually faces; do not guess flip conditions independently in each renderer.
+- Before delivery, compare logical movement/attack direction against the actual source frame direction for every changed directional monster.
+- Body-attached parts (fuse, weapon, tail, tentacle anchor, etc.) must share the same transform as the body unless the animation explicitly separates them.
+- A moving enemy must never visually face away from its actual movement/attack target unless that behavior is intentionally specified.

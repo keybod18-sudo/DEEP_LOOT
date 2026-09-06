@@ -9,6 +9,7 @@ import type { Slug } from './Slug';
 import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
 import type { Bomb } from './Bomb';
+import type { Facing } from '../game/types';
 
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
@@ -53,6 +54,18 @@ const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
 );
+
+
+// Explicit orientation of the adopted source sprites.
+// This avoids per-monster ad-hoc flip conditions getting inverted again.
+const SOURCE_FACING = {
+  goblin: -1,
+  snake: -1,
+  roper: -1,
+  slug: 1,
+  rat: 1,
+  skeleton: -1,
+} as const satisfies Record<string, Facing>;
 
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
@@ -177,8 +190,7 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    // Existing adopted orientation: frames face the opposite logical direction.
-    if (goblin.facing > 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, goblin.facing, SOURCE_FACING.goblin);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
@@ -253,7 +265,7 @@ export class EnemyRenderer {
     const footY = snake.y + snake.h + 2;
     ctx.save();
     ctx.translate(centerX, footY);
-    if (snake.facing > 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, snake.facing, SOURCE_FACING.snake);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
@@ -310,12 +322,19 @@ export class EnemyRenderer {
     }
 
     const fuseFlash = bomb.state === 'fuse' ? (Math.sin(bomb.actionTime * 18) * 0.5 + 0.5) : 0;
-    const radius = 12 + Math.sin(bomb.actionTime * 12) * 0.6;
-    const rollOffset = Math.sin(bomb.actionTime * 10) * 1.2;
+    const radius = 12 + Math.sin(bomb.actionTime * 12) * 0.45;
+    const rollOffset = bomb.state === 'roll' ? Math.sin(bomb.actionTime * 10) * 0.7 : 0;
+
+    // Rotation derives from actual world X, so rightward movement rotates clockwise,
+    // leftward movement rotates counter-clockwise, and the exact angle is preserved
+    // when the bomb stops to light its fuse.
+    const rollAngle = bomb.x / 12;
 
     ctx.save();
     ctx.translate(centerX, centerY + rollOffset);
+    ctx.rotate(rollAngle);
 
+    // The entire bomb is now one rigid rotating body: shell, face, seam AND fuse.
     ctx.fillStyle = fuseFlash > 0.45 ? '#f27d34' : '#363d4e';
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -332,23 +351,20 @@ export class EnemyRenderer {
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Rolling seam
-    ctx.save();
-    ctx.rotate(bomb.actionTime * 8 * bomb.facing);
+    // Rolling seam is attached to the shell; no separate rotation.
     ctx.strokeStyle = '#1a1f2b';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, radius * 0.65, -0.9, 0.9);
     ctx.stroke();
-    ctx.restore();
 
-    // Face
+    // Face is painted on the shell and rotates with it too.
     ctx.fillStyle = '#14181f';
     ctx.fillRect(-5, -2, 3, 3);
     ctx.fillRect(2, -2, 3, 3);
     ctx.fillRect(-3, 5, 6, 2);
 
-    // Fuse
+    // Fuse is physically attached to the shell, so it uses the same transform.
     ctx.strokeStyle = '#59462a';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -384,7 +400,7 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    if (roper.facing < 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, roper.facing, SOURCE_FACING.roper);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
@@ -401,7 +417,7 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    if (slug.facing < 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, slug.facing, SOURCE_FACING.slug);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
@@ -419,7 +435,7 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    if (rat.facing < 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, rat.facing, SOURCE_FACING.rat);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
@@ -438,10 +454,18 @@ export class EnemyRenderer {
 
     ctx.save();
     ctx.translate(centerX, footY);
-    if (skeleton.facing < 0) ctx.scale(-1, 1);
+    applySpriteFacing(ctx, skeleton.facing, SOURCE_FACING.skeleton);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
+}
+
+function applySpriteFacing(
+  ctx: CanvasRenderingContext2D,
+  logicalFacing: Facing,
+  sourceFacing: Facing,
+): void {
+  if (logicalFacing !== sourceFacing) ctx.scale(-1, 1);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
