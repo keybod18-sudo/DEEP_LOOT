@@ -20,6 +20,7 @@ import { CrystalEye } from '../enemies/CrystalEye';
 import { Kagenoko } from '../enemies/Kagenoko';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
+import { LightOrb } from '../combat/LightOrb';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
 import { SkeletonArrow } from '../combat/SkeletonArrow';
@@ -58,11 +59,13 @@ export class Game {
   private chests: TreasureChest[] = [];
   private fireballs: Fireball[] = [];
   private thunderStrikes: ThunderStrike[] = [];
+  private lightOrbs: LightOrb[] = [];
   private ahrimanFireballs: AhrimanFireball[] = [];
   private freezeLancers: FreezeLancer[] = [];
   private skeletonArrows: SkeletonArrow[] = [];
   private fireballCooldown = 0;
   private thunderCooldown = 0;
+  private lightCooldown = 0;
   private cameraX = 0;
   private cameraY = 0;
   private gold = 0;
@@ -113,11 +116,13 @@ export class Game {
     this.loot = [];
     this.fireballs = [];
     this.thunderStrikes = [];
+    this.lightOrbs = [];
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
+    this.lightCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -173,6 +178,7 @@ export class Game {
 
     this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
     this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
+    this.lightCooldown = Math.max(0, this.lightCooldown - dt);
 
     if (this.input.consumePress('k')) {
       if (this.player.silenced) {
@@ -188,10 +194,18 @@ export class Game {
         this.castThunder();
       }
     }
+    if (this.input.consumePress('i')) {
+      if (this.player.silenced) {
+        this.showNotice('沈黙で呪文を唱えられない');
+      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.lightCooldown <= 0) {
+        this.castLight();
+      }
+    }
 
     this.resolvePlayerAttack();
     this.updateFireballs(dt);
     this.updateThunderStrikes(dt);
+    this.updateLightOrbs(dt);
 
     for (const enemy of this.enemies) {
       enemy.update(dt, {
@@ -376,6 +390,61 @@ export class Game {
     this.refreshUi();
   }
 
+  private castLight(): void {
+    const originX = this.player.x + this.player.w / 2 - 7;
+    const originY = this.player.y + this.player.h * 0.34 - 7;
+    let target: Enemy | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    const px = this.player.x + this.player.w / 2;
+    const py = this.player.y + this.player.h / 2;
+
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      const dx = enemy.x + enemy.w / 2 - px;
+      const dy = enemy.y + enemy.h / 2 - py;
+      const distance = dx * dx + dy * dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        target = enemy;
+      }
+    }
+
+    this.lightOrbs.push(new LightOrb(originX, originY, this.player.facing, target));
+    this.lightCooldown = 0.82;
+    this.showNotice('ライト');
+  }
+
+  private updateLightOrbs(dt: number): void {
+    for (const orb of this.lightOrbs) {
+      orb.update(dt, this.enemies);
+      if (!orb.alive) continue;
+
+      for (const enemy of this.enemies) {
+        if (!enemy.alive || !intersects(orb.rect, enemy)) continue;
+
+        const killed = damageEnemy(
+          enemy,
+          5,
+          orb.x + orb.w / 2,
+          0.65,
+        );
+        orb.alive = false;
+
+        if (killed) this.handleEnemyKilled(enemy);
+        this.refreshUi();
+        break;
+      }
+    }
+
+    this.lightOrbs = this.lightOrbs.filter((orb) =>
+      orb.alive &&
+      orb.x > -160 &&
+      orb.x < this.stage.width + 160 &&
+      orb.y > -120 &&
+      orb.y < this.stage.height + 160
+    );
+  }
+
   private updateFireballs(dt: number): void {
     for (const fireball of this.fireballs) {
       fireball.update(dt);
@@ -524,11 +593,13 @@ export class Game {
     this.loot = [];
     this.fireballs = [];
     this.thunderStrikes = [];
+    this.lightOrbs = [];
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
+    this.lightCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -733,6 +804,7 @@ export class Game {
     for (const chest of this.chests) chest.draw(this.ctx);
     for (const drop of this.loot) drop.draw(this.ctx);
     for (const strike of this.thunderStrikes) strike.draw(this.ctx);
+    for (const orb of this.lightOrbs) orb.draw(this.ctx);
     for (const fireball of this.fireballs) fireball.draw(this.ctx);
     for (const shot of this.ahrimanFireballs) shot.draw(this.ctx);
     for (const lance of this.freezeLancers) lance.draw(this.ctx);
