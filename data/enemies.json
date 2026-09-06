@@ -42,7 +42,17 @@
     "bobAmplitude": 10,
     "minY": 70,
     "maxY": 285,
-    "contactDamage": 10
+    "contactDamage": 10,
+    "spellRange": 320,
+    "castDuration": 0.72,
+    "castHitTime": 0.34,
+    "spellCooldown": 1.25,
+    "fireballDamage": 12,
+    "fireballSpeed": 5.6,
+    "fireballLife": 2.2,
+    "freezeDamage": 18,
+    "freezeSpeed": 7.2,
+    "freezeLife": 1.8
   },
   "snake": {
     "maxHp": 28,
@@ -71,7 +81,8 @@
     "attackRange": 135,
     "attackDuration": 0.62,
     "hitTime": 0.28,
-    "cooldown": 1.45
+    "cooldown": 1.45,
+    "paralyzeDuration": 1.8
   },
   "slug": {
     "maxHp": 16,
@@ -99,7 +110,17 @@
   "fireball": {
     "damage": 14,
     "speed": 8.0,
-    "cooldown": 0.55,
-    "life": 1.7
+    "cooldown": 0.48,
+    "life": 1.8,
+    "width": 38,
+    "height": 24,
+    "drawHeight": 42
+  },
+  "thunder": {
+    "damage": 42,
+    "cooldown": 1.1,
+    "life": 0.24,
+    "beamWidth": 54,
+    "range": 96
   }
 }

@@ -20,10 +20,13 @@ export class Player implements PhysicsBody {
   invulnerability = 0;
   readonly attack = new PlayerAttack();
   walkTime = 0;
+
   poisonTime = 0;
   poisonTickTimer = 0;
   poisonTickInterval = 1;
   poisonDamage = 0;
+
+  paralysisTime = 0;
 
   constructor(private readonly renderer: PlayerRenderer) {}
 
@@ -39,6 +42,7 @@ export class Player implements PhysicsBody {
     this.poisonTickTimer = 0;
     this.poisonTickInterval = 1;
     this.poisonDamage = 0;
+    this.paralysisTime = 0;
   }
 
   resetPosition(x = 30, y = 330): void {
@@ -52,8 +56,13 @@ export class Player implements PhysicsBody {
   }
 
   update(dt: number, input: Input, stage: Stage): void {
-    const left = input.isDown('a', 'arrowleft');
-    const right = input.isDown('d', 'arrowright');
+    this.invulnerability = Math.max(0, this.invulnerability - dt);
+    this.updatePoison(dt);
+    this.updateParalysis(dt);
+
+    const canAct = !this.paralyzed && this.hp > 0;
+    const left = canAct && input.isDown('a', 'arrowleft');
+    const right = canAct && input.isDown('d', 'arrowright');
 
     if (left) {
       this.vx -= BALANCE.player.moveAcceleration;
@@ -64,24 +73,22 @@ export class Player implements PhysicsBody {
       this.facing = 1;
     }
     if (!left && !right) {
-      this.vx *= BALANCE.player.moveFriction;
+      this.vx *= this.paralyzed ? 0.72 : BALANCE.player.moveFriction;
     }
 
     this.vx = Math.max(-BALANCE.player.maxMoveSpeed, Math.min(BALANCE.player.maxMoveSpeed, this.vx));
 
-    if (input.consumePress('w', 'arrowup', ' ') && this.grounded) {
+    if (canAct && input.consumePress('w', 'arrowup', ' ') && this.grounded) {
       this.vy = -BALANCE.player.jumpPower;
     }
 
-    if (input.consumePress('j')) {
+    if (canAct && input.consumePress('j')) {
       this.attack.tryStart();
     }
 
     this.attack.update(dt);
-    this.invulnerability = Math.max(0, this.invulnerability - dt);
-    this.updatePoison(dt);
 
-    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0;
+    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !this.paralyzed;
     if (movingOnGround) this.walkTime += dt;
 
     const previousY = this.y;
@@ -98,8 +105,16 @@ export class Player implements PhysicsBody {
     if (this.poisonTickTimer <= 0) this.poisonTickTimer = this.poisonTickInterval;
   }
 
+  applyParalysis(duration: number): void {
+    this.paralysisTime = Math.max(this.paralysisTime, duration);
+  }
+
   get poisoned(): boolean {
     return this.poisonTime > 0;
+  }
+
+  get paralyzed(): boolean {
+    return this.paralysisTime > 0;
   }
 
   private updatePoison(dt: number): void {
@@ -118,6 +133,11 @@ export class Player implements PhysicsBody {
       this.poisonTickTimer = 0;
       this.poisonDamage = 0;
     }
+  }
+
+  private updateParalysis(dt: number): void {
+    if (this.paralysisTime <= 0) return;
+    this.paralysisTime = Math.max(0, this.paralysisTime - dt);
   }
 
   hurt(damage: number, sourceX: number): boolean {
@@ -152,7 +172,7 @@ export class Player implements PhysicsBody {
       this.facing,
       this.attack.frame,
       this.invulnerability,
-      this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0,
+      this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !this.paralyzed,
       this.walkTime,
     );
   }

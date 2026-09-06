@@ -13,5 +13,6 @@ export const BALANCE = {
   rat: enemyData.rat,
   skeleton: enemyData.skeleton,
   fireball: enemyData.fireball,
+  thunder: enemyData.thunder,
   enemyKnockback: enemyData.knockback,
 } as const;

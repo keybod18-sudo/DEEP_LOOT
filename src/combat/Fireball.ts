@@ -1,3 +1,4 @@
+import { BALANCE } from '../config/balance';
 import type { Facing, Rect } from '../game/types';
 
 const frameUrls = [1, 2, 3, 4, 5, 6, 7, 8].map((index) =>
@@ -12,8 +13,8 @@ export class Fireball {
     this.images.push(...await Promise.all(frameUrls.map(loadImage)));
   }
 
-  readonly w = 28;
-  readonly h = 16;
+  readonly w = BALANCE.fireball.width;
+  readonly h = BALANCE.fireball.height;
   alive = true;
   age = 0;
 
@@ -41,7 +42,7 @@ export class Fireball {
     if (!this.alive || Fireball.images.length === 0) return;
     const frame = Math.floor(this.age * 18) % Fireball.images.length;
     const image = Fireball.images[frame] ?? Fireball.images[0]!;
-    const drawH = 28;
+    const drawH = BALANCE.fireball.drawHeight;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
 
     ctx.save();

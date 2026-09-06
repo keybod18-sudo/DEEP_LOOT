@@ -13,6 +13,9 @@ import { Slug } from '../enemies/Slug';
 import { Rat } from '../enemies/Rat';
 import { Skeleton } from '../enemies/Skeleton';
 import { Fireball } from '../combat/Fireball';
+import { ThunderStrike } from '../combat/ThunderStrike';
+import { AhrimanFireball } from '../combat/AhrimanFireball';
+import { FreezeLancer } from '../combat/FreezeLancer';
 import { Inventory } from '../items/Inventory';
 import { createRandomItem } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
@@ -47,7 +50,11 @@ export class Game {
   private loot: LootDrop[] = [];
   private chests: TreasureChest[] = [];
   private fireballs: Fireball[] = [];
+  private thunderStrikes: ThunderStrike[] = [];
+  private ahrimanFireballs: AhrimanFireball[] = [];
+  private freezeLancers: FreezeLancer[] = [];
   private fireballCooldown = 0;
+  private thunderCooldown = 0;
   private cameraX = 0;
   private cameraY = 0;
   private gold = 0;
@@ -90,7 +97,11 @@ export class Game {
     this.gold = 0;
     this.loot = [];
     this.fireballs = [];
+    this.thunderStrikes = [];
+    this.ahrimanFireballs = [];
+    this.freezeLancers = [];
     this.fireballCooldown = 0;
+    this.thunderCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -119,12 +130,18 @@ export class Game {
     if (this.player.hp !== hpBeforeUpdate) this.refreshUi();
 
     this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
-    if (this.input.consumePress('k') && this.fireballCooldown <= 0) {
+    this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
+
+    if (!this.player.paralyzed && this.input.consumePress('k') && this.fireballCooldown <= 0) {
       this.castFireball();
+    }
+    if (!this.player.paralyzed && this.input.consumePress('l') && this.thunderCooldown <= 0) {
+      this.castThunder();
     }
 
     this.resolvePlayerAttack();
     this.updateFireballs(dt);
+    this.updateThunderStrikes(dt);
 
     for (const enemy of this.enemies) {
       enemy.update(dt, {
@@ -137,12 +154,40 @@ export class Game {
           return damaged;
         },
         poisonPlayer: (duration, tickInterval, damage) => {
+          const wasPoisoned = this.player.poisoned;
           this.player.applyPoison(duration, tickInterval, damage);
-          this.showNotice('毒状態になった');
+          if (!wasPoisoned) this.showNotice('毒状態になった');
           this.refreshUi();
+        },
+        paralyzePlayer: (duration) => {
+          const wasParalyzed = this.player.paralyzed;
+          this.player.applyParalysis(duration);
+          if (!wasParalyzed) this.showNotice('麻痺した');
+          this.refreshUi();
+        },
+        spawnAhrimanFireball: (x, y, facing) => {
+          this.ahrimanFireballs.push(new AhrimanFireball(
+            x,
+            y,
+            facing * BALANCE.ahriman.fireballSpeed,
+            facing,
+            BALANCE.ahriman.fireballLife,
+          ));
+        },
+        spawnFreezeLancer: (x, y, facing) => {
+          this.freezeLancers.push(new FreezeLancer(
+            x,
+            y,
+            facing * BALANCE.ahriman.freezeSpeed,
+            facing,
+            BALANCE.ahriman.freezeLife,
+          ));
         },
       });
     }
+
+    this.updateAhrimanFireballs(dt);
+    this.updateFreezeLancers(dt);
 
     for (const drop of this.loot) drop.update(dt, this.stage);
     this.collectLoot();
@@ -178,8 +223,8 @@ export class Game {
     const facing = this.player.facing;
     const x = facing > 0
       ? this.player.x + this.player.w + 8
-      : this.player.x - 36;
-    const y = this.player.y + 7;
+      : this.player.x - BALANCE.fireball.width - 8;
+    const y = this.player.y + 4;
 
     this.fireballs.push(new Fireball(
       x,
@@ -189,6 +234,34 @@ export class Game {
       BALANCE.fireball.life,
     ));
     this.fireballCooldown = BALANCE.fireball.cooldown;
+  }
+
+  private castThunder(): void {
+    const centerX = this.player.facing > 0
+      ? this.player.x + this.player.w + BALANCE.thunder.range
+      : this.player.x - BALANCE.thunder.range;
+    const strike = new ThunderStrike(
+      centerX,
+      this.stage.height,
+      BALANCE.thunder.life,
+      BALANCE.thunder.beamWidth,
+    );
+
+    this.thunderStrikes.push(strike);
+    this.thunderCooldown = BALANCE.thunder.cooldown;
+    this.showNotice('サンダー');
+
+    for (const enemy of this.enemies) {
+      if (!enemy.alive || !intersects(strike.rect, enemy)) continue;
+      const killed = damageEnemy(
+        enemy,
+        BALANCE.thunder.damage,
+        centerX,
+        1.2,
+      );
+      if (killed) this.handleEnemyKilled(enemy);
+    }
+    this.refreshUi();
   }
 
   private updateFireballs(dt: number): void {
@@ -217,8 +290,51 @@ export class Game {
 
     this.fireballs = this.fireballs.filter((fireball) =>
       fireball.alive &&
-      fireball.x > -80 &&
-      fireball.x < this.stage.width + 80
+      fireball.x > -120 &&
+      fireball.x < this.stage.width + 120
+    );
+  }
+
+  private updateThunderStrikes(dt: number): void {
+    for (const strike of this.thunderStrikes) strike.update(dt);
+    this.thunderStrikes = this.thunderStrikes.filter((strike) => strike.alive);
+  }
+
+  private updateAhrimanFireballs(dt: number): void {
+    for (const shot of this.ahrimanFireballs) {
+      shot.update(dt);
+      if (!shot.alive) continue;
+
+      if (intersects(shot.rect, this.player)) {
+        const hit = this.player.hurt(shot.damage, shot.x);
+        if (hit) this.refreshUi();
+        shot.alive = false;
+      }
+    }
+
+    this.ahrimanFireballs = this.ahrimanFireballs.filter((shot) =>
+      shot.alive &&
+      shot.x > -120 &&
+      shot.x < this.stage.width + 120
+    );
+  }
+
+  private updateFreezeLancers(dt: number): void {
+    for (const lance of this.freezeLancers) {
+      lance.update(dt);
+      if (!lance.alive) continue;
+
+      if (intersects(lance.rect, this.player)) {
+        const hit = this.player.hurt(lance.damage, lance.x);
+        if (hit) this.refreshUi();
+        lance.alive = false;
+      }
+    }
+
+    this.freezeLancers = this.freezeLancers.filter((lance) =>
+      lance.alive &&
+      lance.x > -140 &&
+      lance.x < this.stage.width + 140
     );
   }
 
@@ -256,7 +372,11 @@ export class Game {
     this.floor += 1;
     this.loot = [];
     this.fireballs = [];
+    this.thunderStrikes = [];
+    this.ahrimanFireballs = [];
+    this.freezeLancers = [];
     this.fireballCooldown = 0;
+    this.thunderCooldown = 0;
     this.stage = createDungeonStage(this.floor);
     this.player.resetPosition(this.stage.spawn.x, this.stage.spawn.y);
     this.cameraX = 0;
@@ -392,7 +512,10 @@ export class Game {
 
     for (const chest of this.chests) chest.draw(this.ctx);
     for (const drop of this.loot) drop.draw(this.ctx);
+    for (const strike of this.thunderStrikes) strike.draw(this.ctx);
     for (const fireball of this.fireballs) fireball.draw(this.ctx);
+    for (const shot of this.ahrimanFireballs) shot.draw(this.ctx);
+    for (const lance of this.freezeLancers) lance.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
     }
@@ -407,33 +530,37 @@ export class Game {
 
   private drawPlayerHpBar(): void {
     const centerX = this.player.x + this.player.w / 2;
-    // Player sprite is much taller than its collision box; place the bar above the visible head.
     const topY = this.player.y - 62;
     const width = 44;
 
     this.drawHpBar(centerX, topY, width, this.player.hp, this.maxHp);
 
+    let iconX = centerX + width / 2 + 9;
     if (this.player.poisoned) {
-      this.drawPoisonMark(centerX + width / 2 + 9, topY + 3);
+      this.drawStatusMark(iconX, topY + 3, '#7d1bb1', '#f0b6ff', '毒');
+      iconX += 16;
+    }
+    if (this.player.paralyzed) {
+      this.drawStatusMark(iconX, topY + 3, '#8d6c11', '#ffe38a', '麻');
     }
   }
 
-  private drawPoisonMark(centerX: number, centerY: number): void {
+  private drawStatusMark(centerX: number, centerY: number, fill: string, stroke: string, label: string): void {
     const size = 12;
     const x = Math.round(centerX - size / 2);
     const y = Math.round(centerY - size / 2);
 
     this.ctx.save();
-    this.ctx.fillStyle = '#7d1bb1';
+    this.ctx.fillStyle = fill;
     this.ctx.fillRect(x, y, size, size);
-    this.ctx.strokeStyle = '#f0b6ff';
+    this.ctx.strokeStyle = stroke;
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(x - 0.5, y - 0.5, size + 1, size + 1);
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = 'bold 9px system-ui';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('毒', centerX, centerY + 0.5);
+    this.ctx.fillText(label, centerX, centerY + 0.5);
     this.ctx.restore();
   }
 
@@ -449,7 +576,6 @@ export class Game {
         enemy.type === 'snake' ? 40 :
         36;
 
-      // These offsets follow each sprite's visible top, not the smaller collision box.
       const y =
         enemy.type === 'goblin' ? enemy.y - 30 :
         enemy.type === 'skeleton' ? enemy.y - 34 :
@@ -572,7 +698,7 @@ function shuffle<T>(values: readonly T[]): T[] {
   const result = [...values];
   for (let i = result.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j]!, result[i]!];
+    [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
 }

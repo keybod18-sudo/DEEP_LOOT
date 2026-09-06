@@ -42,7 +42,8 @@ export class Roper extends Enemy {
           ? { x: this.x + this.w - 4, y: this.y + 10, w: reach, h: 34 }
           : { x: this.x - reach + 4, y: this.y + 10, w: reach, h: 34 };
         if (intersects(player, hitbox)) {
-          context.hurtPlayer(BALANCE.roper.attackDamage, this.x);
+          const hit = context.hurtPlayer(BALANCE.roper.attackDamage, this.x);
+          if (hit) context.paralyzePlayer(BALANCE.roper.paralyzeDuration);
         }
         this.hitDone = true;
       }

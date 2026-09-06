@@ -184,7 +184,10 @@ export class EnemyRenderer {
   private drawAhriman(ctx: CanvasRenderingContext2D, ahriman: Ahriman): void {
     const drawW = 76;
     const drawH = 40;
-    const flap = Math.sin(ahriman.actionTime * 13);
+    const castingKind = ahriman.castingKind;
+    const flapSpeed = castingKind ? 7.5 : 13;
+    const flapStrength = castingKind ? 2.4 : 5;
+    const flap = Math.sin(ahriman.actionTime * flapSpeed);
     const centerX = ahriman.x + ahriman.w / 2;
     const centerY = ahriman.y + ahriman.h / 2;
 
@@ -192,11 +195,34 @@ export class EnemyRenderer {
     ctx.translate(centerX, centerY);
     if (ahriman.facing < 0) ctx.scale(-1, 1);
 
+    if (castingKind) {
+      const accent = castingKind === 'fireball' ? '#ff9342' : '#85f0ff';
+      const accent2 = castingKind === 'fireball' ? '#6b1930' : '#265f7a';
+      const radius = 16 + Math.sin(ahriman.actionTime * 8) * 2.5;
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 16, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = accent2;
+      for (let i = 0; i < 6; i += 1) {
+        const angle = ahriman.actionTime * 3.4 + i * (Math.PI * 2 / 6);
+        const px = Math.cos(angle) * (radius + 2);
+        const py = 16 + Math.sin(angle) * (radius * 0.42);
+        ctx.fillRect(Math.round(px) - 2, Math.round(py) - 2, 4, 4);
+      }
+
+      ctx.fillStyle = accent;
+      ctx.fillRect(-4, -18, 8, 4);
+    }
+
     const sourceW = this.ahrimanImage.naturalWidth;
     const sourceH = this.ahrimanImage.naturalHeight;
     const wingW = Math.floor(sourceW * 0.34);
     const bodyW = sourceW - wingW * 2;
-    const wingLift = flap * 5;
+    const wingLift = flap * flapStrength;
     const wingScaleY = 0.78 + (flap + 1) * 0.18;
 
     ctx.save();
