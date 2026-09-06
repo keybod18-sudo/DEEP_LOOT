@@ -15,6 +15,7 @@ import { Skeleton } from '../enemies/Skeleton';
 import { SkeletonArcher } from '../enemies/SkeletonArcher';
 import { Bomb } from '../enemies/Bomb';
 import { Caterpillar } from '../enemies/Caterpillar';
+import { FrostMite } from '../enemies/FrostMite';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { AhrimanFireball } from '../combat/AhrimanFireball';
@@ -127,6 +128,14 @@ export class Game {
       this.showNotice('封印でメニューを開けない');
       return;
     }
+    if (this.player.sleeping) {
+      this.showNotice('睡眠中で動けない');
+      return;
+    }
+    if (this.player.frozen) {
+      this.showNotice('氷結中で動けない');
+      return;
+    }
     this.setMenuOpen(true);
   }
 
@@ -136,6 +145,10 @@ export class Game {
         this.setMenuOpen(false);
       } else if (this.player.sealed) {
         this.showNotice('封印でメニューを開けない');
+      } else if (this.player.sleeping) {
+        this.showNotice('睡眠中で動けない');
+      } else if (this.player.frozen) {
+        this.showNotice('氷結中で動けない');
       } else {
         this.setMenuOpen(true);
       }
@@ -155,14 +168,14 @@ export class Game {
     if (this.input.consumePress('k')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralyzed && this.fireballCooldown <= 0) {
+      } else if (!this.player.paralyzed && !this.player.sleeping && !this.player.frozen && this.fireballCooldown <= 0) {
         this.castFireball();
       }
     }
     if (this.input.consumePress('l')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralyzed && this.thunderCooldown <= 0) {
+      } else if (!this.player.paralyzed && !this.player.sleeping && !this.player.frozen && this.thunderCooldown <= 0) {
         this.castThunder();
       }
     }
@@ -216,6 +229,20 @@ export class Game {
           const wasBlinded = this.player.blinded;
           this.player.applyBlind(duration);
           if (!wasBlinded) this.showNotice('暗闇状態になった');
+          this.refreshUi();
+        },
+        sleepPlayer: (duration) => {
+          const wasSleeping = this.player.sleeping;
+          this.player.applySleep(duration);
+          this.setMenuOpen(false);
+          if (!wasSleeping) this.showNotice('睡眠状態になった');
+          this.refreshUi();
+        },
+        freezePlayer: (duration) => {
+          const wasFrozen = this.player.frozen;
+          this.player.applyFrozen(duration);
+          this.setMenuOpen(false);
+          if (!wasFrozen) this.showNotice('氷結した');
           this.refreshUi();
         },
         spawnAhrimanFireball: (x, y, facing) => {
@@ -543,6 +570,7 @@ export class Game {
     const bombPlatform = startingPlatforms[2] ?? midPlatforms[0] ?? chosen[8] ?? chosen[2];
     const caterpillarPlatform = startingPlatforms[1] ?? startingPlatforms[0] ?? chosen[0];
     const caterpillarFarPlatform = groundPlatforms[groundPlatforms.length - 1] ?? chosen[8] ?? chosen[4];
+    const frostMitePlatform = midPlatforms[0] ?? startingPlatforms[startingPlatforms.length - 1] ?? chosen[5];
 
     const rat1 = point(ratPlatform, 14, 250, 356);
     const slug1 = point(slugPlatform, 11, 520, 359);
@@ -551,6 +579,7 @@ export class Game {
     const bomb1 = point(bombPlatform, 26, 610, 356);
     const caterpillar1 = point(caterpillarPlatform, 20, 430, 350);
     const caterpillar2 = point(caterpillarFarPlatform, 20, this.stage.width - 260, 700);
+    const frostMite1 = point(frostMitePlatform, 24, 760, 526);
 
     const batBandX1 = Math.max(260, this.stage.spawn.x + 140);
     const batBandX2 = Math.min(this.stage.width - 260, this.stage.spawn.x + 520);
@@ -579,6 +608,7 @@ export class Game {
       new Bomb(bomb1.x, bomb1.y),
       new Caterpillar(caterpillar1.x, caterpillar1.y),
       new Caterpillar(caterpillar2.x, caterpillar2.y),
+      new FrostMite(frostMite1.x, frostMite1.y),
     ];
 
     const chestPlatforms = shuffle(groundPlatforms)
@@ -678,7 +708,9 @@ export class Game {
     for (const lance of this.freezeLancers) lance.draw(this.ctx);
     for (const arrow of this.skeletonArrows) arrow.draw(this.ctx);
     for (const enemy of this.enemies) {
-      if (enemy.alive) this.enemyRenderer.draw(this.ctx, enemy);
+      if (!enemy.alive) continue;
+      if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
+      else this.enemyRenderer.draw(this.ctx, enemy);
     }
     this.player.draw(this.ctx);
     this.drawEnemyHpBars();
@@ -719,6 +751,14 @@ export class Game {
     }
     if (this.player.blinded) {
       this.drawStatusMark(iconX, topY + 3, '#1d1a28', '#bbb0df', '暗');
+      iconX += 16;
+    }
+    if (this.player.sleeping) {
+      this.drawStatusMark(iconX, topY + 3, '#34325f', '#d9ddff', '眠');
+      iconX += 16;
+    }
+    if (this.player.frozen) {
+      this.drawStatusMark(iconX, topY + 3, '#17677e', '#c7f8ff', '氷');
     }
   }
 
@@ -754,6 +794,7 @@ export class Game {
         enemy.type === 'snake' ? 40 :
         enemy.type === 'bomb' ? 38 :
         enemy.type === 'caterpillar' ? 42 :
+        enemy.type === 'frostMite' ? 42 :
         36;
 
       const y =
@@ -768,6 +809,7 @@ export class Game {
         enemy.type === 'rat' ? enemy.y - 17 :
         enemy.type === 'bomb' ? enemy.y - 20 :
         enemy.type === 'caterpillar' ? enemy.y - 26 :
+        enemy.type === 'frostMite' ? enemy.y - 28 :
         enemy.y - 16;
 
       this.drawHpBar(

@@ -213,15 +213,17 @@ export class Caterpillar extends Enemy {
     let seal = Math.random() < BALANCE.caterpillar.sealChance;
     let silence = Math.random() < BALANCE.caterpillar.silenceChance;
     let blind = Math.random() < BALANCE.caterpillar.blindChance;
+    let sleep = Math.random() < BALANCE.caterpillar.sleepChance;
 
-    if (!slow && !paralysis && !poison && !seal && !silence && !blind) {
-      const forced = Math.floor(Math.random() * 6);
+    if (!slow && !paralysis && !poison && !seal && !silence && !blind && !sleep) {
+      const forced = Math.floor(Math.random() * 7);
       slow = forced === 0;
       paralysis = forced === 1;
       poison = forced === 2;
       seal = forced === 3;
       silence = forced === 4;
       blind = forced === 5;
+      sleep = forced === 6;
     }
 
     if (slow) context.slowPlayer(BALANCE.caterpillar.slowDuration);
@@ -236,6 +238,7 @@ export class Caterpillar extends Enemy {
     if (seal) context.sealPlayer(BALANCE.caterpillar.sealDuration);
     if (silence) context.silencePlayer(BALANCE.caterpillar.silenceDuration);
     if (blind) context.blindPlayer(BALANCE.caterpillar.blindDuration);
+    if (sleep) context.sleepPlayer(BALANCE.caterpillar.sleepDuration);
   }
 
   private finishButterflyAttack(): void {

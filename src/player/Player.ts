@@ -31,6 +31,8 @@ export class Player implements PhysicsBody {
   sealTime = 0;
   silenceTime = 0;
   blindTime = 0;
+  sleepTime = 0;
+  frozenTime = 0;
 
   constructor(private readonly renderer: PlayerRenderer) {}
 
@@ -41,6 +43,7 @@ export class Player implements PhysicsBody {
     this.attack.timer = 0;
     this.attack.cooldown = 0;
     this.attack.hitConsumed = false;
+    this.attack.missed = false;
     this.walkTime = 0;
     this.poisonTime = 0;
     this.poisonTickTimer = 0;
@@ -51,6 +54,8 @@ export class Player implements PhysicsBody {
     this.sealTime = 0;
     this.silenceTime = 0;
     this.blindTime = 0;
+    this.sleepTime = 0;
+    this.frozenTime = 0;
   }
 
   resetPosition(x = 30, y = 330): void {
@@ -66,14 +71,11 @@ export class Player implements PhysicsBody {
   update(dt: number, input: Input, stage: Stage): void {
     this.invulnerability = Math.max(0, this.invulnerability - dt);
     this.updatePoison(dt);
-    this.updateParalysis(dt);
-    this.updateSlow(dt);
-    this.updateSeal(dt);
-    this.updateSilence(dt);
-    this.updateBlind(dt);
+    this.updateTimedStatuses(dt);
 
+    const disabled = this.paralyzed || this.sleeping || this.frozen;
     const speedFactor = this.slowed ? 0.48 : 1;
-    const canAct = !this.paralyzed && this.hp > 0;
+    const canAct = !disabled && this.hp > 0;
     const left = canAct && input.isDown('a', 'arrowleft');
     const right = canAct && input.isDown('d', 'arrowright');
 
@@ -86,7 +88,7 @@ export class Player implements PhysicsBody {
       this.facing = 1;
     }
     if (!left && !right) {
-      this.vx *= this.paralyzed ? 0.72 : BALANCE.player.moveFriction;
+      this.vx *= disabled ? (this.frozen ? 0.2 : 0.72) : BALANCE.player.moveFriction;
     }
 
     const maxMoveSpeed = BALANCE.player.maxMoveSpeed * speedFactor;
@@ -97,12 +99,13 @@ export class Player implements PhysicsBody {
     }
 
     if (canAct && input.consumePress('j')) {
-      this.attack.tryStart();
+      this.attack.tryStart(this.blinded ? BALANCE.caterpillar.blindMissChance : 0);
     }
 
-    this.attack.update(dt);
+    if (disabled) this.attack.cancel();
+    else this.attack.update(dt);
 
-    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !this.paralyzed;
+    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !disabled;
     if (movingOnGround) this.walkTime += dt;
 
     const previousY = this.y;
@@ -139,29 +142,30 @@ export class Player implements PhysicsBody {
     this.blindTime = Math.max(this.blindTime, duration);
   }
 
-  get poisoned(): boolean {
-    return this.poisonTime > 0;
+  applySleep(duration: number): void {
+    this.sleepTime = Math.max(this.sleepTime, duration);
+    this.attack.cancel();
+    this.vx *= 0.25;
   }
 
-  get paralyzed(): boolean {
-    return this.paralysisTime > 0;
+  applyFrozen(duration: number): void {
+    this.frozenTime = Math.max(this.frozenTime, duration);
+    this.attack.cancel();
+    this.vx = 0;
   }
 
-  get slowed(): boolean {
-    return this.slowTime > 0;
+  wakeUp(): void {
+    this.sleepTime = 0;
   }
 
-  get sealed(): boolean {
-    return this.sealTime > 0;
-  }
-
-  get silenced(): boolean {
-    return this.silenceTime > 0;
-  }
-
-  get blinded(): boolean {
-    return this.blindTime > 0;
-  }
+  get poisoned(): boolean { return this.poisonTime > 0; }
+  get paralyzed(): boolean { return this.paralysisTime > 0; }
+  get slowed(): boolean { return this.slowTime > 0; }
+  get sealed(): boolean { return this.sealTime > 0; }
+  get silenced(): boolean { return this.silenceTime > 0; }
+  get blinded(): boolean { return this.blindTime > 0; }
+  get sleeping(): boolean { return this.sleepTime > 0; }
+  get frozen(): boolean { return this.frozenTime > 0; }
 
   private updatePoison(dt: number): void {
     if (this.poisonTime <= 0 || this.hp <= 0) return;
@@ -181,34 +185,20 @@ export class Player implements PhysicsBody {
     }
   }
 
-  private updateParalysis(dt: number): void {
-    if (this.paralysisTime <= 0) return;
+  private updateTimedStatuses(dt: number): void {
     this.paralysisTime = Math.max(0, this.paralysisTime - dt);
-  }
-
-  private updateSlow(dt: number): void {
-    if (this.slowTime <= 0) return;
     this.slowTime = Math.max(0, this.slowTime - dt);
-  }
-
-  private updateSeal(dt: number): void {
-    if (this.sealTime <= 0) return;
     this.sealTime = Math.max(0, this.sealTime - dt);
-  }
-
-  private updateSilence(dt: number): void {
-    if (this.silenceTime <= 0) return;
     this.silenceTime = Math.max(0, this.silenceTime - dt);
-  }
-
-  private updateBlind(dt: number): void {
-    if (this.blindTime <= 0) return;
     this.blindTime = Math.max(0, this.blindTime - dt);
+    this.sleepTime = Math.max(0, this.sleepTime - dt);
+    this.frozenTime = Math.max(0, this.frozenTime - dt);
   }
 
   hurt(damage: number, sourceX: number): boolean {
     if (this.invulnerability > 0 || this.hp <= 0) return false;
 
+    this.wakeUp();
     this.hp = Math.max(0, this.hp - damage);
     this.invulnerability = BALANCE.player.hurtInvulnerability;
     this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
@@ -216,10 +206,10 @@ export class Player implements PhysicsBody {
     return true;
   }
 
-
   hurtProjectile(damage: number, sourceX: number): boolean {
     if (this.hp <= 0) return false;
 
+    this.wakeUp();
     this.hp = Math.max(0, this.hp - damage);
     this.invulnerability = Math.max(this.invulnerability, BALANCE.player.hurtInvulnerability * 0.7);
     this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
@@ -240,6 +230,7 @@ export class Player implements PhysicsBody {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
+    const disabled = this.paralyzed || this.sleeping || this.frozen;
     this.renderer.draw(
       ctx,
       this.x,
@@ -249,8 +240,10 @@ export class Player implements PhysicsBody {
       this.facing,
       this.attack.frame,
       this.invulnerability,
-      this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !this.paralyzed,
+      this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !disabled,
       this.walkTime,
+      this.sleeping,
+      this.frozen,
     );
   }
 }

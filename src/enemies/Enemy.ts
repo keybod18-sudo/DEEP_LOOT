@@ -15,13 +15,15 @@ export interface EnemyContext {
   sealPlayer: (duration: number) => void;
   silencePlayer: (duration: number) => void;
   blindPlayer: (duration: number) => void;
+  sleepPlayer: (duration: number) => void;
+  freezePlayer: (duration: number) => void;
   spawnAhrimanFireball: (x: number, y: number, facing: Facing) => void;
   spawnFreezeLancer: (x: number, y: number, targetX: number, targetY: number) => void;
   spawnSkeletonArrow: (x: number, y: number, vx: number, vy: number, damage: number, poisoned: boolean) => void;
 }
 
 export abstract class Enemy implements PhysicsBody {
-  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat' | 'roper' | 'slug' | 'rat' | 'skeleton' | 'skeletonArcher' | 'bomb' | 'caterpillar';
+  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat' | 'roper' | 'slug' | 'rat' | 'skeleton' | 'skeletonArcher' | 'bomb' | 'caterpillar' | 'frostMite';
 
   vx = 0;
   vy = 0;

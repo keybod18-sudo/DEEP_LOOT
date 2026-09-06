@@ -15,6 +15,7 @@ export const BALANCE = {
   skeletonArcher: enemyData.skeletonArcher,
   bomb: enemyData.bomb,
   caterpillar: enemyData.caterpillar,
+  frostMite: enemyData.frostMite,
   fireball: enemyData.fireball,
   thunder: enemyData.thunder,
   enemyKnockback: enemyData.knockback,
