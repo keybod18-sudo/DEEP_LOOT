@@ -52,7 +52,8 @@
     "fireballLife": 2.2,
     "freezeDamage": 18,
     "freezeSpeed": 7.4,
-    "freezeLife": 1.8
+    "freezeLife": 1.8,
+    "freezeDuration": 2.6
   },
   "snake": {
     "maxHp": 28,

@@ -3,7 +3,7 @@ import { intersects } from '../game/Collision';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
-export type CrystalEyeState = 'hover' | 'beamCharge' | 'beamFire' | 'orbCharge' | 'recover';
+export type CrystalEyeState = 'idle' | 'beamCharge' | 'beamFire' | 'orbCharge' | 'recover';
 
 interface CrystalOrb {
   x: number;
@@ -15,59 +15,79 @@ interface CrystalOrb {
   phase: number;
 }
 
-const crystalEyeFrameUrls = Array.from({ length: 8 }, (_, index) =>
-  new URL(`../../assets/monsters/crystal_eye/idle_${String(index + 1).padStart(2, '0')}.png`, import.meta.url).href,
-);
-
 export class CrystalEye extends Enemy {
   readonly type = 'crystalEye' as const;
-  state: CrystalEyeState = 'hover';
+  state: CrystalEyeState = 'idle';
   stateTime = 0;
   targetX = 0;
   targetY = 0;
   beamHit = false;
+
+  private readonly anchorX: number;
+  private readonly anchorY: number;
   private attackCycle = 0;
+  private lookX = 0;
+  private lookY = 0;
   private readonly orbs: CrystalOrb[] = [];
-  private static readonly frames: HTMLImageElement[] = [];
 
   constructor(x: number, y: number) {
-    super(x, y, 46, 82, BALANCE.crystalEye.maxHp, BALANCE.crystalEye.maxHp);
+    super(x, y, 60, 104, BALANCE.crystalEye.maxHp, BALANCE.crystalEye.maxHp);
+    this.anchorX = x;
+    this.anchorY = y;
     this.cooldown = 0.8 + Math.random() * 0.6;
-    this.facing = Math.random() < 0.5 ? -1 : 1;
   }
 
   static async loadAssets(): Promise<void> {
-    if (this.frames.length > 0) return;
-    const loaded = await Promise.all(crystalEyeFrameUrls.map(loadImage));
-    this.frames.push(...loaded);
+    // V38 draws the translucent crystal and organic eyeball directly.
+    // Old robot-containing Crystal Eye sprite files are intentionally unused.
   }
 
   interruptForKnockback(): void {
-    this.state = 'hover';
+    this.knockbackTime = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.x = this.anchorX;
+    this.y = this.anchorY;
+    this.state = 'idle';
     this.stateTime = 0;
     this.beamHit = false;
   }
 
   protected onKnockbackEnd(): void {
-    this.state = 'hover';
-    this.stateTime = 0;
-    this.cooldown = Math.max(this.cooldown, 0.7);
+    this.knockbackTime = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.x = this.anchorX;
+    this.y = this.anchorY;
   }
 
   protected updateAi(dt: number, context: EnemyContext): void {
+    // Crystal Eye is a fixed turret. It never translates, even after knockback.
+    this.x = this.anchorX;
+    this.y = this.anchorY;
+    this.vx = 0;
+    this.vy = 0;
+    this.knockbackTime = 0;
+
+    this.updateEyeTracking(context);
     this.updateOrbs(dt, context);
     this.stateTime += dt;
 
+    const playerX = context.player.x + context.player.w / 2;
+    const playerY = context.player.y + context.player.h / 2;
+    const centerX = this.x + this.w / 2;
+    const centerY = this.y + this.h / 2;
+    const distance = Math.hypot(playerX - centerX, playerY - centerY);
+
     if (this.state === 'beamCharge') {
-      this.vx *= 0.88;
-      this.vy *= 0.88;
+      // The eye follows the player while charging. The beam locks at release.
+      this.targetX = playerX;
+      this.targetY = playerY;
       if (this.stateTime >= BALANCE.crystalEye.beamCharge) this.beginBeamFire();
       return;
     }
 
     if (this.state === 'beamFire') {
-      this.vx *= 0.76;
-      this.vy *= 0.76;
       if (!this.beamHit) {
         this.beamHit = true;
         this.resolveBeamHit(context);
@@ -77,8 +97,8 @@ export class CrystalEye extends Enemy {
     }
 
     if (this.state === 'orbCharge') {
-      this.vx *= 0.86;
-      this.vy *= 0.86;
+      this.targetX = playerX;
+      this.targetY = playerY;
       if (this.stateTime >= BALANCE.crystalEye.orbCharge) {
         this.spawnOrb(context);
         this.beginRecover();
@@ -87,49 +107,37 @@ export class CrystalEye extends Enemy {
     }
 
     if (this.state === 'recover') {
-      this.vx *= 0.92;
-      this.vy *= 0.92;
       if (this.stateTime >= BALANCE.crystalEye.recoverDuration) {
-        this.state = 'hover';
+        this.state = 'idle';
         this.stateTime = 0;
         this.cooldown = BALANCE.crystalEye.attackCooldown;
       }
       return;
     }
 
-    this.updateHover(context);
-  }
-
-  private updateHover(context: EnemyContext): void {
-    const playerX = context.player.x + context.player.w / 2;
-    const playerY = context.player.y + context.player.h / 2;
-    const centerX = this.x + this.w / 2;
-    const centerY = this.y + this.h / 2;
-    const dx = playerX - centerX;
-    const dy = playerY - centerY;
-    const distance = Math.max(1, Math.hypot(dx, dy));
-
-    this.facing = dx >= 0 ? 1 : -1;
-    const desiredDistance = BALANCE.crystalEye.hoverRange;
-    const toward = distance > desiredDistance ? 1 : distance < desiredDistance * 0.64 ? -0.65 : 0;
-    const orbit = Math.sin(this.actionTime * 1.8) * 0.42;
-    this.vx += ((dx / distance) * BALANCE.crystalEye.hoverSpeed * toward + orbit - this.vx) * 0.08;
-    this.vy += (((dy / distance) * BALANCE.crystalEye.hoverSpeed * 0.7 * toward) + Math.sin(this.actionTime * 3.2) * 0.32 - this.vy) * 0.07;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.keepInStage(context);
-
     if (distance <= BALANCE.crystalEye.attackRange && this.cooldown <= 0) {
       this.targetX = playerX;
       this.targetY = playerY;
       this.stateTime = 0;
       this.beamHit = false;
-      if ((this.attackCycle++ & 1) === 0) {
-        this.state = 'beamCharge';
-      } else {
-        this.state = 'orbCharge';
-      }
+      this.state = (this.attackCycle++ & 1) === 0 ? 'beamCharge' : 'orbCharge';
     }
+  }
+
+  private updateEyeTracking(context: EnemyContext): void {
+    const centerX = this.x + this.w / 2;
+    const centerY = this.y + this.h / 2;
+    const playerX = context.player.x + context.player.w / 2;
+    const playerY = context.player.y + context.player.h / 2;
+    const dx = playerX - centerX;
+    const dy = playerY - centerY;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+
+    const desiredX = (dx / distance) * 7.2;
+    const desiredY = (dy / distance) * 5.0;
+    this.lookX += (desiredX - this.lookX) * 0.16;
+    this.lookY += (desiredY - this.lookY) * 0.16;
+    this.facing = dx >= 0 ? 1 : -1;
   }
 
   private beginBeamFire(): void {
@@ -163,9 +171,10 @@ export class CrystalEye extends Enemy {
     const dx = tx - sx;
     const dy = ty - sy;
     const distance = Math.max(1, Math.hypot(dx, dy));
+
     this.orbs.push({
-      x: sx - 7,
-      y: sy - 7,
+      x: sx - 8,
+      y: sy - 8,
       vx: (dx / distance) * BALANCE.crystalEye.orbSpeed,
       vy: (dy / distance) * BALANCE.crystalEye.orbSpeed,
       life: BALANCE.crystalEye.orbLife,
@@ -186,25 +195,27 @@ export class CrystalEye extends Enemy {
         continue;
       }
 
-      const cx = orb.x + 7;
-      const cy = orb.y + 7;
+      const cx = orb.x + 8;
+      const cy = orb.y + 8;
       const dx = targetX - cx;
       const dy = targetY - cy;
       const distance = Math.max(1, Math.hypot(dx, dy));
       orb.vx += (dx / distance) * BALANCE.crystalEye.orbHoming * dt * 60;
       orb.vy += (dy / distance) * BALANCE.crystalEye.orbHoming * dt * 60;
       const speed = Math.max(0.1, Math.hypot(orb.vx, orb.vy));
-      if (speed > BALANCE.crystalEye.orbSpeed * 1.16) {
-        const scale = (BALANCE.crystalEye.orbSpeed * 1.16) / speed;
+      const maxSpeed = BALANCE.crystalEye.orbSpeed * 1.16;
+      if (speed > maxSpeed) {
+        const scale = maxSpeed / speed;
         orb.vx *= scale;
         orb.vy *= scale;
       }
+
       orb.x += orb.vx;
       orb.y += orb.vy;
       orb.phase += dt * 8;
 
-      if (intersects({ x: orb.x, y: orb.y, w: 14, h: 14 }, context.player)) {
-        const hit = context.hurtPlayer(BALANCE.crystalEye.orbDamage, orb.x + 7);
+      if (intersects({ x: orb.x, y: orb.y, w: 16, h: 16 }, context.player)) {
+        const hit = context.hurtPlayer(BALANCE.crystalEye.orbDamage, orb.x + 8);
         if (hit) this.applyOneRandomStatus(context);
         orb.alive = false;
       }
@@ -248,156 +259,222 @@ export class CrystalEye extends Enemy {
     }
   }
 
-  private keepInStage(context: EnemyContext): void {
-    const maxX = Math.max(0, context.stage.width - this.w);
-    const maxY = Math.max(70, context.stage.height - this.h - 80);
-    if (this.x < 0 || this.x > maxX) {
-      this.x = Math.max(0, Math.min(maxX, this.x));
-      this.vx *= -0.72;
-    }
-    if (this.y < 55 || this.y > maxY) {
-      this.y = Math.max(55, Math.min(maxY, this.y));
-      this.vy *= -0.72;
-    }
-  }
-
   draw(ctx: CanvasRenderingContext2D): void {
-    const frame = CrystalEye.frames[Math.floor(this.actionTime * 6) % Math.max(1, CrystalEye.frames.length)];
-    if (!frame) return;
-
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const bob = Math.sin(this.actionTime * 3.4) * 2.3;
-    const pulse = 1 + Math.sin(this.actionTime * 5.1) * 0.018;
-    const attackGlow = this.state === 'beamCharge' || this.state === 'orbCharge' ? Math.min(1, this.stateTime * 1.5) : 0;
+    const charge = this.state === 'beamCharge' || this.state === 'orbCharge'
+      ? Math.min(1, this.stateTime / Math.max(0.01, this.state === 'beamCharge' ? BALANCE.crystalEye.beamCharge : BALANCE.crystalEye.orbCharge))
+      : 0;
 
-    ctx.save();
-    ctx.translate(centerX, centerY + bob);
-    ctx.scale(pulse, 1 / pulse);
-    ctx.globalAlpha = 0.96;
-    const drawH = 96;
-    const drawW = Math.round(drawH * (frame.naturalWidth / frame.naturalHeight));
-    ctx.drawImage(frame, -drawW / 2, -drawH / 2, drawW, drawH);
+    this.drawOrganicEye(ctx, centerX, centerY, charge);
+    this.drawCrystalShell(ctx, centerX, centerY, charge);
 
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.18 + attackGlow * 0.22;
-    ctx.strokeStyle = '#9fdcff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -44);
-    ctx.lineTo(18, -8);
-    ctx.lineTo(3, 43);
-    ctx.lineTo(-18, 7);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
-
-    if (this.state === 'beamCharge') this.drawBeamCharge(ctx, centerX, centerY + bob);
-    if (this.state === 'beamFire') this.drawBeam(ctx, centerX, centerY + bob);
-    if (this.state === 'orbCharge') this.drawOrbCharge(ctx, centerX, centerY + bob);
+    if (this.state === 'beamCharge') this.drawBeamCharge(ctx, centerX, centerY);
+    if (this.state === 'beamFire') this.drawBeam(ctx, centerX, centerY);
+    if (this.state === 'orbCharge') this.drawOrbCharge(ctx, centerX, centerY);
     this.drawOrbs(ctx);
   }
 
+  private drawOrganicEye(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
+    const pulse = 1 + Math.sin(this.actionTime * 2.7) * 0.018;
+    ctx.save();
+    ctx.translate(centerX, centerY + 2);
+    ctx.scale(pulse, 1 / pulse);
+
+    const sclera = ctx.createRadialGradient(-6, -7, 2, 0, 0, 29);
+    sclera.addColorStop(0, '#fff5e7');
+    sclera.addColorStop(0.66, '#d9c6b6');
+    sclera.addColorStop(1, '#855c65');
+    ctx.fillStyle = sclera;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 27, 21, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Organic red veins across the sclera.
+    ctx.strokeStyle = 'rgba(156, 36, 66, 0.72)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 9; i += 1) {
+      const angle = i * (Math.PI * 2 / 9) + 0.22;
+      const ex = Math.cos(angle) * 24;
+      const ey = Math.sin(angle) * 18;
+      const mx = Math.cos(angle + 0.32) * 15;
+      const my = Math.sin(angle + 0.32) * 11;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.quadraticCurveTo(mx, my, this.lookX * 0.65, this.lookY * 0.65);
+      ctx.stroke();
+    }
+
+    const irisX = this.lookX;
+    const irisY = this.lookY;
+    const iris = ctx.createRadialGradient(irisX - 2, irisY - 2, 1, irisX, irisY, 12);
+    iris.addColorStop(0, charge > 0 ? '#ffd6ff' : '#ff8bdc');
+    iris.addColorStop(0.42, '#bf43ca');
+    iris.addColorStop(0.75, '#5a1d89');
+    iris.addColorStop(1, '#24123c');
+    ctx.fillStyle = iris;
+    ctx.beginPath();
+    ctx.arc(irisX, irisY, 12.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#100817';
+    ctx.beginPath();
+    ctx.arc(irisX, irisY, 5.7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.arc(irisX - 3.2, irisY - 4.0, 2.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = 'rgba(76, 24, 65, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 27, 21, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  private drawCrystalShell(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, charge: number): void {
+    ctx.save();
+    ctx.translate(centerX, centerY);
+
+    const outer = [
+      [0, -66], [31, -35], [42, 12], [24, 56], [0, 69], [-27, 55], [-42, 11], [-32, -36],
+    ] as const;
+
+    const glass = ctx.createLinearGradient(-42, -60, 42, 62);
+    glass.addColorStop(0, 'rgba(135, 205, 255, 0.12)');
+    glass.addColorStop(0.34, 'rgba(95, 85, 255, 0.23)');
+    glass.addColorStop(0.66, 'rgba(83, 54, 200, 0.17)');
+    glass.addColorStop(1, 'rgba(180, 225, 255, 0.13)');
+    ctx.fillStyle = glass;
+    ctx.beginPath();
+    ctx.moveTo(outer[0][0], outer[0][1]);
+    for (let i = 1; i < outer.length; i += 1) ctx.lineTo(outer[i][0], outer[i][1]);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = charge > 0 ? `rgba(225, 192, 255, ${0.78 + charge * 0.2})` : 'rgba(165, 193, 255, 0.78)';
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    // Facets: deliberately sparse so the eyeball remains clearly visible through the glass.
+    ctx.lineWidth = 1.25;
+    ctx.strokeStyle = 'rgba(166, 205, 255, 0.48)';
+    const facets: ReadonlyArray<readonly [number, number, number, number]> = [
+      [0, -66, -18, -15], [0, -66, 18, -16], [-32, -36, -18, -15], [31, -35, 18, -16],
+      [-42, 11, -20, 17], [42, 12, 20, 17], [-27, 55, -19, 18], [24, 56, 19, 18],
+      [-18, -15, 0, -28], [18, -16, 0, -28], [-20, 17, 0, 30], [20, 17, 0, 30],
+      [0, 30, 0, 69],
+    ];
+    for (const [x1, y1, x2, y2] of facets) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    const shimmer = Math.sin(this.actionTime * 3.6) * 0.5 + 0.5;
+    ctx.globalAlpha = 0.35 + shimmer * 0.45 + charge * 0.18;
+    ctx.fillStyle = '#e9f8ff';
+    const sparkleX = -21 + shimmer * 12;
+    const sparkleY = -43 + Math.cos(this.actionTime * 2.8) * 4;
+    ctx.fillRect(Math.round(sparkleX) - 1, Math.round(sparkleY) - 6, 2, 13);
+    ctx.fillRect(Math.round(sparkleX) - 6, Math.round(sparkleY) - 1, 13, 2);
+
+    ctx.restore();
+  }
+
   private drawBeamCharge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    const p = Math.min(1, this.stateTime / BALANCE.crystalEye.beamCharge);
-    const radius = 8 + p * 17;
+    const p = Math.min(1, this.stateTime / Math.max(0.01, BALANCE.crystalEye.beamCharge));
+    const radius = 8 + p * 18;
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.strokeStyle = '#d7a2ff';
-    ctx.lineWidth = 2 + p * 2;
-    ctx.globalAlpha = 0.32 + p * 0.5;
+    ctx.strokeStyle = `rgba(225, 125, 255, ${0.4 + p * 0.55})`;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x + this.lookX, y + this.lookY, radius, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = '#ffb9ff';
-    ctx.globalAlpha = 0.4 + p * 0.5;
+    ctx.fillStyle = `rgba(255, 220, 255, ${0.25 + p * 0.55})`;
     ctx.beginPath();
-    ctx.arc(x, y, 3 + p * 5, 0, Math.PI * 2);
+    ctx.arc(x + this.lookX, y + this.lookY, 3 + p * 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
   private drawBeam(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    const life = 1 - Math.min(1, this.stateTime / BALANCE.crystalEye.beamDuration);
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.lineCap = 'round';
-    ctx.globalAlpha = 0.42 + life * 0.38;
-    ctx.strokeStyle = '#7d38ff';
-    ctx.lineWidth = 16;
+    ctx.strokeStyle = 'rgba(103, 32, 194, 0.48)';
+    ctx.lineWidth = 14;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(this.targetX, this.targetY);
     ctx.stroke();
-    ctx.globalAlpha = 0.88;
-    ctx.strokeStyle = '#d35cff';
+    ctx.strokeStyle = 'rgba(220, 80, 255, 0.92)';
     ctx.lineWidth = 7;
     ctx.stroke();
-    ctx.strokeStyle = '#fff3ff';
+    ctx.strokeStyle = '#fff0ff';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
   }
 
   private drawOrbCharge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    const p = Math.min(1, this.stateTime / BALANCE.crystalEye.orbCharge);
-    const ox = x + this.facing * (18 + p * 8);
+    const p = Math.min(1, this.stateTime / Math.max(0.01, BALANCE.crystalEye.orbCharge));
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    for (let i = 0; i < 3; i += 1) {
-      ctx.fillStyle = i === 2 ? '#ffffff' : i === 1 ? '#e267ff' : '#7c2fff';
-      ctx.globalAlpha = 0.28 + i * 0.18;
-      ctx.beginPath();
-      ctx.arc(ox, y, 13 - i * 4 + p * 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const gradient = ctx.createRadialGradient(x, y, 1, x, y, 18 + p * 10);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.95)');
+    gradient.addColorStop(0.3, 'rgba(224,122,255,0.88)');
+    gradient.addColorStop(1, 'rgba(92,20,170,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, 18 + p * 10, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
   private drawOrbs(ctx: CanvasRenderingContext2D): void {
     for (const orb of this.orbs) {
-      const cx = orb.x + 7;
-      const cy = orb.y + 7;
+      const x = orb.x + 8;
+      const y = orb.y + 8;
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = '#6f1dff';
+      const radius = 9 + Math.sin(orb.phase) * 1.4;
+      const glow = ctx.createRadialGradient(x, y, 1, x, y, radius * 2.2);
+      glow.addColorStop(0, '#ffffff');
+      glow.addColorStop(0.24, '#ec9dff');
+      glow.addColorStop(0.58, 'rgba(153, 51, 235, 0.75)');
+      glow.addColorStop(1, 'rgba(70, 14, 136, 0)');
+      ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(cx - orb.vx * 2.6, cy - orb.vy * 2.6, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 0.48;
-      ctx.fillStyle = '#ac45ff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 10 + Math.sin(orb.phase) * 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 0.92;
-      ctx.fillStyle = '#fff1ff';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.arc(x, y, radius * 2.2, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }
 }
 
-function pointSegmentDistance(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
-  const vx = x2 - x1;
-  const vy = y2 - y1;
-  const wx = px - x1;
-  const wy = py - y1;
-  const len2 = vx * vx + vy * vy;
-  if (len2 <= 0.0001) return Math.hypot(px - x1, py - y1);
-  const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / len2));
-  const cx = x1 + vx * t;
-  const cy = y1 + vy * t;
-  return Math.hypot(px - cx, py - cy);
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`画像を読み込めません: ${src}`));
-    image.src = src;
-  });
+function pointSegmentDistance(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const lengthSq = abx * abx + aby * aby;
+  if (lengthSq <= 0.0001) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / lengthSq));
+  const x = ax + abx * t;
+  const y = ay + aby * t;
+  return Math.hypot(px - x, py - y);
 }

@@ -436,7 +436,13 @@ export class Game {
 
       if (intersects(lance.rect, this.player)) {
         const hit = this.player.hurt(lance.damage, lance.x);
-        if (hit) this.refreshUi();
+        if (hit) {
+          const wasFrozen = this.player.frozen;
+          this.player.applyFrozen(BALANCE.ahriman.freezeDuration);
+          this.setMenuOpen(false);
+          if (!wasFrozen) this.showNotice('フリーズランサーで氷結した');
+          this.refreshUi();
+        }
         lance.alive = false;
       }
     }
@@ -815,7 +821,7 @@ export class Game {
         enemy.type === 'bomb' ? 38 :
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
-        enemy.type === 'crystalEye' ? 50 :
+        enemy.type === 'crystalEye' ? 58 :
         36;
 
       const y =
@@ -831,7 +837,7 @@ export class Game {
         enemy.type === 'bomb' ? enemy.y - 20 :
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
-        enemy.type === 'crystalEye' ? enemy.y - 30 :
+        enemy.type === 'crystalEye' ? enemy.y - 46 :
         enemy.y - 16;
 
       this.drawHpBar(
