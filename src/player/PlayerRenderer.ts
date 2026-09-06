@@ -33,6 +33,8 @@ export class PlayerRenderer {
     walkTime: number,
     sleeping: boolean,
     frozen: boolean,
+    poisoned: boolean,
+    paralysisStunned: boolean,
   ): void {
     const now = performance.now() / 1000;
     const attacking = frame > 0 && !sleeping && !frozen;
@@ -48,6 +50,7 @@ export class PlayerRenderer {
 
     if (sleeping) {
       this.drawSleeping(ctx, image, centerX, footY, facing, invulnerability, now);
+      this.drawStatusEffects(ctx, centerX, footY, now, poisoned, paralysisStunned);
       return;
     }
 
@@ -66,6 +69,107 @@ export class PlayerRenderer {
     ctx.restore();
 
     if (frozen) this.drawFrozenShell(ctx, centerX, footY, now);
+    this.drawStatusEffects(ctx, centerX, footY, now, poisoned, paralysisStunned);
+  }
+
+  private drawStatusEffects(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+    poisoned: boolean,
+    paralysisStunned: boolean,
+  ): void {
+    if (poisoned) this.drawPoisonBubbles(ctx, centerX, footY, time);
+    if (paralysisStunned) this.drawParalysisShock(ctx, centerX, footY, time);
+  }
+
+  private drawPoisonBubbles(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    ctx.save();
+
+    for (let i = 0; i < 7; i += 1) {
+      const cycle = (time * (0.62 + i * 0.035) + i * 0.143) % 1;
+      const side = i % 2 === 0 ? -1 : 1;
+      const drift = Math.sin(time * 2.8 + i * 1.7) * (3 + (i % 3));
+      const x = centerX + side * (9 + (i * 5) % 15) + drift;
+      const y = footY - 8 - cycle * 72;
+      const radius = 2 + (i % 4);
+      const fade = Math.min(1, cycle * 4) * Math.min(1, (1 - cycle) * 5);
+
+      ctx.globalAlpha = 0.32 + fade * 0.48;
+      ctx.fillStyle = i % 3 === 0 ? '#9dff48' : '#46d84f';
+      ctx.strokeStyle = '#174f25';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.5 * fade;
+      ctx.fillStyle = '#ddff9b';
+      ctx.fillRect(Math.round(x - radius * 0.35), Math.round(y - radius * 0.45), 1.5, 1.5);
+
+      if (cycle > 0.9) {
+        const pop = (cycle - 0.9) / 0.1;
+        ctx.globalAlpha = (1 - pop) * 0.42;
+        ctx.strokeStyle = '#79f05b';
+        ctx.beginPath();
+        ctx.arc(x, y, radius + pop * 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  private drawParalysisShock(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    const flicker = Math.floor(time * 34);
+    ctx.save();
+    ctx.lineJoin = 'miter';
+    ctx.lineCap = 'square';
+
+    for (let i = 0; i < 4; i += 1) {
+      const phase = flicker + i * 17;
+      const side = i % 2 === 0 ? -1 : 1;
+      const topY = footY - 75 + ((phase * 13) % 17);
+      const baseX = centerX + side * (15 + ((phase * 7) % 8));
+
+      ctx.globalAlpha = 0.72 + ((phase & 1) ? 0.18 : 0);
+      ctx.strokeStyle = '#ffe84a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(baseX, topY);
+      ctx.lineTo(baseX - side * 7, topY + 12);
+      ctx.lineTo(baseX + side * 4, topY + 20);
+      ctx.lineTo(baseX - side * 9, topY + 33);
+      ctx.lineTo(baseX + side * 2, topY + 43);
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.95;
+      ctx.strokeStyle = '#fffbd0';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = '#fff36b';
+    for (let i = 0; i < 5; i += 1) {
+      const px = centerX - 21 + ((flicker * 11 + i * 19) % 43);
+      const py = footY - 68 + ((flicker * 7 + i * 13) % 59);
+      ctx.fillRect(Math.round(px), Math.round(py), 2, 2);
+    }
+
+    ctx.restore();
   }
 
   private drawSleeping(

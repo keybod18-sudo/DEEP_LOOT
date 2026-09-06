@@ -292,6 +292,8 @@ export class Player implements PhysicsBody {
       this.walkTime,
       this.sleeping,
       this.frozen,
+      this.poisoned,
+      this.paralysisStunned,
     );
   }
 }
