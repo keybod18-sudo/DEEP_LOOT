@@ -372,11 +372,6 @@ export class Game {
       arrow.update(dt);
       if (!arrow.alive) continue;
 
-      if (this.stage.platforms.some((platform) => intersects(arrow.rect, platform))) {
-        arrow.alive = false;
-        continue;
-      }
-
       if (intersects(arrow.rect, this.player)) {
         const hit = this.player.hurt(arrow.damage, arrow.x);
         if (hit) {

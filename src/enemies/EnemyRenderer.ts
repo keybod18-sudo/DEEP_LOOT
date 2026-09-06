@@ -433,82 +433,177 @@ export class EnemyRenderer {
   }
 
 
-  private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
-    const frame = Math.floor(skeletonArcher.actionTime * 8) % Math.max(1, this.skeletonWalkImages.length);
-    const image = this.skeletonWalkImages[frame] ?? this.skeletonWalkImages[0];
-    if (!image) return;
 
-    const drawH = 68;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
-    const centerX = skeletonArcher.x + skeletonArcher.w / 2;
-    const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawProgress = skeletonArcher.state === 'attack'
-      ? Math.min(1, skeletonArcher.actionTime / BALANCE.skeletonArcher.releaseTime)
-      : 0;
-    const releasePulse = skeletonArcher.state === 'attack' && skeletonArcher.shotReleased
-      ? Math.max(0, 1 - (skeletonArcher.actionTime - BALANCE.skeletonArcher.releaseTime) * 5)
-      : 0;
+private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
+  const centerX = skeletonArcher.x + skeletonArcher.w / 2;
+  const footY = skeletonArcher.y + skeletonArcher.h + 1;
+  const walkCycle = skeletonArcher.state === 'walk' ? Math.sin(skeletonArcher.actionTime * 8.5) : 0;
+  const drawProgress = skeletonArcher.state === 'attack'
+    ? Math.min(1, skeletonArcher.actionTime / BALANCE.skeletonArcher.releaseTime)
+    : 0;
+  const releasePulse = skeletonArcher.state === 'attack' && skeletonArcher.shotReleased
+    ? Math.max(0, 1 - (skeletonArcher.actionTime - BALANCE.skeletonArcher.releaseTime) * 5)
+    : 0;
+  const hipBob = skeletonArcher.state === 'walk' ? Math.max(0, Math.sin(skeletonArcher.actionTime * 17)) * 1.1 : 0;
 
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+  ctx.save();
+  ctx.translate(centerX, footY);
+  applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
 
-    // quiver
-    ctx.fillStyle = '#5a3417';
-    ctx.fillRect(8, -46, 6, 15);
-    ctx.fillStyle = '#e0e8ef';
-    ctx.fillRect(7, -49, 2, 5);
-    ctx.fillRect(10, -50, 2, 6);
-    ctx.fillRect(13, -48, 2, 4);
+  const bone = '#d7d0c8';
+  const boneDark = '#857d76';
+  const rib = '#bcb4ac';
+  const bowWood = '#6d4726';
+  const bowString = '#f1eee7';
+  const poison = skeletonArcher.shotType === 'poison';
+  const arrowShaft = poison ? '#87f77b' : '#d7dadf';
+  const arrowTip = poison ? '#cbff9f' : '#eef5fd';
 
-    // bow body
-    const bowX = -15;
-    const bowTop = -43;
-    const bowBottom = -14;
-    const pullX = 4 + drawProgress * 8;
+  const bodyY = -42 + hipBob;
+  const headY = bodyY - 11;
+  const leftLegSwing = walkCycle * 2.9;
+  const rightLegSwing = -walkCycle * 2.9;
+  const bowHandX = -11;
+  const bowHandY = -31;
+  const pullBaseX = 1;
+  const pullX = pullBaseX + drawProgress * 7.5;
+  const pullY = -29 + Math.sin(drawProgress * Math.PI) * 1.5;
 
-    ctx.strokeStyle = '#6d4726';
-    ctx.lineWidth = 2;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(0, -1, 12, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // back arm
+  ctx.strokeStyle = boneDark;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(7, bodyY - 2);
+  ctx.lineTo(12 - drawProgress * 1.2, -30);
+  ctx.lineTo(8 - drawProgress * 0.8, -19);
+  ctx.stroke();
+
+  // legs
+  ctx.strokeStyle = boneDark;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-4, bodyY + 9);
+  ctx.lineTo(-6 - leftLegSwing * 0.6, bodyY + 18);
+  ctx.lineTo(-9 - leftLegSwing, -2);
+  ctx.moveTo(3, bodyY + 9);
+  ctx.lineTo(6 - rightLegSwing * 0.6, bodyY + 18);
+  ctx.lineTo(9 - rightLegSwing, -2);
+  ctx.stroke();
+
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-12 - leftLegSwing, -2, 8, 2);
+  ctx.fillRect(4 - rightLegSwing, -2, 8, 2);
+
+  // pelvis + ribcage
+  ctx.fillStyle = rib;
+  ctx.fillRect(-5, bodyY + 5, 10, 6);
+  ctx.fillRect(-7, bodyY - 10, 14, 14);
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-4, bodyY - 7, 8, 1);
+  ctx.fillRect(-5, bodyY - 3, 10, 1);
+  ctx.fillRect(-4, bodyY + 1, 8, 1);
+
+  // spine/neck
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-1, bodyY - 12, 2, 20);
+  ctx.fillRect(-1, bodyY - 15, 2, 4);
+
+  // head
+  ctx.fillStyle = bone;
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 9, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#21252d';
+  ctx.fillRect(-5, headY - 1, 3, 4);
+  ctx.fillRect(2, headY - 1, 3, 4);
+  ctx.fillRect(-2, headY + 4, 4, 2);
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-6, headY - 8, 12, 1);
+  ctx.fillRect(-8, headY + 8, 16, 1);
+
+  // quiver on back
+  ctx.fillStyle = '#5a3417';
+  ctx.fillRect(8, -45, 6, 16);
+  ctx.fillStyle = '#e0e8ef';
+  ctx.fillRect(7, -49, 2, 5);
+  ctx.fillRect(10, -50, 2, 6);
+  ctx.fillRect(13, -48, 2, 4);
+
+  // front arm drawing bow
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-5, bodyY - 4);
+  ctx.lineTo(bowHandX + 4, bowHandY + 4);
+  ctx.lineTo(bowHandX, bowHandY);
+  ctx.stroke();
+
+  // draw arm pulling string
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(4, bodyY - 4);
+  ctx.lineTo(4 + drawProgress * 1.4, -31);
+  ctx.lineTo(pullX, pullY);
+  ctx.stroke();
+
+  // bow
+  ctx.strokeStyle = bowWood;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(bowHandX - 1, -43);
+  ctx.quadraticCurveTo(bowHandX - 10, -30, bowHandX - 1, -16);
+  ctx.stroke();
+
+  ctx.strokeStyle = bowString;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(bowHandX - 1, -42);
+  ctx.lineTo(pullX, pullY);
+  ctx.lineTo(bowHandX - 1, -17);
+  ctx.stroke();
+
+  // nocked arrow while drawing
+  if (skeletonArcher.state === 'attack' && !skeletonArcher.shotReleased) {
+    ctx.fillStyle = '#28303a';
+    ctx.fillRect(bowHandX - 1, -30, 18, 3);
+    ctx.fillStyle = arrowShaft;
+    ctx.fillRect(bowHandX, -29, 15, 1);
+    ctx.fillStyle = '#7d4f24';
+    ctx.fillRect(bowHandX - 3, -30, 3, 1);
+    ctx.fillRect(bowHandX - 3, -28, 3, 1);
+    ctx.fillStyle = arrowTip;
     ctx.beginPath();
-    ctx.moveTo(bowX, bowTop);
-    ctx.quadraticCurveTo(bowX - 8, -29, bowX, bowBottom);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#dfeaf6';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(bowX, bowTop + 1);
-    ctx.lineTo(bowX + pullX, -29);
-    ctx.lineTo(bowX, bowBottom - 1);
-    ctx.stroke();
-
-    if (skeletonArcher.state === 'attack' && !skeletonArcher.shotReleased) {
-      const arrowColor = skeletonArcher.shotType === 'poison' ? '#8cf47c' : '#d8dade';
-      ctx.fillStyle = '#27323c';
-      ctx.fillRect(bowX - 1, -30, 19, 3);
-      ctx.fillStyle = arrowColor;
-      ctx.fillRect(bowX, -29, 16, 1);
-      ctx.fillStyle = skeletonArcher.shotType === 'poison' ? '#cbff9f' : '#eff6ff';
-      ctx.beginPath();
-      ctx.moveTo(19, -28.5);
-      ctx.lineTo(14, -32);
-      ctx.lineTo(14, -25);
-      ctx.closePath();
-      ctx.fill();
+    ctx.moveTo(19, -28.5);
+    ctx.lineTo(14, -32);
+    ctx.lineTo(14, -25);
+    ctx.closePath();
+    ctx.fill();
+    if (skeletonArcher.shotType === 'triple') {
+      ctx.fillStyle = '#dfe5ec';
+      ctx.fillRect(2, -34, 11, 1);
+      ctx.fillRect(2, -24, 11, 1);
     }
-
-    if (releasePulse > 0) {
-      ctx.fillStyle = skeletonArcher.shotType === 'poison' ? '#9fff85' : '#f6f4ef';
-      ctx.fillRect(6, -30, 6 * releasePulse, 2);
-      if (skeletonArcher.shotType === 'triple') {
-        ctx.fillRect(6, -35, 5 * releasePulse, 1);
-        ctx.fillRect(6, -24, 5 * releasePulse, 1);
-      }
-    }
-
-    ctx.restore();
   }
+
+  // release flash
+  if (releasePulse > 0) {
+    ctx.fillStyle = poison ? '#9fff85' : '#f6f4ef';
+    ctx.fillRect(7, -30, 8 * releasePulse, 2);
+    if (skeletonArcher.shotType === 'triple') {
+      ctx.fillRect(7, -35, 7 * releasePulse, 1);
+      ctx.fillRect(7, -24, 7 * releasePulse, 1);
+    }
+  }
+
+  ctx.restore();
+}
 
   private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
     const images = skeleton.state === 'attack' ? this.skeletonAttackImages : this.skeletonWalkImages;
