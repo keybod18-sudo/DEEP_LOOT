@@ -393,8 +393,19 @@ export class Game {
     const px = this.player.x + this.player.w / 2;
     const py = this.player.y + this.player.h * 0.43;
     const count = 5 + Math.floor(Math.random() * 4);
-    const targets = this.enemies
-      .filter((enemy) => enemy.alive)
+    const viewLeft = this.cameraX;
+    const viewTop = this.cameraY;
+    const viewRight = viewLeft + this.ctx.canvas.width;
+    const viewBottom = viewTop + this.ctx.canvas.height;
+
+    const visibleTargets = this.enemies
+      .filter((enemy) =>
+        enemy.alive &&
+        enemy.x + enemy.w > viewLeft &&
+        enemy.x < viewRight &&
+        enemy.y + enemy.h > viewTop &&
+        enemy.y < viewBottom
+      )
       .sort((a, b) => {
         const adx = a.x + a.w / 2 - px;
         const ady = a.y + a.h / 2 - py;
@@ -403,26 +414,32 @@ export class Game {
         return adx * adx + ady * ady - (bdx * bdx + bdy * bdy);
       });
 
+    // One visible enemy is selected for the whole volley.
+    const volleyTarget = visibleTargets[0] ?? null;
+    const scatterOffset = Math.random() * Math.PI * 2;
+
     for (let index = 0; index < count; index += 1) {
       const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
       const radius = 14 + (index % 2) * 5;
       const x = px + Math.cos(angle) * radius - 6;
       const y = py + Math.sin(angle) * radius * 0.72 - 6;
-      const target = targets.length > 0 ? targets[index % targets.length] : null;
+      const freeAngle = scatterOffset + (Math.PI * 2 * index) / count + (Math.random() - 0.5) * 0.36;
 
       this.lightOrbs.push(new LightOrb(
         x,
         y,
         this.player.facing,
-        target,
+        volleyTarget,
         angle,
         0.78 + index * 0.075,
+        freeAngle,
       ));
     }
 
     this.lightCooldown = 1.12;
     this.showNotice('シャイニング');
   }
+
 
 
 
@@ -459,6 +476,7 @@ export class Game {
       orb.y < this.stage.height + 180
     );
   }
+
 
 
 

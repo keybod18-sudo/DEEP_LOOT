@@ -18,6 +18,7 @@ export class LightOrb {
   private orbitAngle: number;
   private readonly launchDelay: number;
   private readonly orbitRadius: number;
+  private readonly freeAngle: number;
   private trail: Array<{ x: number; y: number; life: number }> = [];
 
   constructor(
@@ -27,6 +28,7 @@ export class LightOrb {
     target: Enemy | null,
     orbitAngle = 0,
     launchDelay = 0.72,
+    freeAngle = orbitAngle,
   ) {
     this.x = x;
     this.y = y;
@@ -34,6 +36,7 @@ export class LightOrb {
     this.orbitAngle = orbitAngle;
     this.launchDelay = launchDelay;
     this.orbitRadius = 20 + Math.random() * 8;
+    this.freeAngle = freeAngle;
     this.vx = facing * 10;
   }
 
@@ -41,12 +44,7 @@ export class LightOrb {
     return { x: this.x, y: this.y, w: this.w, h: this.h };
   }
 
-  update(
-    dt: number,
-    enemies: Enemy[],
-    anchorX: number,
-    anchorY: number,
-  ): void {
+  update(dt: number, _enemies: Enemy[], anchorX: number, anchorY: number): void {
     if (!this.alive) return;
 
     this.life -= dt;
@@ -56,6 +54,9 @@ export class LightOrb {
       this.alive = false;
       return;
     }
+
+    // Keep the target chosen when Shining was cast. Do not split or retarget.
+    if (this.target && !this.target.alive) this.target = null;
 
     if (!this.launched && this.age < this.launchDelay) {
       this.orbitAngle += dt * 0.82;
@@ -70,12 +71,16 @@ export class LightOrb {
 
     if (!this.launched) {
       this.launched = true;
-      const tangent = this.orbitAngle + Math.PI / 2;
-      this.vx = Math.cos(tangent) * 26;
-      this.vy = Math.sin(tangent) * 26;
+      if (this.target?.alive) {
+        const tangent = this.orbitAngle + Math.PI / 2;
+        this.vx = Math.cos(tangent) * 26;
+        this.vy = Math.sin(tangent) * 26;
+      } else {
+        // With no visible enemy, fly outward in all directions without homing.
+        this.vx = Math.cos(this.freeAngle) * 22;
+        this.vy = Math.sin(this.freeAngle) * 22;
+      }
     }
-
-    if (!this.target?.alive) this.target = this.findNearest(enemies);
 
     const launchAge = Math.max(0, this.age - this.launchDelay);
     const targetSpeed = Math.min(360, 42 + launchAge * 280);
@@ -143,32 +148,9 @@ export class LightOrb {
   }
 
   private pushTrail(dt: number): void {
-    this.trail.push({
-      x: this.x + this.w / 2,
-      y: this.y + this.h / 2,
-      life: 0.34,
-    });
+    this.trail.push({ x: this.x + this.w / 2, y: this.y + this.h / 2, life: 0.34 });
     if (this.trail.length > 13) this.trail.shift();
     for (const point of this.trail) point.life -= dt;
     this.trail = this.trail.filter((point) => point.life > 0);
-  }
-
-  private findNearest(enemies: Enemy[]): Enemy | null {
-    let best: Enemy | null = null;
-    let bestDist = Number.POSITIVE_INFINITY;
-    const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
-
-    for (const enemy of enemies) {
-      if (!enemy.alive) continue;
-      const dx = enemy.x + enemy.w / 2 - cx;
-      const dy = enemy.y + enemy.h / 2 - cy;
-      const distance = dx * dx + dy * dy;
-      if (distance < bestDist) {
-        bestDist = distance;
-        best = enemy;
-      }
-    }
-    return best;
   }
 }
