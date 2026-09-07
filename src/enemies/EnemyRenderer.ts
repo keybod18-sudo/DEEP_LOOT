@@ -91,8 +91,8 @@ const SOURCE_FACING = {
   roper: -1,
   slug: 1,
   rat: 1,
-  skeleton: -1,
-  skeletonArcher: -1,
+  skeleton: 1,
+  skeletonArcher: 1,
   caterpillar: 1,
 } as const satisfies Record<string, Facing>;
 
@@ -556,7 +556,8 @@ export class EnemyRenderer {
         : Math.sin(caterpillar.phaseTime * 7) * 0.8;
       ctx.translate(centerX, footY);
       applySpriteFacing(ctx, caterpillar.facing, SOURCE_FACING.caterpillar);
-      ctx.drawImage(image, -drawW / 2, -drawH + squash, drawW, drawH - squash);
+      const groundOffset = caterpillar.phase === 'larva' ? 6 : 0;
+      ctx.drawImage(image, -drawW / 2, -drawH + squash + groundOffset, drawW, drawH - squash);
     }
     ctx.restore();
   }
@@ -579,7 +580,7 @@ export class EnemyRenderer {
 
     const centerX = skeletonArcher.x + skeletonArcher.w / 2;
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawH = 78;
+    const drawH = 92;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const tension = attacking && !skeletonArcher.shotReleased
       ? Math.min(1, index / 3)
@@ -683,7 +684,7 @@ export class EnemyRenderer {
     const image = images[frame] ?? images[0];
     if (!image) return;
 
-    const drawH = 68;
+    const drawH = 124;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const centerX = skeleton.x + skeleton.w / 2;
     const footY = skeleton.y + skeleton.h + 1;
