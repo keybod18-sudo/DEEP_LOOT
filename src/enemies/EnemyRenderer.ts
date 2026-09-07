@@ -117,7 +117,7 @@ const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 );
 
 const SOURCE_FACING = {
-  goblin: 1,
+  goblin: -1,
   snake: -1,
   bat: 1,
   roper: -1,
@@ -366,19 +366,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 72;
-    let drawH = 48;
+    let drawW = 60;
+    let drawH = 40;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 54;
-      drawH = 36;
+      drawW = 45;
+      drawH = 30;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 68;
-      drawH = 42;
+      drawW = 57;
+      drawH = 35;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -851,7 +851,7 @@ export class EnemyRenderer {
     if (!image || !swordReference || !archerReference) return;
 
     const swordBounds = getOpaqueBounds(swordReference);
-    const swordScale = scaleFromReference(swordReference, 88);
+    const swordScale = scaleFromReference(swordReference, 80);
     const targetVisibleH = swordBounds.h * swordScale;
     const archerReferenceBounds = getOpaqueBounds(archerReference);
     const scale = targetVisibleH / Math.max(1, archerReferenceBounds.h);
@@ -904,7 +904,7 @@ export class EnemyRenderer {
     const reference = this.skeletonWalkImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 88);
+    const scale = scaleFromReference(reference, 80);
     drawGroundedSprite(
       ctx,
       image,
