@@ -672,7 +672,7 @@ export class Game {
       };
       let bestSpacing = -1;
 
-      for (let attempt = 0; attempt < 28; attempt += 1) {
+      for (let attempt = 0; attempt < 32; attempt += 1) {
         const platform = groundPlatforms[Math.floor(Math.random() * groundPlatforms.length)];
         const margin = Math.min(54, Math.max(16, platform.w * 0.12));
         const usable = Math.max(1, platform.w - margin * 2 - width);
@@ -699,7 +699,7 @@ export class Game {
           bestSpacing = nearest;
           best = { x, y };
         }
-        if (nearest >= 72) break;
+        if (nearest >= 66) break;
       }
 
       occupied.push({
@@ -721,7 +721,7 @@ export class Game {
       let best = { x: minX, y: minY };
       let bestSpacing = -1;
 
-      for (let attempt = 0; attempt < 24; attempt += 1) {
+      for (let attempt = 0; attempt < 30; attempt += 1) {
         const x = minX + Math.random() * Math.max(1, maxX - minX);
         const y = minY + Math.random() * Math.max(1, maxY - minY);
         const centerX = x + width / 2;
@@ -741,7 +741,7 @@ export class Game {
           bestSpacing = nearest;
           best = { x, y };
         }
-        if (nearest >= 100) break;
+        if (nearest >= 90) break;
       }
 
       occupied.push({
@@ -758,60 +758,164 @@ export class Game {
       const platform = candidates[Math.floor(Math.random() * candidates.length)];
       const margin = Math.min(42, Math.max(12, platform.w * 0.14));
       const usable = Math.max(1, platform.w - margin * 2 - 34);
-      return {
+      const point = {
         x: platform.x + margin + Math.random() * usable,
         y: platform.y + platform.h,
       };
+      occupied.push({
+        x: point.x + 17,
+        y: point.y + 12,
+      });
+      return point;
     };
 
-    const slime1 = randomGroundPoint(25, 34);
-    const slime2 = randomGroundPoint(25, 34);
-    const goblin1 = randomGroundPoint(38, 32);
-    const goblin2 = randomGroundPoint(38, 32);
-    const goblin3 = randomGroundPoint(38, 32);
-    const snake1 = randomGroundPoint(18, 42);
-    const snake2 = randomGroundPoint(18, 42);
-    const roper1 = randomGroundPoint(58, 42);
-    const slug1 = randomGroundPoint(11, 40);
-    const rat1 = randomGroundPoint(14, 28);
-    const skeleton1 = randomGroundPoint(42, 34);
-    const skeletonArcher1 = randomGroundPoint(42, 34);
-    const bomb1 = randomGroundPoint(26, 30);
-    const caterpillar1 = randomGroundPoint(20, 42);
-    const caterpillar2 = randomGroundPoint(20, 42);
-    const frostMite1 = randomGroundPoint(24, 38);
-    const kagenoko1 = randomGroundPoint(28, 34);
+    type EnemyKind =
+      | 'slime'
+      | 'clingSlime'
+      | 'goblin'
+      | 'ahriman'
+      | 'snake'
+      | 'bat'
+      | 'roper'
+      | 'slug'
+      | 'rat'
+      | 'skeleton'
+      | 'skeletonArcher'
+      | 'bomb'
+      | 'caterpillar'
+      | 'frostMite'
+      | 'kagenoko'
+      | 'crystalEye';
 
-    const ahriman1 = randomAirPoint(42, 34, 150, Math.max(190, this.stage.height - 220));
-    const bat1 = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
-    const bat2 = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
-    const crystalEye1 = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
-    const clingSlime = randomClingPoint();
+    const weightedKinds: EnemyKind[] = [
+      'slime', 'slime', 'slime',
+      'goblin', 'goblin', 'goblin',
+      'snake', 'snake',
+      'bat', 'bat',
+      'caterpillar', 'caterpillar',
+      'slug',
+      'rat',
+      'skeleton', 'skeleton',
+      'skeletonArcher',
+      'bomb',
+      'ahriman',
+      'roper',
+      'frostMite',
+      'kagenoko',
+      'clingSlime',
+      'crystalEye',
+    ];
 
-    this.enemies = shuffle([
-      new Slime(slime1.x, slime1.y, 'crawl'),
-      new Slime(slime2.x, slime2.y, 'crawl'),
-      new Slime(clingSlime.x, clingSlime.y, 'cling'),
-      new Goblin(goblin1.x, goblin1.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
-      new Goblin(goblin2.x, goblin2.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
-      new Goblin(goblin3.x, goblin3.y, Math.random() < 0.5 ? -1 : 1, 0.55 + Math.random() * 0.7),
-      new Ahriman(ahriman1.x, ahriman1.y),
-      new Snake(snake1.x, snake1.y),
-      new Snake(snake2.x, snake2.y),
-      new Bat(bat1.x, bat1.y),
-      new Bat(bat2.x, bat2.y),
-      new Roper(roper1.x, roper1.y),
-      new Slug(slug1.x, slug1.y),
-      new Rat(rat1.x, rat1.y),
-      new Skeleton(skeleton1.x, skeleton1.y),
-      new SkeletonArcher(skeletonArcher1.x, skeletonArcher1.y),
-      new Bomb(bomb1.x, bomb1.y),
-      new Caterpillar(caterpillar1.x, caterpillar1.y),
-      new Caterpillar(caterpillar2.x, caterpillar2.y),
-      new FrostMite(frostMite1.x, frostMite1.y),
-      new Kagenoko(kagenoko1.x, kagenoko1.y),
-      new CrystalEye(crystalEye1.x, crystalEye1.y),
-    ]);
+    const caps: Partial<Record<EnemyKind, number>> = {
+      crystalEye: 2,
+      ahriman: 3,
+      roper: 3,
+      frostMite: 3,
+      kagenoko: 3,
+      skeletonArcher: 3,
+      clingSlime: 3,
+    };
+
+    const spawnedByKind: Partial<Record<EnemyKind, number>> = {};
+
+    const pickKind = (): EnemyKind => {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const kind = weightedKinds[Math.floor(Math.random() * weightedKinds.length)];
+        const cap = caps[kind];
+        const used = spawnedByKind[kind] ?? 0;
+        if (cap === undefined || used < cap) return kind;
+      }
+      return Math.random() < 0.5 ? 'slime' : 'goblin';
+    };
+
+    const spawnEnemy = (kind: EnemyKind): Enemy => {
+      spawnedByKind[kind] = (spawnedByKind[kind] ?? 0) + 1;
+
+      switch (kind) {
+        case 'slime': {
+          const p = randomGroundPoint(25, 34);
+          return new Slime(p.x, p.y, 'crawl');
+        }
+        case 'clingSlime': {
+          const p = randomClingPoint();
+          return new Slime(p.x, p.y, 'cling');
+        }
+        case 'goblin': {
+          const p = randomGroundPoint(38, 32);
+          return new Goblin(
+            p.x,
+            p.y,
+            Math.random() < 0.5 ? -1 : 1,
+            0.55 + Math.random() * 0.7,
+          );
+        }
+        case 'ahriman': {
+          const p = randomAirPoint(42, 34, 150, Math.max(190, this.stage.height - 220));
+          return new Ahriman(p.x, p.y);
+        }
+        case 'snake': {
+          const p = randomGroundPoint(18, 42);
+          return new Snake(p.x, p.y);
+        }
+        case 'bat': {
+          const p = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
+          return new Bat(p.x, p.y);
+        }
+        case 'roper': {
+          const p = randomGroundPoint(58, 42);
+          return new Roper(p.x, p.y);
+        }
+        case 'slug': {
+          const p = randomGroundPoint(11, 40);
+          return new Slug(p.x, p.y);
+        }
+        case 'rat': {
+          const p = randomGroundPoint(14, 28);
+          return new Rat(p.x, p.y);
+        }
+        case 'skeleton': {
+          const p = randomGroundPoint(42, 34);
+          return new Skeleton(p.x, p.y);
+        }
+        case 'skeletonArcher': {
+          const p = randomGroundPoint(42, 34);
+          return new SkeletonArcher(p.x, p.y);
+        }
+        case 'bomb': {
+          const p = randomGroundPoint(26, 30);
+          return new Bomb(p.x, p.y);
+        }
+        case 'caterpillar': {
+          const p = randomGroundPoint(20, 42);
+          return new Caterpillar(p.x, p.y);
+        }
+        case 'frostMite': {
+          const p = randomGroundPoint(24, 38);
+          return new FrostMite(p.x, p.y);
+        }
+        case 'kagenoko': {
+          const p = randomGroundPoint(28, 34);
+          return new Kagenoko(p.x, p.y);
+        }
+        case 'crystalEye': {
+          const p = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
+          return new CrystalEye(p.x, p.y);
+        }
+      }
+    };
+
+    // The old implementation always spawned exactly 22 enemies.
+    // Now the TOTAL enemy count and the count of each species both change every floor.
+    const floorBonus = Math.min(4, Math.floor((this.floor - 1) / 3));
+    const minEnemies = 12 + floorBonus;
+    const maxEnemies = 22 + floorBonus;
+    const enemyCount = minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1));
+
+    const generatedEnemies: Enemy[] = [];
+    for (let index = 0; index < enemyCount; index += 1) {
+      generatedEnemies.push(spawnEnemy(pickKind()));
+    }
+    this.enemies = shuffle(generatedEnemies);
 
     const chestCandidates = shuffle(
       groundPlatforms.filter((platform) =>
