@@ -5,6 +5,15 @@ import type { Facing } from '../game/types';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
+const frostMiteSpriteUrls = [1, 2, 3, 4, 5, 6].map((index) =>
+  new URL(`../../assets/monsters/frost_mite/frame_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+);
+const frostMiteSprites: HTMLImageElement[] = frostMiteSpriteUrls.map((src) => {
+  const image = new Image();
+  image.src = src;
+  return image;
+});
+
 export type FrostMiteState = 'crawl' | 'charge' | 'breath' | 'shoot' | 'recover';
 
 interface FrostShard {
@@ -281,7 +290,6 @@ export class FrostMite extends Enemy {
 
     const centerX = this.x + this.w / 2;
     const footY = this.y + this.h;
-    const crawl = Math.sin(this.actionTime * 11);
     const charge = this.state === 'charge'
       ? Math.min(1, this.stateTime / BALANCE.frostMite.chargeDuration)
       : 0;
@@ -291,75 +299,34 @@ export class FrostMite extends Enemy {
     ctx.translate(centerX - this.facing * recoil, footY);
     if (this.facing < 0) ctx.scale(-1, 1);
 
-    // Six independently moving legs make the creature read as a cold cave arthropod.
-    ctx.strokeStyle = '#16394a';
-    ctx.lineWidth = 3;
-    for (let i = 0; i < 3; i += 1) {
-      const x = -12 + i * 12;
-      const kick = Math.sin(this.actionTime * 13 + i * 2.2) * 4;
-      ctx.beginPath();
-      ctx.moveTo(x, -7);
-      ctx.lineTo(x - 5, -1 + kick * 0.18);
-      ctx.lineTo(x - 9, 3 + Math.abs(kick) * 0.22);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, -7);
-      ctx.lineTo(x + 5, -1 - kick * 0.18);
-      ctx.lineTo(x + 9, 3 + Math.abs(kick) * 0.22);
-      ctx.stroke();
+    // Approved Frost Mite sprite design: blue-white crystal shell + cyan glowing eyes.
+    let spriteIndex = 0;
+    if (this.state === 'charge') spriteIndex = 4;
+    else if (this.state === 'breath' || this.state === 'shoot') spriteIndex = 5;
+    else if (this.state === 'recover') spriteIndex = 3;
+    else spriteIndex = Math.floor(this.actionTime * 8) % 4;
+
+    const sprite = frostMiteSprites[spriteIndex] ?? frostMiteSprites[0];
+    const drawH = this.state === 'charge' ? 45 : 42;
+    const ratio = sprite && sprite.naturalHeight > 0 ? sprite.naturalWidth / sprite.naturalHeight : 1.45;
+    const drawW = Math.round(drawH * ratio);
+
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+      if (this.facing > 0) ctx.scale(-1, 1);
+      ctx.drawImage(sprite, -drawW / 2, -drawH + 3, drawW, drawH);
     }
-
-    const shellBob = this.state === 'crawl' ? crawl * 1.2 : 0;
-    ctx.translate(0, shellBob);
-
-    // Dark shell with translucent ice plates.
-    ctx.fillStyle = '#102833';
-    ctx.fillRect(-16, -17, 30, 13);
-    ctx.fillStyle = '#1f556a';
-    ctx.fillRect(-12, -21, 22, 8);
-    ctx.fillStyle = '#7bd9f0';
-    ctx.fillRect(-9, -23, 7, 5);
-    ctx.fillRect(1, -22, 6, 5);
-    ctx.fillStyle = '#bdf6ff';
-    ctx.fillRect(-7, -23, 3, 2);
-    ctx.fillRect(3, -22, 2, 2);
-
-    // Horned head and icy mandibles.
-    ctx.fillStyle = '#173744';
-    ctx.fillRect(11, -16, 9, 10);
-    ctx.fillStyle = '#9eeaff';
-    ctx.beginPath();
-    ctx.moveTo(18, -15);
-    ctx.lineTo(27, -20);
-    ctx.lineTo(21, -10);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(18, -9);
-    ctx.lineTo(27, -5);
-    ctx.lineTo(21, -14);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#d8fbff';
-    ctx.fillRect(15, -15, 2, 2);
 
     if (charge > 0) {
-      const pulse = 0.35 + Math.sin(this.stateTime * 28) * 0.15;
+      const pulse = 0.28 + Math.sin(this.stateTime * 28) * 0.12;
       ctx.save();
-      ctx.globalAlpha = pulse * charge;
-      ctx.fillStyle = '#9eefff';
-      ctx.fillRect(-20, -27, 44, 24);
+      ctx.globalAlpha = Math.max(0.1, pulse * charge);
+      ctx.strokeStyle = '#bdf6ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, -18, 27 + charge * 4, 15 + charge * 2, 0, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = '#e8ffff';
-      const sparks = 2 + Math.floor(charge * 5);
-      for (let i = 0; i < sparks; i += 1) {
-        const px = -18 + ((i * 11 + Math.floor(this.stateTime * 40)) % 38);
-        const py = -28 + ((i * 7) % 18);
-        ctx.fillRect(px, py, 2, 2);
-      }
     }
-
     ctx.restore();
   }
 

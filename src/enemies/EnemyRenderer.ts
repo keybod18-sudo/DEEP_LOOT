@@ -191,19 +191,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 32;
-    let drawH = 21;
+    let drawW = 45;
+    let drawH = 30;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 29;
-      drawH = 20;
+      drawW = 41;
+      drawH = 28;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 36;
-      drawH = 22;
+      drawW = 50;
+      drawH = 31;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -492,15 +492,15 @@ export class EnemyRenderer {
       images = this.caterpillarPupaImages;
       const progress = Math.min(0.999, caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration);
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 54;
+      drawH = 42;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
-      drawH = 72;
+      drawH = 68;
     } else if (caterpillar.butterflyState === 'ram' || caterpillar.butterflyState === 'ramWindup') {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
-      drawH = 68;
+      drawH = 66;
     } else {
       images = this.caterpillarFlyImages;
       index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
