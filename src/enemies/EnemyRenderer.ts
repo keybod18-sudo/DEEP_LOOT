@@ -86,8 +86,8 @@ const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 // Explicit orientation of the adopted source sprites.
 // This avoids per-monster ad-hoc flip conditions getting inverted again.
 const SOURCE_FACING = {
-  goblin: -1,
-  snake: -1,
+  goblin: 1,
+  snake: 1,
   roper: -1,
   slug: 1,
   rat: 1,
@@ -191,19 +191,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 45;
-    let drawH = 30;
+    let drawW = 60;
+    let drawH = 40;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 41;
-      drawH = 28;
+      drawW = 54;
+      drawH = 36;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 50;
-      drawH = 31;
+      drawW = 68;
+      drawH = 42;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
