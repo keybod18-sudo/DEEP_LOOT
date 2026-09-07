@@ -118,13 +118,13 @@ const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 
 const SOURCE_FACING = {
   goblin: 1,
-  snake: 1,
+  snake: -1,
   bat: 1,
   roper: -1,
   slug: 1,
   rat: 1,
-  skeleton: 1,
-  skeletonArcher: 1,
+  skeleton: -1,
+  skeletonArcher: -1,
   caterpillar: 1,
 } as const satisfies Record<string, Facing>;
 
@@ -851,7 +851,7 @@ export class EnemyRenderer {
     if (!image || !swordReference || !archerReference) return;
 
     const swordBounds = getOpaqueBounds(swordReference);
-    const swordScale = scaleFromReference(swordReference, 96);
+    const swordScale = scaleFromReference(swordReference, 88);
     const targetVisibleH = swordBounds.h * swordScale;
     const archerReferenceBounds = getOpaqueBounds(archerReference);
     const scale = targetVisibleH / Math.max(1, archerReferenceBounds.h);
@@ -904,7 +904,7 @@ export class EnemyRenderer {
     const reference = this.skeletonWalkImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 96);
+    const scale = scaleFromReference(reference, 88);
     drawGroundedSprite(
       ctx,
       image,
