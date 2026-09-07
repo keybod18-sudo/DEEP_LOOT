@@ -191,8 +191,8 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 60;
-    let drawH = 40;
+    let drawW = 72;
+    let drawH = 48;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
@@ -580,7 +580,7 @@ export class EnemyRenderer {
 
     const centerX = skeletonArcher.x + skeletonArcher.w / 2;
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawH = 92;
+    const drawH = 82;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const tension = attacking && !skeletonArcher.shotReleased
       ? Math.min(1, index / 3)
@@ -684,7 +684,7 @@ export class EnemyRenderer {
     const image = images[frame] ?? images[0];
     if (!image) return;
 
-    const drawH = 124;
+    const drawH = 96;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const centerX = skeleton.x + skeleton.w / 2;
     const footY = skeleton.y + skeleton.h + 1;
