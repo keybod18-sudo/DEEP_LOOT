@@ -62,7 +62,7 @@ export class PlayerRenderer {
       ctx.globalAlpha = 0.35;
     }
 
-    const drawH = attacking ? 98 : 95;
+    const drawH = attacking ? 82 : 79;
     const aspect = image.naturalWidth / image.naturalHeight;
     const drawW = Math.round(drawH * aspect);
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
@@ -183,7 +183,7 @@ export class PlayerRenderer {
   ): void {
     const breathe = (Math.sin(time * 3.1) + 1) * 0.5;
     const twitch = Math.sin(time * 8.5) > 0.92 ? 1.8 : 0;
-    const drawH = 84;
+    const drawH = 70;
     const aspect = image.naturalWidth / image.naturalHeight;
     const drawW = Math.round(drawH * aspect);
 

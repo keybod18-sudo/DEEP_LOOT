@@ -10,8 +10,8 @@ import { PlayerRenderer } from './PlayerRenderer';
 export class Player implements PhysicsBody {
   x = 30;
   y = 330;
-  w = 22;
-  h = 34;
+  w = 18;
+  h = 28;
   vx = 0;
   vy = 0;
   grounded = false;
