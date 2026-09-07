@@ -179,21 +179,21 @@ export class Game {
     this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
     this.lightCooldown = Math.max(0, this.lightCooldown - dt);
 
-    if (this.input.consumePress('k')) {
+    if (this.input.consumePress('s')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
       } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.fireballCooldown <= 0) {
         this.castFireball();
       }
     }
-    if (this.input.consumePress('l')) {
+    if (this.input.consumePress('d')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
       } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.thunderCooldown <= 0) {
         this.castThunder();
       }
     }
-    if (this.input.consumePress('i')) {
+    if (this.input.consumePress('f')) {
       if (this.player.silenced) {
         this.showNotice('沈黙で呪文を唱えられない');
       } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.lightCooldown <= 0) {
@@ -390,32 +390,47 @@ export class Game {
   }
 
   private castLight(): void {
-    const originX = this.player.x + this.player.w / 2 - 7;
-    const originY = this.player.y + this.player.h * 0.34 - 7;
-    let target: Enemy | null = null;
-    let bestDistance = Number.POSITIVE_INFINITY;
     const px = this.player.x + this.player.w / 2;
-    const py = this.player.y + this.player.h / 2;
+    const py = this.player.y + this.player.h * 0.43;
+    const count = 5 + Math.floor(Math.random() * 4);
+    const targets = this.enemies
+      .filter((enemy) => enemy.alive)
+      .sort((a, b) => {
+        const adx = a.x + a.w / 2 - px;
+        const ady = a.y + a.h / 2 - py;
+        const bdx = b.x + b.w / 2 - px;
+        const bdy = b.y + b.h / 2 - py;
+        return adx * adx + ady * ady - (bdx * bdx + bdy * bdy);
+      });
 
-    for (const enemy of this.enemies) {
-      if (!enemy.alive) continue;
-      const dx = enemy.x + enemy.w / 2 - px;
-      const dy = enemy.y + enemy.h / 2 - py;
-      const distance = dx * dx + dy * dy;
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        target = enemy;
-      }
+    for (let index = 0; index < count; index += 1) {
+      const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
+      const radius = 14 + (index % 2) * 5;
+      const x = px + Math.cos(angle) * radius - 6;
+      const y = py + Math.sin(angle) * radius * 0.72 - 6;
+      const target = targets.length > 0 ? targets[index % targets.length] : null;
+
+      this.lightOrbs.push(new LightOrb(
+        x,
+        y,
+        this.player.facing,
+        target,
+        angle,
+        0.42 + index * 0.055,
+      ));
     }
 
-    this.lightOrbs.push(new LightOrb(originX, originY, this.player.facing, target));
-    this.lightCooldown = 0.82;
-    this.showNotice('ライト');
+    this.lightCooldown = 1.12;
+    this.showNotice('シャイニング');
   }
 
+
   private updateLightOrbs(dt: number): void {
+    const anchorX = this.player.x + this.player.w / 2;
+    const anchorY = this.player.y + this.player.h * 0.43;
+
     for (const orb of this.lightOrbs) {
-      orb.update(dt, this.enemies);
+      orb.update(dt, this.enemies, anchorX, anchorY);
       if (!orb.alive) continue;
 
       for (const enemy of this.enemies) {
@@ -437,12 +452,13 @@ export class Game {
 
     this.lightOrbs = this.lightOrbs.filter((orb) =>
       orb.alive &&
-      orb.x > -160 &&
-      orb.x < this.stage.width + 160 &&
-      orb.y > -120 &&
-      orb.y < this.stage.height + 160
+      orb.x > -180 &&
+      orb.x < this.stage.width + 180 &&
+      orb.y > -160 &&
+      orb.y < this.stage.height + 180
     );
   }
+
 
   private updateFireballs(dt: number): void {
     for (const fireball of this.fireballs) {

@@ -80,8 +80,8 @@ export class Player implements PhysicsBody {
     const disabled = this.paralysisStunned || this.sleeping || this.frozen;
     const speedFactor = this.slowed ? 0.48 : 1;
     const canAct = !disabled && this.hp > 0;
-    const left = canAct && input.isDown('a', 'arrowleft');
-    const right = canAct && input.isDown('d', 'arrowright');
+    const left = canAct && input.isDown('arrowleft');
+    const right = canAct && input.isDown('arrowright');
 
     if (left) {
       this.vx -= BALANCE.player.moveAcceleration * speedFactor;
@@ -102,7 +102,7 @@ export class Player implements PhysicsBody {
       this.vy = -BALANCE.player.jumpPower * (this.slowed ? 0.82 : 1);
     }
 
-    if (canAct && input.consumePress('j')) {
+    if (canAct && input.consumePress('a')) {
       this.attack.tryStart(this.blinded ? BALANCE.caterpillar.blindMissChance : 0);
     }
 
