@@ -17,6 +17,7 @@ import { BALANCE } from '../config/balance';
 const slimeUrl = new URL('../../assets/monsters/slime/crawl.png', import.meta.url).href;
 const clingUrl = new URL('../../assets/monsters/slime/cling.png', import.meta.url).href;
 const ahrimanUrl = new URL('../../assets/monsters/ahriman/base.png', import.meta.url).href;
+
 const snakeUrls = [1, 2, 3].map((index) =>
   new URL(`../../assets/monsters/snake/move_0${index}.png`, import.meta.url).href,
 );
@@ -42,52 +43,83 @@ const roperIdleUrls = [1, 2, 3, 4].map((index) =>
 const roperAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/roper/attack_0${index}.png`, import.meta.url).href,
 );
+const roperHurtUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/roper/hurt_0${index}.png`, import.meta.url).href,
+);
+
 const slugMoveUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/slug/move_0${index}.png`, import.meta.url).href,
 );
+const slugSquashUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/slug/squash_0${index}.png`, import.meta.url).href,
+);
+
 const ratRunUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/rat/run_0${index}.png`, import.meta.url).href,
 );
 const ratBiteUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/rat/bite_0${index}.png`, import.meta.url).href,
 );
+
 const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/skeleton/walk_0${index}.png`, import.meta.url).href,
 );
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
 );
+const skeletonHurtUrls = [1, 2, 3, 4].map((index) =>
+  new URL(`../../assets/monsters/skeleton/hurt_0${index}.png`, import.meta.url).href,
+);
+
 const skeletonArcherWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/skeleton_archer/walk_0${index}.png`, import.meta.url).href,
 );
 const skeletonArcherShootUrls = [1, 2, 3, 4, 5].map((index) =>
   new URL(`../../assets/monsters/skeleton_archer/shoot_0${index}.png`, import.meta.url).href,
 );
+
 const bombExplosionUrls = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((index) =>
-  new URL(`../../assets/effects/bomb_explosion/explosion_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/effects/bomb_explosion/explosion_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
+
 const caterpillarLarvaUrls = [1, 2, 3, 4, 5, 6].map((index) =>
-  new URL(`../../assets/monsters/caterpillar/larva/crawl_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/monsters/caterpillar/larva/crawl_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
 const caterpillarPupaUrls = [1, 2, 3, 4].map((index) =>
-  new URL(`../../assets/monsters/caterpillar/pupa/pupa_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/monsters/caterpillar/pupa/pupa_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
 const caterpillarFlyUrls = [1, 2, 3, 4, 5, 6].map((index) =>
-  new URL(`../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
 const caterpillarRamUrls = [1, 2, 3, 4].map((index) =>
-  new URL(`../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
 const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
-  new URL(`../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.png`, import.meta.url).href,
+  new URL(
+    `../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
 );
 
-
-// Explicit orientation of the adopted source sprites.
-// This avoids per-monster ad-hoc flip conditions getting inverted again.
 const SOURCE_FACING = {
   goblin: 1,
   snake: 1,
+  bat: 1,
   roper: -1,
   slug: 1,
   rat: 1,
@@ -142,25 +174,86 @@ function getOpaqueBounds(image: HTMLImageElement): SpriteBounds {
   return bounds;
 }
 
+function scaleFromReference(reference: HTMLImageElement, targetFullHeight: number): number {
+  return targetFullHeight / Math.max(1, reference.naturalHeight);
+}
+
+function drawGroundedSprite(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  footY: number,
+  scale: number,
+  logicalFacing: Facing,
+  sourceFacing: Facing,
+  offsetX = 0,
+  offsetY = 0,
+): void {
+  const bounds = getOpaqueBounds(image);
+  const drawW = image.naturalWidth * scale;
+  const drawH = image.naturalHeight * scale;
+  const drawX = -(bounds.x + bounds.w / 2) * scale + offsetX;
+  const drawY = -(bounds.y + bounds.h) * scale + offsetY;
+
+  ctx.save();
+  ctx.translate(centerX, footY);
+  applySpriteFacing(ctx, logicalFacing, sourceFacing);
+  ctx.drawImage(image, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
+
+function drawCenteredSprite(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  centerY: number,
+  scale: number,
+  logicalFacing: Facing,
+  sourceFacing: Facing,
+): void {
+  const bounds = getOpaqueBounds(image);
+  const drawW = image.naturalWidth * scale;
+  const drawH = image.naturalHeight * scale;
+  const drawX = -(bounds.x + bounds.w / 2) * scale;
+  const drawY = -(bounds.y + bounds.h / 2) * scale;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  applySpriteFacing(ctx, logicalFacing, sourceFacing);
+  ctx.drawImage(image, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
+
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
   private ahrimanImage!: HTMLImageElement;
+
   private readonly snakeImages: HTMLImageElement[] = [];
   private readonly batImages: HTMLImageElement[] = [];
+
   private readonly goblinWalkImages: HTMLImageElement[] = [];
   private readonly goblinSwingImages: HTMLImageElement[] = [];
   private readonly goblinLeapImages: HTMLImageElement[] = [];
   private readonly goblinSmashImages: HTMLImageElement[] = [];
+
   private readonly roperIdleImages: HTMLImageElement[] = [];
   private readonly roperAttackImages: HTMLImageElement[] = [];
+  private readonly roperHurtImages: HTMLImageElement[] = [];
+
   private readonly slugMoveImages: HTMLImageElement[] = [];
+  private readonly slugSquashImages: HTMLImageElement[] = [];
+
   private readonly ratRunImages: HTMLImageElement[] = [];
   private readonly ratBiteImages: HTMLImageElement[] = [];
+
   private readonly skeletonWalkImages: HTMLImageElement[] = [];
   private readonly skeletonAttackImages: HTMLImageElement[] = [];
+  private readonly skeletonHurtImages: HTMLImageElement[] = [];
+
   private readonly skeletonArcherWalkImages: HTMLImageElement[] = [];
   private readonly skeletonArcherShootImages: HTMLImageElement[] = [];
+
   private readonly bombExplosionImages: HTMLImageElement[] = [];
   private readonly caterpillarLarvaImages: HTMLImageElement[] = [];
   private readonly caterpillarPupaImages: HTMLImageElement[] = [];
@@ -174,7 +267,33 @@ export class EnemyRenderer {
       loadImage(clingUrl),
       loadImage(ahrimanUrl),
     ]);
-    const [snake, bat, walk, swing, leap, smash, roperIdle, roperAttack, slugMove, ratRun, ratBite, skeletonWalk, skeletonAttack, skeletonArcherWalk, skeletonArcherShoot, bombExplosion, caterpillarLarva, caterpillarPupa, caterpillarFly, caterpillarRam, caterpillarPowder] = await Promise.all([
+
+    const [
+      snake,
+      bat,
+      goblinWalk,
+      goblinSwing,
+      goblinLeap,
+      goblinSmash,
+      roperIdle,
+      roperAttack,
+      roperHurt,
+      slugMove,
+      slugSquash,
+      ratRun,
+      ratBite,
+      skeletonWalk,
+      skeletonAttack,
+      skeletonHurt,
+      skeletonArcherWalk,
+      skeletonArcherShoot,
+      bombExplosion,
+      caterpillarLarva,
+      caterpillarPupa,
+      caterpillarFly,
+      caterpillarRam,
+      caterpillarPowder,
+    ] = await Promise.all([
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
@@ -183,11 +302,14 @@ export class EnemyRenderer {
       Promise.all(goblinSmashUrls.map(loadImage)),
       Promise.all(roperIdleUrls.map(loadImage)),
       Promise.all(roperAttackUrls.map(loadImage)),
+      Promise.all(roperHurtUrls.map(loadImage)),
       Promise.all(slugMoveUrls.map(loadImage)),
+      Promise.all(slugSquashUrls.map(loadImage)),
       Promise.all(ratRunUrls.map(loadImage)),
       Promise.all(ratBiteUrls.map(loadImage)),
       Promise.all(skeletonWalkUrls.map(loadImage)),
       Promise.all(skeletonAttackUrls.map(loadImage)),
+      Promise.all(skeletonHurtUrls.map(loadImage)),
       Promise.all(skeletonArcherWalkUrls.map(loadImage)),
       Promise.all(skeletonArcherShootUrls.map(loadImage)),
       Promise.all(bombExplosionUrls.map(loadImage)),
@@ -197,19 +319,23 @@ export class EnemyRenderer {
       Promise.all(caterpillarRamUrls.map(loadImage)),
       Promise.all(caterpillarPowderUrls.map(loadImage)),
     ]);
+
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
-    this.goblinWalkImages.push(...walk);
-    this.goblinSwingImages.push(...swing);
-    this.goblinLeapImages.push(...leap);
-    this.goblinSmashImages.push(...smash);
+    this.goblinWalkImages.push(...goblinWalk);
+    this.goblinSwingImages.push(...goblinSwing);
+    this.goblinLeapImages.push(...goblinLeap);
+    this.goblinSmashImages.push(...goblinSmash);
     this.roperIdleImages.push(...roperIdle);
     this.roperAttackImages.push(...roperAttack);
+    this.roperHurtImages.push(...roperHurt);
     this.slugMoveImages.push(...slugMove);
+    this.slugSquashImages.push(...slugSquash);
     this.ratRunImages.push(...ratRun);
     this.ratBiteImages.push(...ratBite);
     this.skeletonWalkImages.push(...skeletonWalk);
     this.skeletonAttackImages.push(...skeletonAttack);
+    this.skeletonHurtImages.push(...skeletonHurt);
     this.skeletonArcherWalkImages.push(...skeletonArcherWalk);
     this.skeletonArcherShootImages.push(...skeletonArcherShoot);
     this.bombExplosionImages.push(...bombExplosion);
@@ -231,8 +357,11 @@ export class EnemyRenderer {
     else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
     else if (enemy.type === 'bomb') this.drawBomb(ctx, enemy as Bomb);
     else if (enemy.type === 'caterpillar') this.drawCaterpillar(ctx, enemy as Caterpillar);
-    else if (enemy.type === 'skeletonArcher') this.drawSkeletonArcher(ctx, enemy as SkeletonArcher);
-    else this.drawSkeleton(ctx, enemy as Skeleton);
+    else if (enemy.type === 'skeletonArcher') {
+      this.drawSkeletonArcher(ctx, enemy as SkeletonArcher);
+    } else {
+      this.drawSkeleton(ctx, enemy as Skeleton);
+    }
   }
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
@@ -241,7 +370,6 @@ export class EnemyRenderer {
     let drawH = 48;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
-    let visibleBounds: SpriteBounds | null = null;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
@@ -253,36 +381,17 @@ export class EnemyRenderer {
       drawH = 42;
       drawY = slime.y + slime.h - drawH;
     } else {
-      visibleBounds = getOpaqueBounds(image);
-      drawW = 72 * (visibleBounds.w / Math.max(1, image.naturalWidth));
-      drawH = 48 * (visibleBounds.h / Math.max(1, image.naturalHeight));
       crawlPhase = Math.sin(slime.actionTime * 11);
       drawW *= 1 + Math.abs(crawlPhase) * 0.10;
       drawH *= 1 - Math.abs(crawlPhase) * 0.13;
       drawY = slime.y + slime.h - drawH + 1;
     }
 
-    ctx.save();
     const centerX = slime.x + slime.w / 2 + crawlPhase * 0.9;
+    ctx.save();
     ctx.translate(centerX, 0);
     if (slime.facing < 0) ctx.scale(-1, 1);
-
-    if (visibleBounds) {
-      ctx.drawImage(
-        image,
-        visibleBounds.x,
-        visibleBounds.y,
-        visibleBounds.w,
-        visibleBounds.h,
-        -drawW / 2,
-        drawY,
-        drawW,
-        drawH,
-      );
-    } else {
-      ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
-    }
-
+    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
     ctx.restore();
   }
 
@@ -292,30 +401,35 @@ export class EnemyRenderer {
 
     if (goblin.state === 'swing') {
       images = this.goblinSwingImages;
-      index = Math.min(images.length - 1, Math.floor((goblin.actionTime / 0.42) * images.length));
+      index = Math.min(
+        images.length - 1,
+        Math.floor((goblin.actionTime / 0.42) * images.length),
+      );
     } else if (goblin.state === 'leap') {
       images = this.goblinLeapImages;
       index = Math.min(images.length - 1, Math.floor(goblin.actionTime * 6));
     } else if (goblin.state === 'smash') {
       images = this.goblinSmashImages;
-      index = Math.min(images.length - 1, Math.floor((goblin.actionTime / 0.38) * images.length));
+      index = Math.min(
+        images.length - 1,
+        Math.floor((goblin.actionTime / 0.38) * images.length),
+      );
     }
 
     const image = images[index] ?? images[0];
-    if (!image) return;
+    const reference = this.goblinWalkImages[0] ?? image;
+    if (!image || !reference) return;
 
-    const bounds = getOpaqueBounds(image);
-    const centerX = goblin.x + goblin.w / 2;
-    const footY = goblin.y + goblin.h + 2;
-    const drawH = 62;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
-    const drawY = -(bounds.y + bounds.h) * (drawH / Math.max(1, image.naturalHeight));
-
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, goblin.facing, SOURCE_FACING.goblin);
-    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
-    ctx.restore();
+    const scale = scaleFromReference(reference, 62);
+    drawGroundedSprite(
+      ctx,
+      image,
+      goblin.x + goblin.w / 2,
+      goblin.y + goblin.h + 2,
+      scale,
+      goblin.facing,
+      SOURCE_FACING.goblin,
+    );
   }
 
   private drawAhriman(ctx: CanvasRenderingContext2D, ahriman: Ahriman): void {
@@ -365,50 +479,87 @@ export class EnemyRenderer {
     ctx.save();
     ctx.translate(-drawW / 2, wingLift * -0.45);
     ctx.scale(1, wingScaleY);
-    ctx.drawImage(this.ahrimanImage, 0, 0, wingW, sourceH, 0, -drawH / 2, drawW * 0.34, drawH);
+    ctx.drawImage(
+      this.ahrimanImage,
+      0,
+      0,
+      wingW,
+      sourceH,
+      0,
+      -drawH / 2,
+      drawW * 0.34,
+      drawH,
+    );
     ctx.restore();
 
-    ctx.drawImage(this.ahrimanImage, wingW, 0, bodyW, sourceH, -drawW * 0.16, -drawH / 2, drawW * 0.32, drawH);
+    ctx.drawImage(
+      this.ahrimanImage,
+      wingW,
+      0,
+      bodyW,
+      sourceH,
+      -drawW * 0.16,
+      -drawH / 2,
+      drawW * 0.32,
+      drawH,
+    );
 
     ctx.save();
     ctx.translate(drawW * 0.16, wingLift * -0.45);
     ctx.scale(1, wingScaleY);
-    ctx.drawImage(this.ahrimanImage, wingW + bodyW, 0, wingW, sourceH, 0, -drawH / 2, drawW * 0.34, drawH);
+    ctx.drawImage(
+      this.ahrimanImage,
+      wingW + bodyW,
+      0,
+      wingW,
+      sourceH,
+      0,
+      -drawH / 2,
+      drawW * 0.34,
+      drawH,
+    );
     ctx.restore();
     ctx.restore();
   }
 
   private drawSnake(ctx: CanvasRenderingContext2D, snake: Snake): void {
-    const frame = snake.state === 'strike' ? 2 : Math.floor(snake.actionTime * 8) % this.snakeImages.length;
+    const frame = snake.state === 'strike'
+      ? 2
+      : Math.floor(snake.actionTime * 8) % Math.max(1, this.snakeImages.length);
     const image = this.snakeImages[frame] ?? this.snakeImages[0];
-    if (!image) return;
-    const drawW = snake.state === 'strike' ? 64 : 58;
-    const drawH = snake.state === 'strike' ? 38 : 34;
-    const centerX = snake.x + snake.w / 2;
-    const footY = snake.y + snake.h + 2;
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, snake.facing, SOURCE_FACING.snake);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
-    ctx.restore();
+    const reference = this.snakeImages[0] ?? image;
+    if (!image || !reference) return;
+
+    const scale = scaleFromReference(reference, 34);
+    drawGroundedSprite(
+      ctx,
+      image,
+      snake.x + snake.w / 2,
+      snake.y + snake.h + 2,
+      scale,
+      snake.facing,
+      SOURCE_FACING.snake,
+    );
   }
 
   private drawBat(ctx: CanvasRenderingContext2D, bat: Bat): void {
-    const frame = Math.floor(bat.actionTime * 10) % this.batImages.length;
+    const frame = Math.floor(bat.actionTime * 10) % Math.max(1, this.batImages.length);
     const image = this.batImages[frame] ?? this.batImages[0];
-    if (!image) return;
-    const drawW = 52;
-    const drawH = 30;
-    const bob = Math.sin(bat.actionTime * 14) * 1.5;
-    const centerX = bat.x + bat.w / 2;
-    const centerY = bat.y + bat.h / 2 + bob;
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    if (bat.facing < 0) ctx.scale(-1, 1);
-    ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
-  }
+    const reference = this.batImages[0] ?? image;
+    if (!image || !reference) return;
 
+    const scale = scaleFromReference(reference, 30);
+    const bob = Math.sin(bat.actionTime * 14) * 1.5;
+    drawCenteredSprite(
+      ctx,
+      image,
+      bat.x + bat.w / 2,
+      bat.y + bat.h / 2 + bob,
+      scale,
+      bat.facing,
+      SOURCE_FACING.bat,
+    );
+  }
 
   private drawBomb(ctx: CanvasRenderingContext2D, bomb: Bomb): void {
     const centerX = bomb.x + bomb.w / 2;
@@ -420,10 +571,10 @@ export class EnemyRenderer {
         this.bombExplosionImages.length - 1,
         Math.floor(progress * this.bombExplosionImages.length),
       );
-      const image = this.bombExplosionImages[frameIndex] ?? this.bombExplosionImages[0];
+      const image =
+        this.bombExplosionImages[frameIndex] ?? this.bombExplosionImages[0];
       if (!image) return;
 
-      // Real sprite animation; no rectangular panel and no single-circle explosion.
       const drawSize = BALANCE.bomb.explosionRadius * 2.08;
       const pulse = progress < 0.18 ? 1 + (0.18 - progress) * 0.9 : 1;
       ctx.save();
@@ -434,9 +585,11 @@ export class EnemyRenderer {
       return;
     }
 
-    const fuseFlash = bomb.state === 'fuse' ? (Math.sin(bomb.actionTime * 18) * 0.5 + 0.5) : 0;
+    const fuseFlash =
+      bomb.state === 'fuse' ? Math.sin(bomb.actionTime * 18) * 0.5 + 0.5 : 0;
     const radius = 12 + Math.sin(bomb.actionTime * 12) * 0.45;
-    const rollOffset = bomb.state === 'roll' ? Math.sin(bomb.actionTime * 10) * 0.7 : 0;
+    const rollOffset =
+      bomb.state === 'roll' ? Math.sin(bomb.actionTime * 10) * 0.7 : 0;
     const rollAngle = bomb.x / 12;
 
     ctx.save();
@@ -490,68 +643,76 @@ export class EnemyRenderer {
     ctx.restore();
   }
 
-
   private drawRoper(ctx: CanvasRenderingContext2D, roper: Roper): void {
-    const images = roper.state === 'attack' ? this.roperAttackImages : this.roperIdleImages;
-    const speed = roper.state === 'attack' ? 8 : 5;
+    const hurt = roper.knockbackTime > 0 && this.roperHurtImages.length > 0;
+    const images = hurt
+      ? this.roperHurtImages
+      : roper.state === 'attack'
+        ? this.roperAttackImages
+        : this.roperIdleImages;
+
+    const speed = hurt ? 12 : roper.state === 'attack' ? 8 : 5;
     const frame = Math.floor(roper.actionTime * speed) % Math.max(1, images.length);
     const image = images[frame] ?? images[0];
-    if (!image) return;
-
     const reference = this.roperIdleImages[0] ?? image;
-    const scale = 82 / Math.max(1, reference.naturalHeight);
-    const bounds = getOpaqueBounds(image);
-    const drawW = image.naturalWidth * scale;
-    const drawH = image.naturalHeight * scale;
-    const drawY = -(bounds.y + bounds.h) * scale;
-    const centerX = roper.x + roper.w / 2;
-    const footY = roper.y + roper.h + 1;
+    if (!image || !reference) return;
 
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, roper.facing, SOURCE_FACING.roper);
-    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
-    ctx.restore();
+    const scale = scaleFromReference(reference, 82);
+    drawGroundedSprite(
+      ctx,
+      image,
+      roper.x + roper.w / 2,
+      roper.y + roper.h + 1,
+      scale,
+      roper.facing,
+      SOURCE_FACING.roper,
+    );
   }
 
   private drawSlug(ctx: CanvasRenderingContext2D, slug: Slug): void {
-    const frame = Math.floor(slug.actionTime * 9) % Math.max(1, this.slugMoveImages.length);
-    const image = this.slugMoveImages[frame] ?? this.slugMoveImages[0];
-    if (!image) return;
+    const squashed = slug.knockbackTime > 0 && this.slugSquashImages.length > 0;
+    const images = squashed ? this.slugSquashImages : this.slugMoveImages;
+    const speed = squashed ? 12 : 9;
+    const frame = Math.floor(slug.actionTime * speed) % Math.max(1, images.length);
+    const image = images[frame] ?? images[0];
+    const reference = this.slugMoveImages[0] ?? image;
+    if (!image || !reference) return;
 
-    const drawH = 18;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
-    const centerX = slug.x + slug.w / 2;
-    const footY = slug.y + slug.h + 1;
-
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, slug.facing, SOURCE_FACING.slug);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
-    ctx.restore();
+    const scale = scaleFromReference(reference, 18);
+    drawGroundedSprite(
+      ctx,
+      image,
+      slug.x + slug.w / 2,
+      slug.y + slug.h + 1,
+      scale,
+      slug.facing,
+      SOURCE_FACING.slug,
+    );
   }
 
   private drawRat(ctx: CanvasRenderingContext2D, rat: Rat): void {
     const images = rat.state === 'bite' ? this.ratBiteImages : this.ratRunImages;
     const frame = Math.floor(rat.actionTime * 12) % Math.max(1, images.length);
     const image = images[frame] ?? images[0];
-    if (!image) return;
+    const reference = this.ratRunImages[0] ?? image;
+    if (!image || !reference) return;
 
-    const drawH = rat.state === 'bite' ? 27 : 24;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
-    const centerX = rat.x + rat.w / 2;
-    const footY = rat.y + rat.h + 1;
-
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, rat.facing, SOURCE_FACING.rat);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
-    ctx.restore();
+    const scale = scaleFromReference(reference, 24);
+    drawGroundedSprite(
+      ctx,
+      image,
+      rat.x + rat.w / 2,
+      rat.y + rat.h + 1,
+      scale,
+      rat.facing,
+      SOURCE_FACING.rat,
+    );
   }
 
-
-
-  private drawCaterpillar(ctx: CanvasRenderingContext2D, caterpillar: Caterpillar): void {
+  private drawCaterpillar(
+    ctx: CanvasRenderingContext2D,
+    caterpillar: Caterpillar,
+  ): void {
     let images: HTMLImageElement[];
     let index = 0;
     let drawH = 36;
@@ -562,14 +723,20 @@ export class EnemyRenderer {
       drawH = 34;
     } else if (caterpillar.phase === 'pupa') {
       images = this.caterpillarPupaImages;
-      const progress = Math.min(0.999, caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration);
+      const progress = Math.min(
+        0.999,
+        caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
+      );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
       drawH = 42;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
       drawH = 68;
-    } else if (caterpillar.butterflyState === 'ram' || caterpillar.butterflyState === 'ramWindup') {
+    } else if (
+      caterpillar.butterflyState === 'ram' ||
+      caterpillar.butterflyState === 'ramWindup'
+    ) {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
       drawH = 66;
@@ -585,25 +752,32 @@ export class EnemyRenderer {
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const centerX = caterpillar.x + caterpillar.w / 2;
 
-    if (caterpillar.phase === 'butterfly' && caterpillar.butterflyState === 'powder') {
+    if (
+      caterpillar.phase === 'butterfly' &&
+      caterpillar.butterflyState === 'powder'
+    ) {
       const release = BALANCE.caterpillar.powderReleaseTime;
-      const progress = Math.min(1, caterpillar.actionTime / Math.max(0.01, release));
+      const progress = Math.min(
+        1,
+        caterpillar.actionTime / Math.max(0.01, release),
+      );
       const cloudRadius = 24 + progress * 112;
 
       ctx.save();
       for (let i = 0; i < 34; i += 1) {
-        const seed = i * 2.399963 + caterpillar.actionTime * (1.4 + (i % 3) * 0.18);
+        const seed =
+          i * 2.399963 + caterpillar.actionTime * (1.4 + (i % 3) * 0.18);
         const ring = ((i * 17) % 31) / 31;
         const radius = cloudRadius * (0.22 + ring * 0.78);
         const px = centerX + Math.cos(seed) * radius;
-        const py = caterpillar.y + caterpillar.h / 2
-          + Math.sin(seed * 1.23) * radius * 0.58;
+        const py =
+          caterpillar.y +
+          caterpillar.h / 2 +
+          Math.sin(seed * 1.23) * radius * 0.58;
         const size = 2 + (i % 3);
         ctx.globalAlpha = 0.24 + (i % 5) * 0.07;
         ctx.fillStyle =
-          i % 3 === 0 ? '#b7df36' :
-          i % 3 === 1 ? '#e33e9f' :
-          '#71308c';
+          i % 3 === 0 ? '#b7df36' : i % 3 === 1 ? '#e33e9f' : '#71308c';
         ctx.fillRect(Math.round(px), Math.round(py), size, size);
       }
       ctx.restore();
@@ -614,27 +788,50 @@ export class EnemyRenderer {
       const centerY = caterpillar.y + caterpillar.h / 2;
       const hover = Math.sin(caterpillar.phaseTime * 7.4) * 2.2;
       ctx.translate(centerX, centerY + hover);
-      applySpriteFacing(ctx, caterpillar.facing, SOURCE_FACING.caterpillar);
+      applySpriteFacing(
+        ctx,
+        caterpillar.facing,
+        SOURCE_FACING.caterpillar,
+      );
       if (caterpillar.butterflyState === 'ramWindup') {
         ctx.rotate(caterpillar.facing * -0.09);
       } else if (caterpillar.butterflyState === 'ram') {
-        ctx.rotate(Math.atan2(caterpillar.vy, Math.max(0.01, Math.abs(caterpillar.vx))) * 0.28);
+        ctx.rotate(
+          Math.atan2(
+            caterpillar.vy,
+            Math.max(0.01, Math.abs(caterpillar.vx)),
+          ) * 0.28,
+        );
       }
       ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
     } else {
       const footY = caterpillar.y + caterpillar.h + 1;
-      const squash = caterpillar.phase === 'larva'
-        ? Math.sin(caterpillar.actionTime * 18) * 1.4
-        : Math.sin(caterpillar.phaseTime * 7) * 0.8;
+      const squash =
+        caterpillar.phase === 'larva'
+          ? Math.sin(caterpillar.actionTime * 18) * 1.4
+          : Math.sin(caterpillar.phaseTime * 7) * 0.8;
       ctx.translate(centerX, footY);
-      applySpriteFacing(ctx, caterpillar.facing, SOURCE_FACING.caterpillar);
+      applySpriteFacing(
+        ctx,
+        caterpillar.facing,
+        SOURCE_FACING.caterpillar,
+      );
       const groundOffset = caterpillar.phase === 'larva' ? 6 : 0;
-      ctx.drawImage(image, -drawW / 2, -drawH + squash + groundOffset, drawW, drawH - squash);
+      ctx.drawImage(
+        image,
+        -drawW / 2,
+        -drawH + squash + groundOffset,
+        drawW,
+        drawH - squash,
+      );
     }
     ctx.restore();
   }
 
-private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: SkeletonArcher): void {
+  private drawSkeletonArcher(
+    ctx: CanvasRenderingContext2D,
+    skeletonArcher: SkeletonArcher,
+  ): void {
     const attacking = skeletonArcher.state === 'attack';
     const images = attacking
       ? this.skeletonArcherShootImages
@@ -649,87 +846,75 @@ private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: Skelet
       : Math.floor(skeletonArcher.actionTime * 8) % Math.max(1, images.length);
 
     const image = images[index] ?? images[0];
-    if (!image) return;
-
     const swordReference = this.skeletonWalkImages[0] ?? image;
+    const archerReference = this.skeletonArcherWalkImages[0] ?? image;
+    if (!image || !swordReference || !archerReference) return;
+
     const swordBounds = getOpaqueBounds(swordReference);
-    const swordScale = 96 / Math.max(1, swordReference.naturalHeight);
+    const swordScale = scaleFromReference(swordReference, 96);
     const targetVisibleH = swordBounds.h * swordScale;
-    const reference = this.skeletonArcherWalkImages[0] ?? image;
-    const referenceBounds = getOpaqueBounds(reference);
-    const scale = targetVisibleH / Math.max(1, referenceBounds.h);
-    const bounds = getOpaqueBounds(image);
+    const archerReferenceBounds = getOpaqueBounds(archerReference);
+    const scale = targetVisibleH / Math.max(1, archerReferenceBounds.h);
 
-    const drawW = image.naturalWidth * scale;
-    const drawH = image.naturalHeight * scale;
-    const drawX = -(bounds.x + bounds.w / 2) * scale;
-    const drawY = -(bounds.y + bounds.h) * scale;
+    const tension =
+      attacking && !skeletonArcher.shotReleased
+        ? Math.min(1, index / Math.max(1, images.length - 1))
+        : 0;
+    const recoil =
+      attacking && skeletonArcher.shotReleased
+        ? Math.max(0, 1 - (skeletonArcher.actionTime - 0.18) * 7)
+        : 0;
 
-    const centerX = skeletonArcher.x + skeletonArcher.w / 2;
-    const footY = skeletonArcher.y + skeletonArcher.h + 1;
-
-    const tension = attacking && !skeletonArcher.shotReleased
-      ? Math.min(1, index / Math.max(1, images.length - 1))
-      : 0;
-    const recoil = attacking && skeletonArcher.shotReleased
-      ? Math.max(0, 1 - (skeletonArcher.actionTime - 0.18) * 7)
-      : 0;
-
-    ctx.save();
-    ctx.translate(centerX - tension * 1.2 + recoil * 1.4, footY);
-    applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
-    ctx.drawImage(
+    drawGroundedSprite(
+      ctx,
       image,
-      drawX,
-      drawY + recoil * 0.5,
-      drawW,
-      drawH,
+      skeletonArcher.x + skeletonArcher.w / 2,
+      skeletonArcher.y + skeletonArcher.h + 1,
+      scale,
+      skeletonArcher.facing,
+      SOURCE_FACING.skeletonArcher,
+      -tension * 1.2 + recoil * 1.4,
+      recoil * 0.5,
     );
-    ctx.restore();
   }
 
-private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
-    const attacking = skeleton.state === 'attack';
-    const images = attacking
-      ? this.skeletonAttackImages
-      : this.skeletonWalkImages;
-    if (images.length === 0) return;
+  private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
+    const hurt = skeleton.knockbackTime > 0 && this.skeletonHurtImages.length > 0;
+    const attacking = skeleton.state === 'attack' && !hurt;
 
-    const frame = attacking
-      ? Math.min(
-          images.length - 1,
-          Math.floor((skeleton.actionTime / 0.42) * images.length),
-        )
-      : Math.floor(skeleton.actionTime * 8) % Math.max(1, images.length);
+    const images = hurt
+      ? this.skeletonHurtImages
+      : attacking
+        ? this.skeletonAttackImages
+        : this.skeletonWalkImages;
+
+    let frame: number;
+    if (hurt) {
+      frame = Math.floor(skeleton.actionTime * 12) % Math.max(1, images.length);
+    } else if (attacking) {
+      frame = Math.min(
+        images.length - 1,
+        Math.floor((skeleton.actionTime / 0.42) * images.length),
+      );
+    } else {
+      frame = Math.floor(skeleton.actionTime * 8) % Math.max(1, images.length);
+    }
 
     const image = images[frame] ?? images[0];
-    if (!image) return;
-
     const reference = this.skeletonWalkImages[0] ?? image;
-    const scale = 96 / Math.max(1, reference.naturalHeight);
-    const bounds = getOpaqueBounds(image);
+    if (!image || !reference) return;
 
-    const drawW = image.naturalWidth * scale;
-    const drawH = image.naturalHeight * scale;
-    const drawX = -(bounds.x + bounds.w / 2) * scale;
-    const drawY = -(bounds.y + bounds.h) * scale;
-
-    const centerX = skeleton.x + skeleton.w / 2;
-    const footY = skeleton.y + skeleton.h + 1;
-
-    ctx.save();
-    ctx.translate(centerX, footY);
-    applySpriteFacing(ctx, skeleton.facing, SOURCE_FACING.skeleton);
-    ctx.drawImage(
+    const scale = scaleFromReference(reference, 96);
+    drawGroundedSprite(
+      ctx,
       image,
-      drawX,
-      drawY,
-      drawW,
-      drawH,
+      skeleton.x + skeleton.w / 2,
+      skeleton.y + skeleton.h + 1,
+      scale,
+      skeleton.facing,
+      SOURCE_FACING.skeleton,
     );
-    ctx.restore();
   }
-
 }
 
 function applySpriteFacing(
