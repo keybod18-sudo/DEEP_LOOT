@@ -96,6 +96,52 @@ const SOURCE_FACING = {
   caterpillar: 1,
 } as const satisfies Record<string, Facing>;
 
+type SpriteBounds = { x: number; y: number; w: number; h: number };
+
+const OPAQUE_BOUNDS = new WeakMap<HTMLImageElement, SpriteBounds>();
+
+function getOpaqueBounds(image: HTMLImageElement): SpriteBounds {
+  const cached = OPAQUE_BOUNDS.get(image);
+  if (cached) return cached;
+
+  const width = Math.max(1, image.naturalWidth);
+  const height = Math.max(1, image.naturalHeight);
+  const fallback = { x: 0, y: 0, w: width, h: height };
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return fallback;
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0);
+
+  const pixels = context.getImageData(0, 0, width, height).data;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = pixels[(y * width + x) * 4 + 3];
+      if (alpha < 8) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  const bounds = maxX >= minX && maxY >= minY
+    ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+    : fallback;
+
+  OPAQUE_BOUNDS.set(image, bounds);
+  return bounds;
+}
+
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
@@ -195,6 +241,7 @@ export class EnemyRenderer {
     let drawH = 48;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
+    let visibleBounds: SpriteBounds | null = null;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
@@ -206,17 +253,36 @@ export class EnemyRenderer {
       drawH = 42;
       drawY = slime.y + slime.h - drawH;
     } else {
+      visibleBounds = getOpaqueBounds(image);
+      drawW = 72 * (visibleBounds.w / Math.max(1, image.naturalWidth));
+      drawH = 48 * (visibleBounds.h / Math.max(1, image.naturalHeight));
       crawlPhase = Math.sin(slime.actionTime * 11);
       drawW *= 1 + Math.abs(crawlPhase) * 0.10;
       drawH *= 1 - Math.abs(crawlPhase) * 0.13;
-      drawY = slime.y + slime.h - drawH + 6 + Math.max(0, crawlPhase) * 1.3;
+      drawY = slime.y + slime.h - drawH + 1;
     }
 
     ctx.save();
     const centerX = slime.x + slime.w / 2 + crawlPhase * 0.9;
     ctx.translate(centerX, 0);
     if (slime.facing < 0) ctx.scale(-1, 1);
-    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
+
+    if (visibleBounds) {
+      ctx.drawImage(
+        image,
+        visibleBounds.x,
+        visibleBounds.y,
+        visibleBounds.w,
+        visibleBounds.h,
+        -drawW / 2,
+        drawY,
+        drawW,
+        drawH,
+      );
+    } else {
+      ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
+    }
+
     ctx.restore();
   }
 
@@ -430,15 +496,30 @@ export class EnemyRenderer {
     const image = images[frame] ?? images[0];
     if (!image) return;
 
-    const drawH = roper.state === 'attack' ? 92 : 82;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const bounds = getOpaqueBounds(image);
+    const reference = this.roperIdleImages[0] ?? image;
+    const referenceBounds = getOpaqueBounds(reference);
+    const referenceVisibleRatio = referenceBounds.h / Math.max(1, reference.naturalHeight);
+    const fullDrawH = roper.state === 'attack' ? 92 : 82;
+    const drawH = fullDrawH * referenceVisibleRatio;
+    const drawW = Math.round(drawH * (bounds.w / Math.max(1, bounds.h)));
     const centerX = roper.x + roper.w / 2;
-    const footY = roper.y + roper.h + 2;
+    const footY = roper.y + roper.h + 1;
 
     ctx.save();
     ctx.translate(centerX, footY);
     applySpriteFacing(ctx, roper.facing, SOURCE_FACING.roper);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.drawImage(
+      image,
+      bounds.x,
+      bounds.y,
+      bounds.w,
+      bounds.h,
+      -drawW / 2,
+      -drawH,
+      drawW,
+      drawH,
+    );
     ctx.restore();
   }
 
@@ -580,8 +661,11 @@ export class EnemyRenderer {
 
     const centerX = skeletonArcher.x + skeletonArcher.w / 2;
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawH = 96;
-    const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const skeletonReference = this.skeletonWalkImages[0] ?? image;
+    const skeletonReferenceBounds = getOpaqueBounds(skeletonReference);
+    const drawH = 96 * (skeletonReferenceBounds.h / Math.max(1, skeletonReference.naturalHeight));
+    const bounds = getOpaqueBounds(image);
+    const drawW = Math.round(drawH * (bounds.w / Math.max(1, bounds.h)));
     const tension = attacking && !skeletonArcher.shotReleased
       ? Math.min(1, index / 3)
       : 0;
@@ -605,7 +689,17 @@ export class EnemyRenderer {
       ctx.rotate(skeletonArcher.facing * (recoil * 0.035 - tension * 0.012));
     }
     applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.drawImage(
+      image,
+      bounds.x,
+      bounds.y,
+      bounds.w,
+      bounds.h,
+      -drawW / 2,
+      -drawH,
+      drawW,
+      drawH,
+    );
 
     if (attacking && !skeletonArcher.shotReleased) {
       const poison = skeletonArcher.shotType === 'poison';
