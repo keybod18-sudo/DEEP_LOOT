@@ -416,13 +416,14 @@ export class Game {
         this.player.facing,
         target,
         angle,
-        0.42 + index * 0.055,
+        0.78 + index * 0.075,
       ));
     }
 
     this.lightCooldown = 1.12;
     this.showNotice('シャイニング');
   }
+
 
 
   private updateLightOrbs(dt: number): void {
@@ -438,7 +439,7 @@ export class Game {
 
         const killed = damageEnemy(
           enemy,
-          60,
+          15,
           orb.x + orb.w / 2,
           0.95,
         );
@@ -458,6 +459,7 @@ export class Game {
       orb.y < this.stage.height + 180
     );
   }
+
 
 
   private updateFireballs(dt: number): void {

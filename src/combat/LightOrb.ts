@@ -9,7 +9,7 @@ export class LightOrb {
   vx = 0;
   vy = 0;
   alive = true;
-  life = 4.4;
+  life = 4.9;
 
   private target: Enemy | null;
   private pulse = 0;
@@ -26,15 +26,15 @@ export class LightOrb {
     facing: number,
     target: Enemy | null,
     orbitAngle = 0,
-    launchDelay = 0.34,
+    launchDelay = 0.72,
   ) {
     this.x = x;
     this.y = y;
     this.target = target;
     this.orbitAngle = orbitAngle;
     this.launchDelay = launchDelay;
-    this.orbitRadius = 20 + Math.random() * 9;
-    this.vx = facing * 22;
+    this.orbitRadius = 20 + Math.random() * 8;
+    this.vx = facing * 10;
   }
 
   get rect(): Rect {
@@ -51,20 +51,19 @@ export class LightOrb {
 
     this.life -= dt;
     this.age += dt;
-    this.pulse += dt * 13;
+    this.pulse += dt * 10;
     if (this.life <= 0) {
       this.alive = false;
       return;
     }
 
-    // First, the light spheres appear slowly around the player.
     if (!this.launched && this.age < this.launchDelay) {
-      this.orbitAngle += dt * 1.65;
-      const radius = this.orbitRadius + Math.sin(this.pulse * 0.45) * 2.2;
+      this.orbitAngle += dt * 0.82;
+      const radius = this.orbitRadius + Math.sin(this.pulse * 0.35) * 1.8;
       const cx = anchorX + Math.cos(this.orbitAngle) * radius;
-      const cy = anchorY + Math.sin(this.orbitAngle) * (radius * 0.72);
-      this.x += (cx - this.w / 2 - this.x) * Math.min(1, dt * 9);
-      this.y += (cy - this.h / 2 - this.y) * Math.min(1, dt * 9);
+      const cy = anchorY + Math.sin(this.orbitAngle) * (radius * 0.68);
+      this.x += (cx - this.w / 2 - this.x) * Math.min(1, dt * 5.4);
+      this.y += (cy - this.h / 2 - this.y) * Math.min(1, dt * 5.4);
       this.pushTrail(dt);
       return;
     }
@@ -72,14 +71,14 @@ export class LightOrb {
     if (!this.launched) {
       this.launched = true;
       const tangent = this.orbitAngle + Math.PI / 2;
-      this.vx = Math.cos(tangent) * 54;
-      this.vy = Math.sin(tangent) * 54;
+      this.vx = Math.cos(tangent) * 26;
+      this.vy = Math.sin(tangent) * 26;
     }
 
     if (!this.target?.alive) this.target = this.findNearest(enemies);
 
     const launchAge = Math.max(0, this.age - this.launchDelay);
-    const targetSpeed = Math.min(465, 62 + launchAge * 560);
+    const targetSpeed = Math.min(360, 42 + launchAge * 280);
 
     if (this.target?.alive) {
       const tx = this.target.x + this.target.w / 2;
@@ -91,14 +90,12 @@ export class LightOrb {
       const dist = Math.max(1, Math.hypot(dx, dy));
       const desiredX = (dx / dist) * targetSpeed;
       const desiredY = (dy / dist) * targetSpeed;
-
-      // Slow at launch, then steering and speed ramp up aggressively.
-      const steer = Math.min(1, dt * (4.3 + Math.min(7, launchAge * 5.5)));
+      const steer = Math.min(1, dt * (2.4 + Math.min(5, launchAge * 3.2)));
       this.vx += (desiredX - this.vx) * steer;
       this.vy += (desiredY - this.vy) * steer;
     } else {
       const speed = Math.max(1, Math.hypot(this.vx, this.vy));
-      const accel = Math.min(465, speed + 520 * dt);
+      const accel = Math.min(360, speed + 260 * dt);
       this.vx = (this.vx / speed) * accel;
       this.vy = (this.vy / speed) * accel;
     }
@@ -115,10 +112,10 @@ export class LightOrb {
     ctx.globalCompositeOperation = 'screen';
 
     for (const point of this.trail) {
-      const ratio = Math.max(0, point.life / 0.30);
-      ctx.fillStyle = `rgba(255, 244, 154, ${ratio * 0.28})`;
+      const ratio = Math.max(0, point.life / 0.34);
+      ctx.fillStyle = `rgba(255, 244, 154, ${ratio * 0.25})`;
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 2 + ratio * 4.2, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, 2 + ratio * 4.0, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -149,7 +146,7 @@ export class LightOrb {
     this.trail.push({
       x: this.x + this.w / 2,
       y: this.y + this.h / 2,
-      life: 0.30,
+      life: 0.34,
     });
     if (this.trail.length > 13) this.trail.shift();
     for (const point of this.trail) point.life -= dt;

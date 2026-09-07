@@ -223,6 +223,7 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const ability = escapeHtml(item.intrinsicAbility?.description ?? '固有能力なし');
   const statLabel = item.category === 'weapon' ? '攻撃' : '防御';
   const statValue = item.category === 'weapon' ? item.attack : item.defense;
+  const equipped = 'equipped' in item && Boolean((item as Record<string, unknown>).equipped);
   const weaponCodes: Record<string,string> = {"鉄の剣":"WPN-001","山賊の剣":"WPN-002","古びた長剣":"WPN-003","青鋼の剣":"WPN-004","黒鉄の剣":"WPN-005","錆喰いの剣":"WPN-006","洞窟刀":"WPN-007","月影の短剣":"WPN-008","火打ちの剣":"WPN-009","骨断ち":"WPN-010","風切丸":"WPN-011","泥濘の刃":"WPN-012","赤銅の長剣":"WPN-013","白銀の小剣":"WPN-014","影縫い":"WPN-015","雷鳴の剣":"WPN-016","苔むす剣":"WPN-017","深層の刃":"WPN-018","血煙丸":"WPN-019","岩砕き":"WPN-020","狩人の曲刀":"WPN-021","亡者の剣":"WPN-022","星屑の剣":"WPN-023","夜渡り":"WPN-024","燐光剣":"WPN-025","黒曜の刃":"WPN-026","朽王の剣":"WPN-027","竜骨剣":"WPN-028","鉱夫の鉈":"WPN-029","迷宮の剣":"WPN-030","霧裂き":"WPN-031","紅蓮の短剣":"WPN-032","氷脈の剣":"WPN-033","紫電の刃":"WPN-034","鬼灯丸":"WPN-035","夢喰い":"WPN-036","蟲狩りの剣":"WPN-037","蛇殺し":"WPN-038","蝙蝠切り":"WPN-039","晶砕き":"WPN-040","影子守":"WPN-041","断層剣":"WPN-042","墓守の剣":"WPN-043","祈り砕き":"WPN-044","灰冠の剣":"WPN-045","金喰いの刃":"WPN-046","幽世の剣":"WPN-047","月蝕刀":"WPN-048","黒薔薇":"WPN-049","太古の剣":"WPN-050","深淵の牙":"WPN-051","旅人の名剣":"WPN-052","迷い星":"WPN-053","終夜の剣":"WPN-054"};
   const armorCodes: Record<string,string> = {"革の鎧":"ARM-001","鉄の胸当て":"ARM-002","探索者の鎧":"ARM-003","青鋼の鎧":"ARM-004","黒革の鎧":"ARM-005","錆鉄の鎧":"ARM-006","苔衣":"ARM-007","鉱夫の胸当て":"ARM-008","月影の外套":"ARM-009","骨組み鎧":"ARM-010","風除けのコート":"ARM-011","泥壁の鎧":"ARM-012","赤銅の胸甲":"ARM-013","白銀の鎧":"ARM-014","影縫いの衣":"ARM-015","雷除け胴":"ARM-016","深層探索服":"ARM-017","血染めの鎧":"ARM-018","岩殻の鎧":"ARM-019","狩人の胴衣":"ARM-020","亡者の鎧":"ARM-021","星屑の外套":"ARM-022","夜渡りの服":"ARM-023","燐光の鎧":"ARM-024","黒曜の鎧":"ARM-025","朽王の外套":"ARM-026","竜骨鎧":"ARM-027","坑道作業服":"ARM-028","迷宮騎士鎧":"ARM-029","霧衣":"ARM-030","紅蓮の胸甲":"ARM-031","氷脈の鎧":"ARM-032","紫電の外套":"ARM-033","鬼灯の鎧":"ARM-034","夢守りの衣":"ARM-035","蟲殻の鎧":"ARM-036","蛇革の胴衣":"ARM-037","蝙蝠羽の外套":"ARM-038","晶殻鎧":"ARM-039","影子守の衣":"ARM-040","断層の鎧":"ARM-041","墓守の鎧":"ARM-042","祈祷師の法衣":"ARM-043","灰冠の鎧":"ARM-044","金継ぎの鎧":"ARM-045","幽世の衣":"ARM-046","月蝕の鎧":"ARM-047","黒薔薇のドレス":"ARM-048","太古の甲冑":"ARM-049","深淵の鎧":"ARM-050","旅人の外套":"ARM-051","迷い星の鎧":"ARM-052","終夜の外套":"ARM-053","王墓の甲冑":"ARM-054"};
   const code = item.category === 'weapon' ? weaponCodes[item.name] : armorCodes[item.name];
@@ -230,23 +231,22 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const accent = palette.accent;
   const border = palette.border;
 
-  return `<span class="equipment-preview" style="display:block;margin-top:8px;padding:9px;border-radius:14px;border:1px solid ${border};background:linear-gradient(135deg,rgba(7,11,18,.98),rgba(15,11,22,.98));box-shadow:inset 0 0 28px rgba(0,0,0,.42);">
-    <span style="display:grid;grid-template-columns:minmax(0,1fr) 184px;gap:10px;align-items:stretch;">
-      <span style="display:flex;flex-direction:column;justify-content:center;padding:10px 11px;border-radius:11px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.018);min-height:190px;">
-        <span style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:9px;">
-          <span style="font-size:18px;line-height:1.08;font-weight:800;color:rgba(255,255,255,.98);">${label}</span>
-          <span style="font-size:10px;font-weight:700;color:${accent};white-space:nowrap;">${escapeHtml(rarity)}</span>
+  return `<span class="equipment-preview" style="display:block;margin-top:6px;padding:8px 9px;border-radius:12px;border:1px solid ${border};background:linear-gradient(135deg,rgba(7,11,18,.985),rgba(15,11,22,.985));box-shadow:inset 0 0 24px rgba(0,0,0,.34);">
+    <span style="display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:8px;align-items:center;">
+      <span style="display:flex;flex-direction:column;justify-content:center;min-width:0;padding:4px 2px;">
+        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;">
+          <span style="font-size:16px;line-height:1.08;font-weight:800;color:rgba(255,255,255,.98);min-width:0;">${label}</span>
+          ${equipped ? `<span style="padding:2px 8px;border-radius:999px;border:1px solid rgba(255,220,120,.38);background:rgba(255,210,80,.09);font-size:10px;font-weight:700;color:#ffd777;white-space:nowrap;">装備中</span>` : ''}
         </span>
-        <span style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-          <span style="padding:4px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.07);font-size:10px;color:rgba(255,255,255,.85);"><b style="color:${accent};">${statLabel}</b> ${escapeHtml(String(statValue))}</span>
-          <span style="padding:4px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.07);font-size:10px;color:rgba(255,255,255,.85);">${item.category === 'weapon' ? '武器' : '防具'}</span>
+        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">${statLabel}</b> ${escapeHtml(String(statValue))}</span>
+          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">レア度</b> ${escapeHtml(rarity)}</span>
+          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:${palette.glow};white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;">${abilityName}</span>
         </span>
-        <span style="font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:4px;">固有能力</span>
-        <span style="font-size:14px;line-height:1.15;font-weight:800;color:${palette.glow};margin-bottom:5px;">${abilityName}</span>
-        <span style="font-size:11px;line-height:1.48;color:rgba(255,255,255,.84);">${ability}</span>
+        <span style="font-size:10px;line-height:1.42;color:rgba(255,255,255,.8);">${ability}</span>
       </span>
-      <span style="display:flex;align-items:center;justify-content:center;padding:6px;border-radius:11px;border:1px solid ${border};background:#080b12;min-height:190px;overflow:hidden;">
-        ${artSrc ? `<img src="${artSrc}" alt="${label}" style="width:100%;height:100%;max-height:202px;object-fit:contain;display:block;border-radius:8px;" />` : `<span style="font-size:10px;color:rgba(255,255,255,.4);">NO IMAGE</span>`}
+      <span style="display:flex;align-items:center;justify-content:center;padding:4px;border-radius:10px;border:1px solid ${border};background:#080b12;height:112px;overflow:hidden;">
+        ${artSrc ? `<img src="${artSrc}" alt="${label}" style="width:100%;height:100%;max-height:112px;object-fit:contain;display:block;border-radius:6px;" />` : `<span style="font-size:10px;color:rgba(255,255,255,.4);">NO IMAGE</span>`}
       </span>
     </span>
   </span>`;
