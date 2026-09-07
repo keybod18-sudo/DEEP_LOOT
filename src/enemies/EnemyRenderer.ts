@@ -304,15 +304,17 @@ export class EnemyRenderer {
     const image = images[index] ?? images[0];
     if (!image) return;
 
+    const bounds = getOpaqueBounds(image);
     const centerX = goblin.x + goblin.w / 2;
     const footY = goblin.y + goblin.h + 2;
     const drawH = 62;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
+    const drawY = -(bounds.y + bounds.h) * (drawH / Math.max(1, image.naturalHeight));
 
     ctx.save();
     ctx.translate(centerX, footY);
     applySpriteFacing(ctx, goblin.facing, SOURCE_FACING.goblin);
-    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
     ctx.restore();
   }
 
@@ -496,30 +498,19 @@ export class EnemyRenderer {
     const image = images[frame] ?? images[0];
     if (!image) return;
 
-    const bounds = getOpaqueBounds(image);
     const reference = this.roperIdleImages[0] ?? image;
-    const referenceBounds = getOpaqueBounds(reference);
-    const referenceVisibleRatio = referenceBounds.h / Math.max(1, reference.naturalHeight);
-    const fullDrawH = roper.state === 'attack' ? 92 : 82;
-    const drawH = fullDrawH * referenceVisibleRatio;
-    const drawW = Math.round(drawH * (bounds.w / Math.max(1, bounds.h)));
+    const scale = 82 / Math.max(1, reference.naturalHeight);
+    const bounds = getOpaqueBounds(image);
+    const drawW = image.naturalWidth * scale;
+    const drawH = image.naturalHeight * scale;
+    const drawY = -(bounds.y + bounds.h) * scale;
     const centerX = roper.x + roper.w / 2;
     const footY = roper.y + roper.h + 1;
 
     ctx.save();
     ctx.translate(centerX, footY);
     applySpriteFacing(ctx, roper.facing, SOURCE_FACING.roper);
-    ctx.drawImage(
-      image,
-      bounds.x,
-      bounds.y,
-      bounds.w,
-      bounds.h,
-      -drawW / 2,
-      -drawH,
-      drawW,
-      drawH,
-    );
+    ctx.drawImage(image, -drawW / 2, drawY, drawW, drawH);
     ctx.restore();
   }
 
@@ -660,8 +651,13 @@ private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: Skelet
     const image = images[index] ?? images[0];
     if (!image) return;
 
+    const swordReference = this.skeletonWalkImages[0] ?? image;
+    const swordBounds = getOpaqueBounds(swordReference);
+    const swordScale = 96 / Math.max(1, swordReference.naturalHeight);
+    const targetVisibleH = swordBounds.h * swordScale;
     const reference = this.skeletonArcherWalkImages[0] ?? image;
-    const scale = 96 / Math.max(1, reference.naturalHeight);
+    const referenceBounds = getOpaqueBounds(reference);
+    const scale = targetVisibleH / Math.max(1, referenceBounds.h);
     const bounds = getOpaqueBounds(image);
 
     const drawW = image.naturalWidth * scale;
