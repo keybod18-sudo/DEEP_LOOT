@@ -209,7 +209,7 @@ export class EnemyRenderer {
       crawlPhase = Math.sin(slime.actionTime * 11);
       drawW *= 1 + Math.abs(crawlPhase) * 0.10;
       drawH *= 1 - Math.abs(crawlPhase) * 0.13;
-      drawY = slime.y + slime.h - drawH + Math.max(0, crawlPhase) * 1.3;
+      drawY = slime.y + slime.h - drawH + 6 + Math.max(0, crawlPhase) * 1.3;
     }
 
     ctx.save();
@@ -580,7 +580,7 @@ export class EnemyRenderer {
 
     const centerX = skeletonArcher.x + skeletonArcher.w / 2;
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawH = 82;
+    const drawH = 96;
     const drawW = Math.round(drawH * (image.naturalWidth / image.naturalHeight));
     const tension = attacking && !skeletonArcher.shotReleased
       ? Math.min(1, index / 3)
