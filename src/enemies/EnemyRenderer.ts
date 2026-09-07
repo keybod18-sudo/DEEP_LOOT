@@ -366,19 +366,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 60;
-    let drawH = 40;
+    let drawW = 52;
+    let drawH = 34;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 45;
-      drawH = 30;
+      drawW = 39;
+      drawH = 26;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 57;
-      drawH = 35;
+      drawW = 50;
+      drawH = 31;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -678,7 +678,7 @@ export class EnemyRenderer {
     const reference = this.slugMoveImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 18);
+    const scale = scaleFromReference(reference, 20);
     drawGroundedSprite(
       ctx,
       image,
@@ -720,7 +720,7 @@ export class EnemyRenderer {
     if (caterpillar.phase === 'larva') {
       images = this.caterpillarLarvaImages;
       index = Math.floor(caterpillar.actionTime * 9) % Math.max(1, images.length);
-      drawH = 34;
+      drawH = 36;
     } else if (caterpillar.phase === 'pupa') {
       images = this.caterpillarPupaImages;
       const progress = Math.min(
@@ -728,22 +728,22 @@ export class EnemyRenderer {
         caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
       );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 42;
+      drawH = 44;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
-      drawH = 68;
+      drawH = 70;
     } else if (
       caterpillar.butterflyState === 'ram' ||
       caterpillar.butterflyState === 'ramWindup'
     ) {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
-      drawH = 66;
+      drawH = 68;
     } else {
       images = this.caterpillarFlyImages;
       index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
-      drawH = 72;
+      drawH = 74;
     }
 
     const image = images[index] ?? images[0];
