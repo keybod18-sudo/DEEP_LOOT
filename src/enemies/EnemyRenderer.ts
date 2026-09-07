@@ -142,35 +142,6 @@ function getOpaqueBounds(image: HTMLImageElement): SpriteBounds {
   return bounds;
 }
 
-function getSharedOpaqueBounds(images: readonly HTMLImageElement[]): SpriteBounds {
-  if (images.length === 0) return { x: 0, y: 0, w: 1, h: 1 };
-
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-
-  for (const image of images) {
-    if (!image) continue;
-    const b = getOpaqueBounds(image);
-    minX = Math.min(minX, b.x);
-    minY = Math.min(minY, b.y);
-    maxX = Math.max(maxX, b.x + b.w);
-    maxY = Math.max(maxY, b.y + b.h);
-  }
-
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
-    return { x: 0, y: 0, w: 1, h: 1 };
-  }
-
-  return {
-    x: minX,
-    y: minY,
-    w: Math.max(1, maxX - minX),
-    h: Math.max(1, maxY - minY),
-  };
-}
-
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
@@ -680,27 +651,29 @@ private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: Skelet
     if (images.length === 0) return;
 
     const index = attacking
-      ? Math.min(images.length - 1, Math.floor((skeletonArcher.actionTime / 0.5) * images.length))
+      ? Math.min(
+          images.length - 1,
+          Math.floor((skeletonArcher.actionTime / 0.5) * images.length),
+        )
       : Math.floor(skeletonArcher.actionTime * 8) % Math.max(1, images.length);
 
     const image = images[index] ?? images[0];
     if (!image) return;
 
-    const shared = getSharedOpaqueBounds(
-      this.skeletonArcherWalkImages.concat(this.skeletonArcherShootImages),
-    );
-    const current = getOpaqueBounds(image);
+    const reference = this.skeletonArcherWalkImages[0] ?? image;
+    const scale = 96 / Math.max(1, reference.naturalHeight);
+    const bounds = getOpaqueBounds(image);
+
+    const drawW = image.naturalWidth * scale;
+    const drawH = image.naturalHeight * scale;
+    const drawX = -(bounds.x + bounds.w / 2) * scale;
+    const drawY = -(bounds.y + bounds.h) * scale;
 
     const centerX = skeletonArcher.x + skeletonArcher.w / 2;
     const footY = skeletonArcher.y + skeletonArcher.h + 1;
-    const drawH = 96;
-    const scale = drawH / Math.max(1, shared.h);
-    const drawW = Math.round(shared.w * scale);
-    const drawX = -drawW / 2 + (current.x - shared.x) * scale;
-    const drawY = -drawH + (current.y - shared.y) * scale;
 
     const tension = attacking && !skeletonArcher.shotReleased
-      ? Math.min(1, (index + 1) / Math.max(1, images.length - 1))
+      ? Math.min(1, index / Math.max(1, images.length - 1))
       : 0;
     const recoil = attacking && skeletonArcher.shotReleased
       ? Math.max(0, 1 - (skeletonArcher.actionTime - 0.18) * 7)
@@ -711,14 +684,10 @@ private drawSkeletonArcher(ctx: CanvasRenderingContext2D, skeletonArcher: Skelet
     applySpriteFacing(ctx, skeletonArcher.facing, SOURCE_FACING.skeletonArcher);
     ctx.drawImage(
       image,
-      current.x,
-      current.y,
-      current.w,
-      current.h,
       drawX,
       drawY + recoil * 0.5,
-      current.w * scale,
-      current.h * scale,
+      drawW,
+      drawH,
     );
     ctx.restore();
   }
@@ -731,42 +700,36 @@ private drawSkeleton(ctx: CanvasRenderingContext2D, skeleton: Skeleton): void {
     if (images.length === 0) return;
 
     const frame = attacking
-      ? Math.min(images.length - 1, Math.floor((skeleton.actionTime / 0.42) * images.length))
+      ? Math.min(
+          images.length - 1,
+          Math.floor((skeleton.actionTime / 0.42) * images.length),
+        )
       : Math.floor(skeleton.actionTime * 8) % Math.max(1, images.length);
 
     const image = images[frame] ?? images[0];
     if (!image) return;
 
-    const shared = getSharedOpaqueBounds(
-      this.skeletonWalkImages.concat(this.skeletonAttackImages),
-    );
-    const current = getOpaqueBounds(image);
+    const reference = this.skeletonWalkImages[0] ?? image;
+    const scale = 96 / Math.max(1, reference.naturalHeight);
+    const bounds = getOpaqueBounds(image);
+
+    const drawW = image.naturalWidth * scale;
+    const drawH = image.naturalHeight * scale;
+    const drawX = -(bounds.x + bounds.w / 2) * scale;
+    const drawY = -(bounds.y + bounds.h) * scale;
 
     const centerX = skeleton.x + skeleton.w / 2;
     const footY = skeleton.y + skeleton.h + 1;
-    const drawH = 96;
-    const scale = drawH / Math.max(1, shared.h);
-    const drawW = Math.round(shared.w * scale);
-    const drawX = -drawW / 2 + (current.x - shared.x) * scale;
-    const drawY = -drawH + (current.y - shared.y) * scale;
-
-    const walkBob = attacking
-      ? 0
-      : Math.max(0, Math.sin(skeleton.actionTime * 16)) * 1.2;
 
     ctx.save();
     ctx.translate(centerX, footY);
     applySpriteFacing(ctx, skeleton.facing, SOURCE_FACING.skeleton);
     ctx.drawImage(
       image,
-      current.x,
-      current.y,
-      current.w,
-      current.h,
       drawX,
-      drawY + walkBob,
-      current.w * scale,
-      current.h * scale,
+      drawY,
+      drawW,
+      drawH,
     );
     ctx.restore();
   }
