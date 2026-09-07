@@ -366,19 +366,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 52;
-    let drawH = 34;
+    let drawW = 46;
+    let drawH = 30;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 39;
-      drawH = 26;
+      drawW = 34;
+      drawH = 22;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 50;
-      drawH = 31;
+      drawW = 44;
+      drawH = 27;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -678,7 +678,7 @@ export class EnemyRenderer {
     const reference = this.slugMoveImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 20);
+    const scale = scaleFromReference(reference, 22);
     drawGroundedSprite(
       ctx,
       image,
@@ -697,7 +697,7 @@ export class EnemyRenderer {
     const reference = this.ratRunImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 24);
+    const scale = scaleFromReference(reference, 27);
     drawGroundedSprite(
       ctx,
       image,
@@ -715,12 +715,12 @@ export class EnemyRenderer {
   ): void {
     let images: HTMLImageElement[];
     let index = 0;
-    let drawH = 36;
+    let drawH = 38;
 
     if (caterpillar.phase === 'larva') {
       images = this.caterpillarLarvaImages;
       index = Math.floor(caterpillar.actionTime * 9) % Math.max(1, images.length);
-      drawH = 36;
+      drawH = 38;
     } else if (caterpillar.phase === 'pupa') {
       images = this.caterpillarPupaImages;
       const progress = Math.min(
@@ -728,22 +728,22 @@ export class EnemyRenderer {
         caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
       );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 44;
+      drawH = 46;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
-      drawH = 70;
+      drawH = 72;
     } else if (
       caterpillar.butterflyState === 'ram' ||
       caterpillar.butterflyState === 'ramWindup'
     ) {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
-      drawH = 68;
+      drawH = 70;
     } else {
       images = this.caterpillarFlyImages;
       index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
-      drawH = 74;
+      drawH = 76;
     }
 
     const image = images[index] ?? images[0];
