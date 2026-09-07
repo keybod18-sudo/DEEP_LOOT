@@ -116,13 +116,9 @@ function weaponCardHtml(item: WeaponItem, index: number, equipped: boolean): str
   return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="weapon" data-slot-index="${index}">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name">${escapeHtml(item.name)}</span>
-    <span class="equipment-summary">
-      <span class="summary-chip">攻撃 +${item.attack}</span>
-      <span class="summary-chip rarity">レア度 ${escapeHtml(designRarityFor(item.name))}</span>
-      <span class="summary-chip intrinsic">固有能力 ${item.intrinsicAbility ? escapeHtml(item.intrinsicAbility.description) : 'なし'}</span>
-    </span>
+    <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
-    ${equipped ? '<span class="equipped-mark">装備中</span>' : ''}
+    ${equipped ? '<span class="equipped-mark"></span>' : ''}
     <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots)}</span>
   </button>`;
 }
@@ -131,13 +127,9 @@ function armorCardHtml(item: ArmorItem, index: number, equipped: boolean): strin
   return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="armor" data-slot-index="${index}">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name">${escapeHtml(item.name)}</span>
-    <span class="equipment-summary">
-      <span class="summary-chip">防御 +${item.defense}</span>
-      <span class="summary-chip rarity">レア度 ${escapeHtml(designRarityFor(item.name))}</span>
-      <span class="summary-chip intrinsic">固有能力 ${item.intrinsicAbility ? escapeHtml(item.intrinsicAbility.description) : 'なし'}</span>
-    </span>
+    <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
-    ${equipped ? '<span class="equipped-mark">装備中</span>' : ''}
+    ${equipped ? '<span class="equipped-mark"></span>' : ''}
     <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots)}</span>
   </button>`;
 }
@@ -231,22 +223,22 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const accent = palette.accent;
   const border = palette.border;
 
-  return `<span class="equipment-preview" style="display:block;margin-top:6px;padding:8px 9px;border-radius:12px;border:1px solid ${border};background:linear-gradient(135deg,rgba(7,11,18,.985),rgba(15,11,22,.985));box-shadow:inset 0 0 24px rgba(0,0,0,.34);">
-    <span style="display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:8px;align-items:center;">
-      <span style="display:flex;flex-direction:column;justify-content:center;min-width:0;padding:4px 2px;">
-        <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;">
-          <span style="font-size:16px;line-height:1.08;font-weight:800;color:rgba(255,255,255,.98);min-width:0;">${label}</span>
-          ${equipped ? `<span style="padding:2px 8px;border-radius:999px;border:1px solid rgba(255,220,120,.38);background:rgba(255,210,80,.09);font-size:10px;font-weight:700;color:#ffd777;white-space:nowrap;">装備中</span>` : ''}
+  return `<span class="equipment-preview" style="display:block;margin-top:4px;padding:6px 8px;border-radius:10px;border:1px solid ${border};background:linear-gradient(135deg,rgba(7,11,18,.985),rgba(15,11,22,.985));box-shadow:inset 0 0 18px rgba(0,0,0,.32);">
+    <span style="display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;">
+      <span style="display:flex;flex-direction:column;justify-content:center;min-width:0;padding:2px 0;">
+        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;min-width:0;">
+          <span style="font-size:15px;line-height:1.08;font-weight:800;color:rgba(255,255,255,.98);min-width:0;">${label}</span>
+          ${equipped ? `<span style="padding:1px 7px;border-radius:999px;border:1px solid rgba(255,220,120,.38);background:rgba(255,210,80,.09);font-size:10px;font-weight:700;color:#ffd777;white-space:nowrap;">装備中</span>` : ''}
         </span>
-        <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">${statLabel}</b> ${escapeHtml(String(statValue))}</span>
-          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">レア度</b> ${escapeHtml(rarity)}</span>
-          <span style="padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:${palette.glow};white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;">${abilityName}</span>
+        <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">${statLabel}</b> ${escapeHtml(String(statValue))}</span>
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">レア度</b> ${escapeHtml(rarity)}</span>
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:${palette.glow};white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;">${abilityName}</span>
         </span>
-        <span style="font-size:10px;line-height:1.42;color:rgba(255,255,255,.8);">${ability}</span>
+        <span style="font-size:10px;line-height:1.36;color:rgba(255,255,255,.8);">${ability}</span>
       </span>
-      <span style="display:flex;align-items:center;justify-content:center;padding:4px;border-radius:10px;border:1px solid ${border};background:#080b12;height:112px;overflow:hidden;">
-        ${artSrc ? `<img src="${artSrc}" alt="${label}" style="width:100%;height:100%;max-height:112px;object-fit:contain;display:block;border-radius:6px;" />` : `<span style="font-size:10px;color:rgba(255,255,255,.4);">NO IMAGE</span>`}
+      <span style="display:flex;align-items:center;justify-content:center;padding:3px;border-radius:8px;border:1px solid ${border};background:#080b12;height:86px;overflow:hidden;">
+        ${artSrc ? `<img src="${artSrc}" alt="${label}" style="width:100%;height:100%;max-height:86px;object-fit:contain;display:block;border-radius:5px;" />` : `<span style="font-size:10px;color:rgba(255,255,255,.4);">NO IMAGE</span>`}
       </span>
     </span>
   </span>`;
