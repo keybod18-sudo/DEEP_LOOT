@@ -732,7 +732,7 @@ export class EnemyRenderer {
         caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
       );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 52;
+      drawH = 104;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);

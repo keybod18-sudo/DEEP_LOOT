@@ -263,7 +263,6 @@ export abstract class Enemy implements PhysicsBody {
     if (!this.hasteActive) return;
     const deltaX = this.x - startX;
     this.x = Math.max(0, Math.min(stage.width - this.w, startX + deltaX * 1.75));
-    this.vx *= 1.75;
   }
 
   protected updateKnockback(dt: number, stage: Stage): void {

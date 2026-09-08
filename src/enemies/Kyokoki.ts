@@ -7,6 +7,11 @@ type KyokokiState = 'roam' | 'drum';
 type KyokokiPose = 'idleA' | 'idleB' | 'drum';
 type SupportKind = 'haste' | 'berserk' | 'regeneration';
 
+type SupportChoice = {
+  target: Enemy;
+  kind: SupportKind;
+};
+
 const MAX_HP = 42;
 const SUPPORT_RADIUS_X = 330;
 const SUPPORT_RADIUS_Y = 190;
@@ -62,8 +67,6 @@ export class Kyokoki extends Enemy {
   }
 
   protected updateUnaware(dt: number, context: EnemyContext): void {
-    // Kyokoki support is independent of player detection.
-    // It can drum for nearby allies even when the player is off-screen.
     if (this.state === 'drum') {
       this.updateDrum(context);
       return;
@@ -112,20 +115,14 @@ export class Kyokoki extends Enemy {
   private tryStartSupport(context: EnemyContext): boolean {
     if (this.cooldown > 0) return false;
 
-    const target = this.pickSupportTarget(context);
-    if (!target) {
+    const choice = this.pickSupportChoice(context);
+    if (!choice) {
       this.cooldown = 0.5;
       return false;
     }
 
-    const roll = Math.random();
-    this.supportTarget = target;
-    this.supportKind =
-      roll < 1 / 3
-        ? 'haste'
-        : roll < 2 / 3
-          ? 'berserk'
-          : 'regeneration';
+    this.supportTarget = choice.target;
+    this.supportKind = choice.kind;
     this.state = 'drum';
     this.actionTime = 0;
     this.supportTriggered = false;
@@ -142,11 +139,11 @@ export class Kyokoki extends Enemy {
 
       if (target?.alive) {
         if (this.supportKind === 'haste') {
-          target.applyHaste(BUFF_DURATION);
+          if (!target.hasteActive) target.applyHaste(BUFF_DURATION);
         } else if (this.supportKind === 'berserk') {
-          target.applyBerserk(BUFF_DURATION);
+          if (!target.berserkActive) target.applyBerserk(BUFF_DURATION);
         } else {
-          target.applyRegeneration(BUFF_DURATION);
+          if (!target.regenerationActive) target.applyRegeneration(BUFF_DURATION);
         }
       }
     }
@@ -164,26 +161,29 @@ export class Kyokoki extends Enemy {
     }
   }
 
-  private pickSupportTarget(context: EnemyContext): Enemy | null {
+  private pickSupportChoice(context: EnemyContext): SupportChoice | null {
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
+
     const candidates = context.allies.filter((enemy) => {
       if (!enemy.alive || enemy === this || enemy.type === 'kyokoki') return false;
-
       const dx = Math.abs((enemy.x + enemy.w / 2) - centerX);
       const dy = Math.abs((enemy.y + enemy.h / 2) - centerY);
       return dx <= SUPPORT_RADIUS_X && dy <= SUPPORT_RADIUS_Y;
     });
 
-    if (!candidates.length) return null;
+    const choices: SupportChoice[] = [];
 
-    const fresh = candidates.filter((enemy) =>
-      !enemy.hasteActive &&
-      !enemy.berserkActive &&
-      !enemy.regenerationActive
-    );
-    const pool = fresh.length ? fresh : candidates;
-    return pool[Math.floor(Math.random() * pool.length)] ?? null;
+    for (const enemy of candidates) {
+      if (!enemy.hasteActive) choices.push({ target: enemy, kind: 'haste' });
+      if (!enemy.berserkActive) choices.push({ target: enemy, kind: 'berserk' });
+      if (!enemy.regenerationActive) {
+        choices.push({ target: enemy, kind: 'regeneration' });
+      }
+    }
+
+    if (!choices.length) return null;
+    return choices[Math.floor(Math.random() * choices.length)] ?? null;
   }
 
   private applyGravity(context: EnemyContext): void {

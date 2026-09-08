@@ -45,6 +45,27 @@ export class Caterpillar extends Enemy {
     this.cooldown = Math.max(this.cooldown, 0.7);
   }
 
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    this.phaseTime += dt;
+
+    if (this.phase === 'larva') {
+      this.updateLarva(context);
+      if (this.phaseTime >= BALANCE.caterpillar.larvaDuration) {
+        this.becomePupa();
+      }
+      return;
+    }
+
+    if (this.phase === 'pupa') {
+      this.updatePupa(context);
+      if (this.phaseTime >= BALANCE.caterpillar.pupaDuration) {
+        this.becomeButterfly();
+      }
+      return;
+    }
+
+    super.updateUnaware(dt, context);
+  }
   protected updateAi(dt: number, context: EnemyContext): void {
     this.phaseTime += dt;
 
@@ -293,9 +314,9 @@ export class Caterpillar extends Enemy {
     this.phase = 'pupa';
     this.phaseTime = 0;
     this.actionTime = 0;
-    this.w = 22;
-    this.h = 32;
-    this.x += 6;
+    this.w = 44;
+    this.h = 64;
+    this.x -= 5;
     this.y = footY - this.h;
     this.vx = 0;
     this.vy = 0;
