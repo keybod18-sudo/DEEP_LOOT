@@ -113,7 +113,9 @@ function equipmentListHtml(
 }
 
 function weaponCardHtml(item: WeaponItem, index: number, equipped: boolean): string {
-  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="weapon" data-slot-index="${index}">
+  const rarity = item.dropRarity ?? equipmentRarityForDesign(item.designRarity ?? designRarityFor(item.name));
+  const palette = previewPalette(item.name, rarity);
+  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="weapon" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span>${escapeHtml(item.name)}</span>
@@ -121,12 +123,14 @@ function weaponCardHtml(item: WeaponItem, index: number, equipped: boolean): str
     </span>
     <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
-    <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots)}</span>
+    <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots, rarity)}</span>
   </button>`;
 }
 
 function armorCardHtml(item: ArmorItem, index: number, equipped: boolean): string {
-  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="armor" data-slot-index="${index}">
+  const rarity = item.dropRarity ?? equipmentRarityForDesign(item.designRarity ?? designRarityFor(item.name));
+  const palette = previewPalette(item.name, rarity);
+  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="armor" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span>${escapeHtml(item.name)}</span>
@@ -134,16 +138,20 @@ function armorCardHtml(item: ArmorItem, index: number, equipped: boolean): strin
     </span>
     <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
-    <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots)}</span>
+    <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots, rarity)}</span>
   </button>`;
 }
 
-function abilitySlotsHtml(slots: ReadonlyArray<WeaponAbility | ArmorAbility | null>): string {
+function abilitySlotsHtml(
+  slots: ReadonlyArray<WeaponAbility | ArmorAbility | null>,
+  rarity: string,
+): string {
+  const palette = previewPalette('', rarity);
   return slots.map((ability, index) => {
     if (!ability) {
-      return `<span class="ability-slot empty"><b>${index + 1}</b><span>＋ 空き</span></span>`;
+      return `<span class="ability-slot empty" style="border-color:${palette.border};background:${palette.bg};opacity:.72;"><b>${index + 1}</b><span>＋ 空き</span></span>`;
     }
-    return `<span class="ability-slot filled"><b>${index + 1}</b><span>${escapeHtml(ability.description)}</span></span>`;
+    return `<span class="ability-slot filled" style="border-color:${palette.border};background:${palette.bg};"><b>${index + 1}</b><span>${escapeHtml(ability.description)}</span></span>`;
   }).join('');
 }
 
@@ -234,7 +242,7 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
   const accent = palette.accent;
   const border = palette.border;
 
-  return `<span class="equipment-preview" style="display:block;margin-top:4px;padding:6px 8px;border-radius:10px;border:1px solid ${border};background:linear-gradient(135deg,rgba(7,11,18,.985),rgba(15,11,22,.985));box-shadow:inset 0 0 18px rgba(0,0,0,.32);">
+  return `<span class="equipment-preview" style="display:block;margin-top:4px;padding:6px 8px;border-radius:10px;border:1px solid ${border};background:${palette.bg};box-shadow:inset 0 0 18px rgba(0,0,0,.32);">
     <span style="display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;">
       <span style="display:flex;flex-direction:column;justify-content:center;min-width:0;padding:1px 0;">
         <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;">

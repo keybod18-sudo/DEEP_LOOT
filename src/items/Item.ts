@@ -388,7 +388,11 @@ function createAbilitySlots<T extends WeaponAbility | ArmorAbility>(
     slots[slotIndex] = ability ? cloneAbility(ability) : null;
   }
 
-  return slots;
+  const filled = slots.filter((ability): ability is T => ability !== null);
+  return [
+    ...filled,
+    ...Array.from({ length: slotCount - filled.length }, () => null),
+  ];
 }
 
 function slotCountForPower(powerLevel: number): number {
