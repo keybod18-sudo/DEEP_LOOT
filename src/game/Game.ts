@@ -126,6 +126,7 @@ export class Game {
       this.enemyRenderer.load(),
       CrystalEye.loadAssets(),
       Kagenoko.loadAssets(),
+      ThreeWiseMonkey.loadAssets(),
       TreasureChest.loadAssets(),
       Fireball.loadAssets(),
     ]);
@@ -331,6 +332,7 @@ export class Game {
       });
     }
 
+    this.spreadNearbyEnemies();
     this.updateAhrimanFireballs(dt);
     this.updateFreezeLancers(dt);
     this.updateSkeletonArrows(dt);
@@ -345,6 +347,69 @@ export class Game {
     this.updateCamera();
   }
 
+  private spreadNearbyEnemies(): void {
+    const active = this.enemies.filter((enemy) =>
+      enemy.alive &&
+      enemy.grounded &&
+      enemy.type !== 'roper' &&
+      enemy.type !== 'crystalEye' &&
+      enemy.type !== 'elemental'
+    );
+
+    const tryShift = (enemy: Enemy, delta: number): void => {
+      const nextX = Math.max(0, Math.min(this.stage.width - enemy.w, enemy.x + delta));
+      const footY = enemy.y + enemy.h;
+      const left = nextX + 2;
+      const right = nextX + enemy.w - 2;
+      const supported = this.stage.platforms.some((platform) =>
+        platform.y >= footY - 6 &&
+        platform.y <= footY + 9 &&
+        right >= platform.x &&
+        left <= platform.x + platform.w
+      );
+      if (supported) enemy.x = nextX;
+    };
+
+    for (let i = 0; i < active.length; i += 1) {
+      const a = active[i]!;
+      for (let j = i + 1; j < active.length; j += 1) {
+        const b = active[j]!;
+        const footGap = Math.abs((a.y + a.h) - (b.y + b.h));
+        if (footGap > 14) continue;
+
+        let dx = (b.x + b.w / 2) - (a.x + a.w / 2);
+        const minGap = Math.min(40, (a.w + b.w) / 2 + 14);
+        const overlap = minGap - Math.abs(dx);
+        if (overlap <= 0) continue;
+        if (Math.abs(dx) < 0.01) dx = 1;
+
+        const direction = dx > 0 ? 1 : -1;
+        const push = Math.min(1.6, overlap * 0.16);
+        tryShift(a, -direction * push);
+        tryShift(b, direction * push);
+      }
+    }
+
+    const playerCenter = this.player.x + this.player.w / 2;
+    const playerFoot = this.player.y + this.player.h;
+    const nearPlayer = active
+      .filter((enemy) =>
+        Math.abs((enemy.y + enemy.h) - playerFoot) <= 18 &&
+        Math.abs((enemy.x + enemy.w / 2) - playerCenter) <= 96
+      )
+      .sort((a, b) => (a.x + a.w / 2) - (b.x + b.w / 2));
+
+    if (nearPlayer.length >= 2) {
+      const middle = (nearPlayer.length - 1) / 2;
+      for (let index = 0; index < nearPlayer.length; index += 1) {
+        const enemy = nearPlayer[index]!;
+        const currentCenter = enemy.x + enemy.w / 2;
+        const targetCenter = playerCenter + (index - middle) * 28;
+        const correction = Math.max(-0.85, Math.min(0.85, (targetCenter - currentCenter) * 0.05));
+        tryShift(enemy, correction);
+      }
+    }
+  }
   private resolvePlayerAttack(): void {
     const hitbox = this.player.getHitbox();
     if (!hitbox) return;

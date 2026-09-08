@@ -8,16 +8,6 @@ export type ThreeWiseMonkeyKind = 'mizaru' | 'iwazaru' | 'kikazaru';
 type MonkeyState = 'run' | 'jump' | 'attack';
 type MonkeyPose = 'runA' | 'runB' | 'jump' | 'attack';
 
-interface MonkeyPalette {
-  outline: string;
-  furDark: string;
-  fur: string;
-  furLight: string;
-  skin: string;
-  skinLight: string;
-  accent: string;
-}
-
 const MONKEY_MAX_HP = 38;
 const MONKEY_RUN_SPEED = 1.70;
 const MONKEY_JUMP_SPEED = 4.90;
@@ -28,42 +18,38 @@ const MONKEY_ATTACK_DURATION = 0.28;
 const MONKEY_HIT_TIME = 0.11;
 const MONKEY_COOLDOWN = 0.48;
 
-const SPRITE_W = 24;
-const SPRITE_H = 28;
-const DRAW_W = 36;
-const DRAW_H = 42;
+const DRAW_W = 32;
+const DRAW_H = 34;
 
-const PALETTES: Record<ThreeWiseMonkeyKind, MonkeyPalette> = {
+const KINDS: ThreeWiseMonkeyKind[] = ['mizaru', 'iwazaru', 'kikazaru'];
+const POSES: MonkeyPose[] = ['runA', 'runB', 'jump', 'attack'];
+
+const frameUrls: Record<ThreeWiseMonkeyKind, Record<MonkeyPose, string>> = {
   mizaru: {
-    outline: '#100d16',
-    furDark: '#241a31',
-    fur: '#3d2c52',
-    furLight: '#62487e',
-    skin: '#b78d75',
-    skinLight: '#e1b89b',
-    accent: '#9b73ff',
+    runA: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runA.svg', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runB.svg', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/mizaru/jump.svg', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/mizaru/attack.svg', import.meta.url).href,
   },
   iwazaru: {
-    outline: '#160d10',
-    furDark: '#321b20',
-    fur: '#512b32',
-    furLight: '#79424c',
-    skin: '#c4937a',
-    skinLight: '#ecc0a4',
-    accent: '#ff718d',
+    runA: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runA.svg', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runB.svg', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/jump.svg', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/attack.svg', import.meta.url).href,
   },
   kikazaru: {
-    outline: '#151108',
-    furDark: '#352c16',
-    fur: '#554725',
-    furLight: '#7e6d39',
-    skin: '#c99c70',
-    skinLight: '#f0c58f',
-    accent: '#ffd95c',
+    runA: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runA.svg', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runB.svg', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/jump.svg', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/attack.svg', import.meta.url).href,
   },
 };
 
-const spriteCache = new Map<string, HTMLCanvasElement>();
+const frameImages: Record<ThreeWiseMonkeyKind, Partial<Record<MonkeyPose, HTMLImageElement>>> = {
+  mizaru: {},
+  iwazaru: {},
+  kikazaru: {},
+};
 
 export class ThreeWiseMonkey extends Enemy {
   readonly type: ThreeWiseMonkeyKind;
@@ -76,9 +62,22 @@ export class ThreeWiseMonkey extends Enemy {
     y: number,
     public readonly kind: ThreeWiseMonkeyKind,
   ) {
-    super(x, y, 22, 28, MONKEY_MAX_HP, MONKEY_MAX_HP);
+    super(x, y, 20, 24, MONKEY_MAX_HP, MONKEY_MAX_HP);
     this.type = kind;
     this.cooldown = 0.14 + Math.random() * 0.22;
+  }
+
+  static async loadAssets(): Promise<void> {
+    const jobs: Promise<void>[] = [];
+    for (const kind of KINDS) {
+      for (const pose of POSES) {
+        if (frameImages[kind][pose]) continue;
+        jobs.push(loadImage(frameUrls[kind][pose]).then((image) => {
+          frameImages[kind][pose] = image;
+        }));
+      }
+    }
+    await Promise.all(jobs);
   }
 
   interruptForKnockback(): void {
@@ -102,8 +101,8 @@ export class ThreeWiseMonkey extends Enemy {
     if (this.state === 'attack') {
       if (!this.hitDone && this.actionTime >= MONKEY_HIT_TIME) {
         const hitbox: Rect = this.facing > 0
-          ? { x: this.x + this.w - 4, y: this.y + 2, w: 32, h: 24 }
-          : { x: this.x - 28, y: this.y + 2, w: 32, h: 24 };
+          ? { x: this.x + this.w - 3, y: this.y + 1, w: 30, h: 22 }
+          : { x: this.x - 27, y: this.y + 1, w: 30, h: 22 };
 
         if (intersects(player, hitbox)) {
           const hit = context.hurtPlayer(MONKEY_DAMAGE, this.x + this.w / 2);
@@ -193,11 +192,13 @@ export class ThreeWiseMonkey extends Enemy {
 
   draw(ctx: CanvasRenderingContext2D): void {
     const pose = this.currentPose();
-    const sprite = getMonkeySprite(this.kind, pose);
+    const image = frameImages[this.kind][pose];
+    if (!image) return;
+
     const centerX = this.x + this.w / 2;
-    const footY = this.y + this.h + 2;
+    const footY = this.y + this.h + 1;
     const bob = this.state === 'run'
-      ? Math.abs(Math.sin(this.actionTime * 25)) * 1.2
+      ? Math.abs(Math.sin(this.actionTime * 25)) * 0.8
       : 0;
 
     ctx.save();
@@ -209,12 +210,15 @@ export class ThreeWiseMonkey extends Enemy {
     if (this.facing < 0) ctx.scale(-1, 1);
 
     if (this.state === 'attack') {
-      ctx.shadowColor = PALETTES[this.kind].accent;
+      ctx.shadowColor =
+        this.kind === 'mizaru' ? '#9a70ff' :
+        this.kind === 'iwazaru' ? '#ff6d8d' :
+        '#ffd754';
       ctx.shadowBlur = 5;
     }
 
     ctx.drawImage(
-      sprite,
+      image,
       -Math.round(DRAW_W / 2),
       -DRAW_H,
       DRAW_W,
@@ -230,165 +234,11 @@ export class ThreeWiseMonkey extends Enemy {
   }
 }
 
-function getMonkeySprite(kind: ThreeWiseMonkeyKind, pose: MonkeyPose): HTMLCanvasElement {
-  const key = `${kind}:${pose}`;
-  const cached = spriteCache.get(key);
-  if (cached) return cached;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = SPRITE_W;
-  canvas.height = SPRITE_H;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Monkey sprite generation failed');
-
-  ctx.imageSmoothingEnabled = false;
-  drawPixelMonkey(ctx, kind, pose);
-  spriteCache.set(key, canvas);
-  return canvas;
-}
-
-function drawPixelMonkey(
-  ctx: CanvasRenderingContext2D,
-  kind: ThreeWiseMonkeyKind,
-  pose: MonkeyPose,
-): void {
-  const p = PALETTES[kind];
-  ctx.clearRect(0, 0, SPRITE_W, SPRITE_H);
-
-  const jump = pose === 'jump';
-  const attack = pose === 'attack';
-  const runB = pose === 'runB';
-  const bodyY = jump ? 12 : 13;
-  const headY = jump ? 4 : 5;
-
-  // Tail: chunky stepped silhouette, like a hand-drawn sprite rather than a vector line.
-  px(ctx, p.outline, 2, bodyY + 5, 3, 3);
-  px(ctx, p.outline, 1, bodyY + 3, 2, 3);
-  px(ctx, p.outline, 2, bodyY + 1, 2, 2);
-  px(ctx, p.fur, 3, bodyY + 5, 2, 2);
-  px(ctx, p.furLight, 2, bodyY + 3, 1, 2);
-
-  // Feet / legs.
-  if (jump) {
-    px(ctx, p.outline, 7, 21, 5, 4);
-    px(ctx, p.outline, 13, 20, 5, 4);
-    px(ctx, p.furDark, 8, 21, 3, 2);
-    px(ctx, p.furDark, 14, 20, 3, 2);
-    px(ctx, p.skin, 6, 24, 5, 2);
-    px(ctx, p.skin, 15, 23, 5, 2);
-  } else if (runB) {
-    px(ctx, p.outline, 6, 20, 5, 6);
-    px(ctx, p.outline, 14, 19, 5, 7);
-    px(ctx, p.furDark, 7, 20, 3, 4);
-    px(ctx, p.furDark, 15, 19, 3, 5);
-    px(ctx, p.skin, 4, 25, 6, 2);
-    px(ctx, p.skin, 15, 25, 6, 2);
-  } else {
-    px(ctx, p.outline, 7, 19, 5, 7);
-    px(ctx, p.outline, 13, 20, 5, 6);
-    px(ctx, p.furDark, 8, 19, 3, 5);
-    px(ctx, p.furDark, 14, 20, 3, 4);
-    px(ctx, p.skin, 6, 25, 6, 2);
-    px(ctx, p.skin, 14, 25, 6, 2);
-  }
-
-  // Body.
-  px(ctx, p.outline, 6, bodyY, 13, 10);
-  px(ctx, p.furDark, 7, bodyY, 11, 9);
-  px(ctx, p.fur, 8, bodyY + 1, 9, 7);
-  px(ctx, p.furLight, 9, bodyY + 1, 6, 2);
-  px(ctx, p.accent, 11, bodyY + 7, 3, 2);
-
-  // Neck / head outline.
-  px(ctx, p.outline, 7, headY + 1, 13, 10);
-  px(ctx, p.outline, 9, headY - 1, 8, 2);
-  px(ctx, p.outline, 10, headY - 2, 2, 2);
-  px(ctx, p.outline, 15, headY - 2, 2, 2);
-  px(ctx, p.furDark, 8, headY + 1, 11, 8);
-  px(ctx, p.fur, 9, headY, 9, 8);
-
-  // Big ears.
-  px(ctx, p.outline, 5, headY + 3, 4, 5);
-  px(ctx, p.outline, 18, headY + 3, 4, 5);
-  px(ctx, p.skin, 6, headY + 4, 2, 3);
-  px(ctx, p.skin, 19, headY + 4, 2, 3);
-  px(ctx, p.skinLight, 6, headY + 4, 1, 1);
-  px(ctx, p.skinLight, 20, headY + 4, 1, 1);
-
-  // Muzzle / face plate.
-  px(ctx, p.skin, 10, headY + 3, 8, 6);
-  px(ctx, p.skinLight, 11, headY + 3, 6, 2);
-  px(ctx, p.outline, 13, headY + 6, 2, 1);
-
-  // Visible expression when not covered by that monkey's signature pose.
-  if (kind !== 'mizaru') {
-    px(ctx, '#171417', 11, headY + 4, 1, 1);
-    px(ctx, '#171417', 16, headY + 4, 1, 1);
-  }
-  if (kind !== 'iwazaru') {
-    px(ctx, '#542e2b', 12, headY + 8, 5, 1);
-  }
-
-  // Arms and the three-wise-monkeys pose.
-  if (kind === 'mizaru') {
-    arm(ctx, p, 7, bodyY + 2, 10, headY + 3);
-    arm(ctx, p, 18, bodyY + 2, 17, headY + 3);
-    px(ctx, p.skin, 9, headY + 3, 5, 3);
-    px(ctx, p.skin, 15, headY + 3, 4, 3);
-    px(ctx, p.skinLight, 10, headY + 3, 3, 1);
-    px(ctx, p.skinLight, 15, headY + 3, 3, 1);
-  } else if (kind === 'iwazaru') {
-    arm(ctx, p, 7, bodyY + 2, 11, headY + 7);
-    arm(ctx, p, 18, bodyY + 2, 17, headY + 7);
-    px(ctx, p.skin, 10, headY + 7, 8, 3);
-    px(ctx, p.skinLight, 11, headY + 7, 6, 1);
-  } else {
-    arm(ctx, p, 8, bodyY + 2, 6, headY + 4);
-    arm(ctx, p, 17, bodyY + 2, 20, headY + 4);
-    px(ctx, p.skin, 5, headY + 3, 3, 5);
-    px(ctx, p.skin, 19, headY + 3, 3, 5);
-    px(ctx, p.skinLight, 6, headY + 4, 1, 3);
-    px(ctx, p.skinLight, 20, headY + 4, 1, 3);
-  }
-
-  if (attack) {
-    px(ctx, p.accent, 20, 10, 2, 2);
-    px(ctx, p.accent, 21, 8, 2, 1);
-    px(ctx, p.accent, 22, 6, 1, 1);
-    px(ctx, p.skinLight, 19, 12, 3, 2);
-  }
-
-  if (jump) {
-    px(ctx, p.accent, 2, 24, 3, 1);
-    px(ctx, p.accent, 1, 26, 4, 1);
-  }
-}
-
-function arm(
-  ctx: CanvasRenderingContext2D,
-  p: MonkeyPalette,
-  sx: number,
-  sy: number,
-  ex: number,
-  ey: number,
-): void {
-  const midX = Math.round((sx + ex) / 2);
-  const midY = Math.round((sy + ey) / 2);
-  px(ctx, p.outline, sx - 1, sy - 1, 3, 3);
-  px(ctx, p.furDark, sx, sy, 2, 2);
-  px(ctx, p.outline, midX - 1, midY - 1, 3, 3);
-  px(ctx, p.fur, midX, midY, 2, 2);
-  px(ctx, p.outline, ex - 1, ey - 1, 3, 3);
-}
-
-function px(
-  ctx: CanvasRenderingContext2D,
-  color: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): void {
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, h);
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Monkey image load failed: ${src}`));
+    image.src = src;
+  });
 }

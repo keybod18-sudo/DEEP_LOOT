@@ -69,6 +69,20 @@ export class PlayerRenderer {
     const drawH = attacking ? 82 : 79;
     const aspect = image.naturalWidth / image.naturalHeight;
     const drawW = Math.round(drawH * aspect);
+    if (slowed) {
+      // slow-silhouette-aura-v3
+      const slowColors = ['#72e7ff', '#2f7dff', '#8d4cff', '#72e7ff'];
+      const slowColor = slowColors[Math.floor(now * 7) % slowColors.length] ?? slowColors[0];
+      const slowPulse = (Math.sin(now * 8) + 1) / 2;
+      const slowGlow = (2.4 + slowPulse * 1.8).toFixed(1);
+      ctx.save();
+      ctx.globalAlpha = 0.74 + slowPulse * 0.14;
+      ctx.filter =
+        'drop-shadow(0 0 1px ' + slowColor + ') ' +
+        'drop-shadow(0 0 ' + slowGlow + 'px ' + slowColor + ')';
+      ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+      ctx.restore();
+    }
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
 
@@ -102,6 +116,7 @@ export class PlayerRenderer {
     footY: number,
     time: number,
   ): void {
+    return;
     const colors = ['#72e7ff', '#2f7dff', '#8d4cff', '#72e7ff'];
     const color = colors[Math.floor(time * 7) % colors.length] ?? colors[0];
     const pulse = 0.62 + (Math.sin(time * 18) + 1) * 0.16;
