@@ -297,7 +297,6 @@ export class FrostMite extends Enemy {
 
     ctx.save();
     ctx.translate(centerX - this.facing * recoil, footY);
-    if (this.facing < 0) ctx.scale(-1, 1);
 
     // Approved Frost Mite sprite design: blue-white crystal shell + cyan glowing eyes.
     let spriteIndex = 0;

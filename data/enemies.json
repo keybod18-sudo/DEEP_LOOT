@@ -14,7 +14,7 @@
   },
   "goblin": {
     "maxHp": 45,
-    "walkSpeed": 0.72,
+    "walkSpeed": 1.08,
     "clubDamage": 12,
     "leapContactDamage": 10,
     "smashDamage": 16,
@@ -101,7 +101,7 @@
   },
   "skeleton": {
     "maxHp": 52,
-    "walkSpeed": 0.68,
+    "walkSpeed": 1.02,
     "swordDamage": 14,
     "attackRange": 50,
     "attackDuration": 0.48,
