@@ -1181,6 +1181,11 @@ export class Game {
   }
 
   private draw(): void {
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.globalAlpha = 1;
+    this.ctx.globalCompositeOperation = 'source-over';
+    this.ctx.filter = 'none';
+    this.ctx.shadowBlur = 0;
     this.ctx.save();
 
     const explodingBomb = this.enemies.find((enemy) =>
