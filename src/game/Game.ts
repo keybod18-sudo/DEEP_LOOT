@@ -60,6 +60,7 @@ export class Game {
   private stage = createDungeonStage(1);
   private readonly playerRenderer = new PlayerRenderer();
   private readonly enemyRenderer = new EnemyRenderer();
+  private readonly enemyBuffCanvas = document.createElement('canvas');
   private readonly player = new Player(this.playerRenderer);
   private readonly inventory = new Inventory();
   private readonly loop = new GameLoop((dt) => this.update(dt), () => this.draw());
@@ -1258,38 +1259,78 @@ export class Game {
     this.refreshUi();
   }
 
+  private drawEnemySprite(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
+    if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
+    else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(ctx);
+    else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(ctx);
+    else if (enemy.type === 'elemental') (enemy as Elemental).draw(ctx);
+    else if (enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru') {
+      (enemy as ThreeWiseMonkey).draw(ctx);
+    } else if (enemy.type === 'frostMite') {
+      (enemy as FrostMite).draw(ctx);
+    } else {
+      this.enemyRenderer.draw(ctx, enemy);
+    }
+  }
+
   private drawEnemyBuffAura(enemy: Enemy): void {
-    if (!enemy.hasteActive && !enemy.berserkActive) return;
+    if (!enemy.hasteActive && !enemy.berserkActive && !enemy.regenerationActive) return;
+
     const ctx = this.ctx;
     const now = performance.now() / 1000;
     const cx = enemy.x + enemy.w / 2;
-    const cy = enemy.y + enemy.h / 2;
-
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
 
     if (enemy.hasteActive) {
-      const hasteColors = ['#ffd83a', '#ff9626', '#ff4330'];
-      const color = hasteColors[Math.floor(now * 14) % hasteColors.length] ?? hasteColors[0];
-      const rx = enemy.w * 0.62 + 8;
-      const ry = enemy.h * 0.55 + 7;
-      const pulse = 0.88 + Math.sin(now * 20) * 0.1;
+      const pad = 80;
+      const width = Math.max(1, Math.ceil(enemy.w + pad * 2));
+      const height = Math.max(1, Math.ceil(enemy.h + pad * 2));
+      const buffer = this.enemyBuffCanvas;
 
-      ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.96;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx * pulse, ry * pulse, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      if (buffer.width !== width) buffer.width = width;
+      if (buffer.height !== height) buffer.height = height;
 
-      for (let i = 0; i < 4; i += 1) {
-        const angle = now * 12 + i * Math.PI / 2;
-        const ox = Math.cos(angle) * rx;
-        const oy = Math.sin(angle) * ry;
-        ctx.fillStyle = color;
-        ctx.fillRect(Math.round(cx + ox - 2), Math.round(cy + oy - 2), 4, 4);
+      const bufferCtx = buffer.getContext('2d');
+      if (bufferCtx) {
+        bufferCtx.setTransform(1, 0, 0, 1, 0, 0);
+        bufferCtx.globalAlpha = 1;
+        bufferCtx.globalCompositeOperation = 'source-over';
+        bufferCtx.filter = 'none';
+        bufferCtx.imageSmoothingEnabled = false;
+        bufferCtx.clearRect(0, 0, width, height);
+        bufferCtx.save();
+        bufferCtx.translate(-enemy.x + pad, -enemy.y + pad);
+        this.drawEnemySprite(bufferCtx, enemy);
+        bufferCtx.restore();
+
+        const hasteColors = ['#ffe13b', '#ff9824', '#ff3f2d', '#ffe13b'];
+        const color = hasteColors[Math.floor(now * 13) % hasteColors.length] ?? hasteColors[0];
+        const pulse = (Math.sin(now * 20) + 1) / 2;
+        const glow = (2.5 + pulse * 2.4).toFixed(1);
+
+        ctx.save();
+        ctx.globalAlpha = 0.78 + pulse * 0.14;
+        ctx.filter =
+          'drop-shadow(0 0 1px ' + color + ') ' +
+          'drop-shadow(0 0 ' + glow + 'px ' + color + ')';
+        ctx.drawImage(buffer, enemy.x - pad, enemy.y - pad);
+        ctx.restore();
       }
+    }
+
+    if (enemy.regenerationActive) {
+      const phase = (now * 19) % 24;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = '#62ff7d';
+      ctx.globalAlpha = 0.84;
+      for (let i = 0; i < 2; i += 1) {
+        const rise = (phase + i * 12) % 24;
+        const px = Math.round(cx - 8 + i * 15 + Math.sin(now * 5 + i) * 2);
+        const py = Math.round(enemy.y + 8 - rise);
+        ctx.fillRect(px - 1, py - 4, 3, 9);
+        ctx.fillRect(px - 4, py - 1, 9, 3);
+      }
+      ctx.restore();
     }
 
     if (enemy.berserkActive) {
@@ -1329,13 +1370,13 @@ export class Game {
         ctx.stroke();
       };
 
+      ctx.save();
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 0.98;
       drawAnger('rgba(45, 0, 0, 0.95)', 6);
       drawAnger('#ff1712', 4);
+      ctx.restore();
     }
-
-    ctx.restore();
   }
   private draw(): void {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1373,13 +1414,7 @@ export class Game {
     for (const arrow of this.skeletonArrows) arrow.draw(this.ctx);
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
-      if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
-      else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(this.ctx);
-      else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(this.ctx);
-      else if (enemy.type === 'elemental') (enemy as Elemental).draw(this.ctx);
-      else if (enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru') (enemy as ThreeWiseMonkey).draw(this.ctx);
-      else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
-      else this.enemyRenderer.draw(this.ctx, enemy);
+      this.drawEnemySprite(this.ctx, enemy);
       this.drawEnemyBuffAura(enemy);
     }
     this.player.draw(this.ctx);

@@ -5,6 +5,7 @@ import { Enemy } from './Enemy';
 
 type KyokokiState = 'roam' | 'drum';
 type KyokokiPose = 'idleA' | 'idleB' | 'drum';
+type SupportKind = 'haste' | 'berserk' | 'regeneration';
 
 const MAX_HP = 42;
 const SUPPORT_RADIUS_X = 330;
@@ -13,7 +14,7 @@ const SUPPORT_HIT_TIME = 0.27;
 const SUPPORT_ANIM_TIME = 0.62;
 const SUPPORT_COOLDOWN_MIN = 4.2;
 const SUPPORT_COOLDOWN_SPAN = 1.6;
-const BUFF_DURATION = 5.5;
+const BUFF_DURATION = 30;
 const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
@@ -32,7 +33,7 @@ export class Kyokoki extends Enemy {
   state: KyokokiState = 'roam';
   private supportTriggered = false;
   private supportTarget: Enemy | null = null;
-  private supportKind: 'haste' | 'berserk' = 'haste';
+  private supportKind: SupportKind = 'haste';
 
   constructor(x: number, y: number) {
     super(x, y, 26, 30, MAX_HP, MAX_HP);
@@ -73,8 +74,13 @@ export class Kyokoki extends Enemy {
         this.supportTriggered = true;
         const target = this.supportTarget;
         if (target?.alive) {
-          if (this.supportKind === 'haste') target.applyHaste(BUFF_DURATION);
-          else target.applyBerserk(BUFF_DURATION);
+          if (this.supportKind === 'haste') {
+            target.applyHaste(BUFF_DURATION);
+          } else if (this.supportKind === 'berserk') {
+            target.applyBerserk(BUFF_DURATION);
+          } else {
+            target.applyRegeneration(BUFF_DURATION);
+          }
         }
       }
       this.applyGravity(context);
@@ -91,8 +97,14 @@ export class Kyokoki extends Enemy {
     if (this.cooldown <= 0) {
       const target = this.pickSupportTarget(context);
       if (target) {
+        const roll = Math.random();
         this.supportTarget = target;
-        this.supportKind = Math.random() < 0.5 ? 'haste' : 'berserk';
+        this.supportKind =
+          roll < 1 / 3
+            ? 'haste'
+            : roll < 2 / 3
+              ? 'berserk'
+              : 'regeneration';
         this.state = 'drum';
         this.actionTime = 0;
         this.supportTriggered = false;
@@ -126,8 +138,14 @@ export class Kyokoki extends Enemy {
       const dy = Math.abs((enemy.y + enemy.h / 2) - centerY);
       return dx <= SUPPORT_RADIUS_X && dy <= SUPPORT_RADIUS_Y;
     });
+
     if (!candidates.length) return null;
-    const fresh = candidates.filter((enemy) => !enemy.hasteActive && !enemy.berserkActive);
+
+    const fresh = candidates.filter((enemy) =>
+      !enemy.hasteActive &&
+      !enemy.berserkActive &&
+      !enemy.regenerationActive
+    );
     const pool = fresh.length ? fresh : candidates;
     return pool[Math.floor(Math.random() * pool.length)] ?? null;
   }
@@ -161,7 +179,12 @@ export class Kyokoki extends Enemy {
     if (this.facing < 0) ctx.scale(-1, 1);
 
     if (this.state === 'drum') {
-      ctx.shadowColor = this.supportKind === 'haste' ? '#ff9a20' : '#ff303c';
+      ctx.shadowColor =
+        this.supportKind === 'haste'
+          ? '#ff9a20'
+          : this.supportKind === 'berserk'
+            ? '#ff303c'
+            : '#5cff86';
       ctx.shadowBlur = 12;
     }
 

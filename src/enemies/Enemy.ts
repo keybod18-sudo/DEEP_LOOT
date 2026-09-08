@@ -154,6 +154,8 @@ export abstract class Enemy implements PhysicsBody {
   knockbackTime = 0;
   private hasteTime = 0;
   private berserkTime = 0;
+  private regenerationTime = 0;
+  private regenerationTickTime = 0;
 
   private aware = false;
   private loseSightTime = 0;
@@ -194,6 +196,12 @@ export abstract class Enemy implements PhysicsBody {
   applyHaste(duration: number): void { this.hasteTime = Math.max(this.hasteTime, duration); }
 
   applyBerserk(duration: number): void { this.berserkTime = Math.max(this.berserkTime, duration); }
+  get regenerationActive(): boolean { return this.regenerationTime > 0; }
+
+  applyRegeneration(duration: number): void {
+    this.regenerationTime = Math.max(this.regenerationTime, duration);
+    if (this.regenerationTickTime <= 0) this.regenerationTickTime = 0.25;
+  }
 
   alertByDamage(): void {
     this.aware = true;
@@ -209,6 +217,17 @@ export abstract class Enemy implements PhysicsBody {
     this.damageAlertTime = Math.max(0, this.damageAlertTime - dt);
     this.hasteTime = Math.max(0, this.hasteTime - dt);
     this.berserkTime = Math.max(0, this.berserkTime - dt);
+    this.regenerationTime = Math.max(0, this.regenerationTime - dt);
+    if (this.regenerationTime > 0) {
+      this.regenerationTickTime -= dt;
+      if (this.regenerationTickTime <= 0) {
+        const regenerationHeal = Math.max(1, Math.ceil(this.maxHp * 0.02));
+        this.hp = Math.min(this.maxHp, this.hp + regenerationHeal);
+        this.regenerationTickTime += 1.0;
+      }
+    } else {
+      this.regenerationTickTime = 0;
+    }
 
     if (this.knockbackTime > 0) {
       this.updateKnockback(dt, context.stage);
