@@ -224,6 +224,95 @@ function drawCenteredSprite(
   ctx.restore();
 }
 
+function drawClimbingSprite(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  footY: number,
+  scale: number,
+  logicalFacing: Facing,
+  sourceFacing: Facing,
+  time: number,
+  gripColor: string,
+): void {
+  const bounds = getOpaqueBounds(image);
+  const drawW = image.naturalWidth * scale;
+  const drawH = image.naturalHeight * scale;
+  const drawX = -(bounds.x + bounds.w / 2) * scale;
+  const drawY = -(bounds.y + bounds.h) * scale;
+
+  const sourceW = Math.max(1, image.naturalWidth);
+  const sourceH = Math.max(1, image.naturalHeight);
+  const splitX = Math.floor(sourceW * 0.5);
+  const splitY = Math.floor(sourceH * 0.56);
+  const scaleX = drawW / sourceW;
+  const scaleY = drawH / sourceH;
+  const phase = Math.sin(time * 15);
+  const bob = Math.abs(Math.cos(time * 15)) * 1.5;
+  const upperShift = phase * 2.4;
+  const lowerShift = phase * 3.2;
+
+  ctx.save();
+  ctx.translate(centerX + phase * 0.8, footY - bob);
+  applySpriteFacing(ctx, logicalFacing, sourceFacing);
+
+  ctx.drawImage(
+    image,
+    0,
+    0,
+    splitX,
+    splitY,
+    drawX,
+    drawY + upperShift,
+    splitX * scaleX,
+    splitY * scaleY,
+  );
+  ctx.drawImage(
+    image,
+    splitX,
+    0,
+    sourceW - splitX,
+    splitY,
+    drawX + splitX * scaleX,
+    drawY - upperShift,
+    (sourceW - splitX) * scaleX,
+    splitY * scaleY,
+  );
+  ctx.drawImage(
+    image,
+    0,
+    splitY,
+    splitX,
+    sourceH - splitY,
+    drawX,
+    drawY + splitY * scaleY - lowerShift,
+    splitX * scaleX,
+    (sourceH - splitY) * scaleY,
+  );
+  ctx.drawImage(
+    image,
+    splitX,
+    splitY,
+    sourceW - splitX,
+    sourceH - splitY,
+    drawX + splitX * scaleX,
+    drawY + splitY * scaleY + lowerShift,
+    (sourceW - splitX) * scaleX,
+    (sourceH - splitY) * scaleY,
+  );
+
+  const visibleH = bounds.h * scale;
+  ctx.fillStyle = gripColor;
+  ctx.globalAlpha = 0.92;
+  const handY = -visibleH * 0.60;
+  const footLocalY = -visibleH * 0.16;
+  ctx.fillRect(-8, handY + phase * 4.8 - 2, 4, 4);
+  ctx.fillRect(4, handY - phase * 4.8 - 2, 4, 4);
+  ctx.fillRect(-9, footLocalY - phase * 4.8 - 2, 5, 4);
+  ctx.fillRect(4, footLocalY + phase * 4.8 - 2, 5, 4);
+
+  ctx.restore();
+}
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
@@ -421,6 +510,20 @@ export class EnemyRenderer {
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 62);
+    if (goblin.state === 'climb') {
+      drawClimbingSprite(
+        ctx,
+        image,
+        goblin.x + goblin.w / 2,
+        goblin.y + goblin.h + 2,
+        scale,
+        goblin.facing,
+        SOURCE_FACING.goblin,
+        goblin.actionTime,
+        '#8ca45a',
+      );
+      return;
+    }
     drawGroundedSprite(
       ctx,
       image,
@@ -909,6 +1012,20 @@ export class EnemyRenderer {
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 72);
+    if (skeleton.state === 'climb') {
+      drawClimbingSprite(
+        ctx,
+        image,
+        skeleton.x + skeleton.w / 2,
+        skeleton.y + skeleton.h + 1,
+        scale,
+        skeleton.facing,
+        SOURCE_FACING.skeleton,
+        skeleton.actionTime,
+        '#e0d6bd',
+      );
+      return;
+    }
     drawGroundedSprite(
       ctx,
       image,
