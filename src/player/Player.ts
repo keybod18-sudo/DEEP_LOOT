@@ -20,6 +20,7 @@ export class Player implements PhysicsBody {
   invulnerability = 0;
   readonly attack = new PlayerAttack();
   walkTime = 0;
+  moveSpeedMultiplier = 1;
 
   poisonTime = 0;
   poisonTickTimer = 0;
@@ -47,6 +48,7 @@ export class Player implements PhysicsBody {
     this.attack.hitConsumed = false;
     this.attack.missed = false;
     this.walkTime = 0;
+    this.moveSpeedMultiplier = 1;
     this.poisonTime = 0;
     this.poisonTickTimer = 0;
     this.poisonTickInterval = 1;
@@ -78,7 +80,7 @@ export class Player implements PhysicsBody {
     this.updateTimedStatuses(dt);
 
     const disabled = this.paralysisStunned || this.sleeping || this.frozen;
-    const speedFactor = this.slowed ? 0.48 : 1;
+    const speedFactor = (this.slowed ? 0.48 : 1) * this.moveSpeedMultiplier;
     const canAct = !disabled && this.hp > 0;
     const left = canAct && input.isDown('arrowleft');
     const right = canAct && input.isDown('arrowright');

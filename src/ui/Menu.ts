@@ -180,6 +180,13 @@ function designRarityFor(name: string): string {
   return FIXED_DESIGN_RARITY[name] ?? '通常';
 }
 
+function equipmentRarityForDesign(rarity: string | undefined): string {
+  if (rarity === '伝説級') return '赤神話';
+  if (rarity === '激レア') return '金';
+  if (rarity === '希少') return '銀';
+  return '銅';
+}
+
 function previewPalette(name: string, rarity: string): { metal: string; glow: string; shade: string; accent: string; border: string; bg: string } {
   let metal = '#c9cdd5';
   let glow = '#e6c77f';
@@ -198,21 +205,23 @@ function previewPalette(name: string, rarity: string): { metal: string; glow: st
   else if (/赤銅|朱/.test(name)) { metal = '#e2b89a'; glow = '#d36346'; shade = '#67392c'; accent = '#ffe3d2'; }
 
   const border =
-    rarity === '伝説級' ? 'rgba(255,214,84,.76)' :
-    rarity === '激レア' ? 'rgba(197,118,255,.72)' :
-    rarity === '希少' ? 'rgba(80,211,255,.60)' :
-    rarity === '上質' ? 'rgba(146,201,255,.48)' :
-    'rgba(121,149,190,.34)';
+    rarity === '赤神話' ? 'rgba(255,68,84,.90)' :
+    rarity === '金' ? 'rgba(255,214,84,.82)' :
+    rarity === '銀' ? 'rgba(215,229,242,.70)' :
+    'rgba(190,118,67,.62)';
   const bg =
-    rarity === '伝説級' ? 'linear-gradient(135deg,#1b1609,#4b3410)' :
-    rarity === '激レア' ? 'linear-gradient(135deg,#171021,#3d205a)' :
-    'linear-gradient(135deg,#0f1621,#202c3b)';
+    rarity === '赤神話' ? 'linear-gradient(135deg,#26090d,#60151d)' :
+    rarity === '金' ? 'linear-gradient(135deg,#1b1609,#4b3410)' :
+    rarity === '銀' ? 'linear-gradient(135deg,#121923,#344353)' :
+    'linear-gradient(135deg,#1b120d,#3a2418)';
 
   return { metal, glow, shade, accent, border, bg };
 }
 
 function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
-  const rarity = item.designRarity ?? item.rarity ?? designRarityFor(item.name);
+  const rarity = item.dropRarity ?? equipmentRarityForDesign(item.designRarity ?? designRarityFor(item.name));
+  const powerLevel = item.powerLevel ?? 1;
+  const slotCount = item.abilitySlots.length;
   const palette = previewPalette(item.name, rarity);
   const abilityName = escapeHtml(item.intrinsicAbility?.name ?? '固有能力なし');
   const ability = escapeHtml(item.intrinsicAbility?.description ?? '固有能力なし');
@@ -230,7 +239,9 @@ function equipmentPreviewHtml(item: WeaponItem | ArmorItem): string {
       <span style="display:flex;flex-direction:column;justify-content:center;min-width:0;padding:1px 0;">
         <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
           <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">${statLabel}</b> ${escapeHtml(String(statValue))}</span>
-          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:${accent};">レア度</b> ${escapeHtml(rarity)}</span>
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid ${border};font-size:10px;color:rgba(255,255,255,.94);white-space:nowrap;"><b style="color:${accent};">レア度</b> ${escapeHtml(rarity)}</span>
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:10px;color:rgba(255,255,255,.94);white-space:nowrap;"><b style="color:#ffdb74;">強さ</b> ${powerLevel}/10</span>
+          <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:10px;color:rgba(255,255,255,.88);white-space:nowrap;"><b style="color:#9fd3ff;">能力枠</b> ${slotCount}</span>
           <span style="padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:10px;color:${palette.glow};white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;">${abilityName}</span>
         </span>
         <span style="font-size:10px;line-height:1.36;color:rgba(255,255,255,.8);">${ability}</span>

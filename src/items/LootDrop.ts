@@ -2,7 +2,7 @@ import { GRAVITY } from '../config/constants';
 import { resolveFloor } from '../game/Collision';
 import type { PhysicsBody } from '../game/types';
 import type { Stage } from '../stage/Stage';
-import type { Item } from './Item';
+import type { EquipmentRarity, Item } from './Item';
 
 export class LootDrop implements PhysicsBody {
   readonly w = 14;
@@ -40,20 +40,28 @@ export class LootDrop implements PhysicsBody {
     ctx.translate(x, y);
     ctx.imageSmoothingEnabled = false;
 
-    if (this.item.category === 'weapon') this.drawWeaponIcon(ctx, pulse);
-    else if (this.item.category === 'armor') this.drawArmorIcon(ctx, pulse);
-    else this.drawPotionIcon(ctx, pulse);
+    if (this.item.category === 'weapon') {
+      const color = rarityColor(this.item.dropRarity);
+      this.drawWeaponIcon(ctx, pulse, color);
+      this.drawPowerBadge(ctx, this.item.powerLevel);
+    } else if (this.item.category === 'armor') {
+      const color = rarityColor(this.item.dropRarity);
+      this.drawArmorIcon(ctx, pulse, color);
+      this.drawPowerBadge(ctx, this.item.powerLevel);
+    } else {
+      this.drawPotionIcon(ctx, pulse);
+    }
 
     ctx.restore();
   }
 
-  private drawWeaponIcon(ctx: CanvasRenderingContext2D, pulse: number): void {
+  private drawWeaponIcon(ctx: CanvasRenderingContext2D, pulse: number, rarity: string): void {
     ctx.save();
-    ctx.shadowColor = `rgba(255, 205, 83, ${pulse})`;
-    ctx.shadowBlur = 7;
+    ctx.shadowColor = rarity;
+    ctx.shadowBlur = 6 + pulse * 3;
     ctx.fillStyle = '#151b22';
     ctx.fillRect(-10, -10, 20, 20);
-    ctx.strokeStyle = '#e2b74b';
+    ctx.strokeStyle = rarity;
     ctx.strokeRect(-9.5, -9.5, 19, 19);
 
     ctx.translate(0, 1);
@@ -62,25 +70,25 @@ export class LootDrop implements PhysicsBody {
     ctx.fillRect(-1, -9, 3, 12);
     ctx.fillStyle = '#9fb6c9';
     ctx.fillRect(1, -8, 1, 10);
-    ctx.fillStyle = '#f4cf63';
+    ctx.fillStyle = rarity;
     ctx.fillRect(-5, 2, 11, 3);
     ctx.fillStyle = '#8b552d';
     ctx.fillRect(-1, 5, 3, 6);
-    ctx.fillStyle = '#e7bc4c';
+    ctx.fillStyle = rarity;
     ctx.fillRect(-2, 10, 5, 2);
     ctx.restore();
   }
 
-  private drawArmorIcon(ctx: CanvasRenderingContext2D, pulse: number): void {
+  private drawArmorIcon(ctx: CanvasRenderingContext2D, pulse: number, rarity: string): void {
     ctx.save();
-    ctx.shadowColor = `rgba(105, 171, 240, ${pulse})`;
-    ctx.shadowBlur = 7;
+    ctx.shadowColor = rarity;
+    ctx.shadowBlur = 6 + pulse * 3;
     ctx.fillStyle = '#151b22';
     ctx.fillRect(-10, -10, 20, 20);
-    ctx.strokeStyle = '#6fa8df';
+    ctx.strokeStyle = rarity;
     ctx.strokeRect(-9.5, -9.5, 19, 19);
 
-    ctx.fillStyle = '#78aee0';
+    ctx.fillStyle = rarity;
     ctx.beginPath();
     ctx.moveTo(0, -8);
     ctx.lineTo(7, -5);
@@ -90,11 +98,28 @@ export class LootDrop implements PhysicsBody {
     ctx.lineTo(-7, -5);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#d9edff';
+    ctx.fillStyle = '#f3f7fb';
     ctx.fillRect(-1, -6, 2, 12);
     ctx.fillRect(-4, -2, 8, 2);
-    ctx.fillStyle = '#355f88';
+    ctx.fillStyle = '#263746';
     ctx.fillRect(-5, 4, 10, 2);
+    ctx.restore();
+  }
+
+  private drawPowerBadge(ctx: CanvasRenderingContext2D, powerLevel: number): void {
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(5,8,12,.94)';
+    ctx.fillRect(3, -10, 8, 8);
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.9;
+    ctx.strokeRect(3.5, -9.5, 7, 7);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 1;
+    ctx.font = 'bold 7px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(powerLevel), 7, -6);
     ctx.restore();
   }
 
@@ -132,4 +157,11 @@ export class LootDrop implements PhysicsBody {
     ctx.fillRect(-3, -1, 2, 4);
     ctx.restore();
   }
+}
+
+function rarityColor(rarity: EquipmentRarity): string {
+  if (rarity === '赤神話') return '#ff4254';
+  if (rarity === '金') return '#ffd653';
+  if (rarity === '銀') return '#d8e3ee';
+  return '#c47a48';
 }

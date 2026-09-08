@@ -80,6 +80,7 @@ export class Game {
   private fireballCooldown = 0;
   private thunderCooldown = 0;
   private lightCooldown = 0;
+  private equipmentRegenTimer = 0;
   private cameraX = 0;
   private cameraY = 0;
   private gold = 0;
@@ -201,9 +202,11 @@ export class Game {
     if (this.menu.isOpen || this.player.hp <= 0) return;
 
     const hpBeforeUpdate = this.player.hp;
+    this.player.moveSpeedMultiplier = this.inventory.moveSpeedMultiplier;
     this.player.update(dt, this.input, this.stage);
     if (this.player.hp < hpBeforeUpdate) this.addDamageNumber(hpBeforeUpdate - this.player.hp);
     if (this.player.hp !== hpBeforeUpdate) this.refreshUi();
+    this.updateEquipmentRegen(dt);
 
     this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
     this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
@@ -231,24 +234,28 @@ export class Game {
           return damaged;
         },
         poisonPlayer: (duration, tickInterval, damage) => {
+          if (this.resistsStatusEffect()) return;
           const wasPoisoned = this.player.poisoned;
           this.player.applyPoison(duration, tickInterval, damage);
           if (!wasPoisoned) this.showNotice('毒状態になった');
           this.refreshUi();
         },
         paralyzePlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasParalyzed = this.player.paralyzed;
           this.player.applyParalysis(duration);
           if (!wasParalyzed) this.showNotice('麻痺した');
           this.refreshUi();
         },
         slowPlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasSlowed = this.player.slowed;
           this.player.applySlow(duration);
           if (!wasSlowed) this.showNotice('スロウ状態になった');
           this.refreshUi();
         },
         sealPlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasSealed = this.player.sealed;
           this.player.applySeal(duration);
           this.setMenuOpen(false);
@@ -256,18 +263,21 @@ export class Game {
           this.refreshUi();
         },
         silencePlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasSilenced = this.player.silenced;
           this.player.applySilence(duration);
           if (!wasSilenced) this.showNotice('沈黙状態になった');
           this.refreshUi();
         },
         blindPlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasBlinded = this.player.blinded;
           this.player.applyBlind(duration);
           if (!wasBlinded) this.showNotice('暗闇状態になった');
           this.refreshUi();
         },
         sleepPlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasSleeping = this.player.sleeping;
           this.player.applySleep(duration);
           this.setMenuOpen(false);
@@ -275,6 +285,7 @@ export class Game {
           this.refreshUi();
         },
         freezePlayer: (duration) => {
+          if (this.resistsStatusEffect()) return;
           const wasFrozen = this.player.frozen;
           this.player.applyFrozen(duration);
           this.setMenuOpen(false);
@@ -339,9 +350,14 @@ export class Game {
     for (const enemy of this.enemies) {
       if (!enemy.alive || !intersects(hitbox, enemy)) continue;
 
+      let meleeDamage = this.totalAttack;
+      if (Math.random() < this.inventory.criticalChance) {
+        meleeDamage = Math.ceil(meleeDamage * this.inventory.criticalMultiplier);
+        this.showNotice('会心の一撃');
+      }
       const killed = damageEnemy(
         enemy,
-        this.totalAttack,
+        meleeDamage,
         this.player.x + this.player.w / 2,
         this.inventory.knockbackMultiplier,
       );
@@ -353,6 +369,31 @@ export class Game {
       this.refreshUi();
       break;
     }
+  }
+
+  private updateEquipmentRegen(dt: number): void {
+    const amount = this.inventory.regenAmount;
+    if (amount <= 0 || this.player.hp <= 0) {
+      this.equipmentRegenTimer = 0;
+      return;
+    }
+    this.equipmentRegenTimer += dt;
+    if (this.player.hp >= this.maxHp) {
+      this.equipmentRegenTimer = Math.min(this.equipmentRegenTimer, 3);
+      return;
+    }
+    if (this.equipmentRegenTimer < 3) return;
+    this.equipmentRegenTimer -= 3;
+    const before = this.player.hp;
+    this.player.heal(amount, this.maxHp);
+    if (this.player.hp > before) this.refreshUi();
+  }
+
+  private resistsStatusEffect(): boolean {
+    const resistance = this.inventory.statusResistance;
+    if (resistance <= 0 || Math.random() >= resistance) return false;
+    this.showNotice('状態異常を防いだ');
+    return true;
   }
 
   private castMemorySpell(spell: 'fireball' | 'thunder' | 'shining'): void {
@@ -579,7 +620,7 @@ export class Game {
 
       if (intersects(lance.rect, this.player)) {
         const hit = this.player.hurt(lance.damage, lance.x);
-        if (hit) {
+        if (hit && !this.resistsStatusEffect()) {
           const wasFrozen = this.player.frozen;
           this.player.applyFrozen(BALANCE.ahriman.freezeDuration);
           this.setMenuOpen(false);
@@ -606,7 +647,7 @@ export class Game {
       if (intersects(arrow.sweptRect, this.player)) {
         const hit = this.player.hurtProjectile(arrow.damage, arrow.x);
 
-        if (arrow.poisoned) {
+        if (arrow.poisoned && !this.resistsStatusEffect()) {
           const wasPoisoned = this.player.poisoned;
           this.player.applyPoison(
             BALANCE.skeletonArcher.poisonDuration,
@@ -631,7 +672,7 @@ export class Game {
   }
 
   private handleEnemyKilled(enemy: Enemy): void {
-    this.gold += 5;
+    this.gold += 5 + this.inventory.goldFindBonus;
     if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
     this.loot.push(new LootDrop(
       enemy.x + enemy.w / 2 - 7,

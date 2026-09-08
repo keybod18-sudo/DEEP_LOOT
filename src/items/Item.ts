@@ -1,6 +1,7 @@
 export type ItemCategory = 'weapon' | 'armor' | 'consumable';
 export type ItemRarity = '通常' | '上質' | '希少' | '激レア' | '伝説級';
 export type DesignRarity = ItemRarity;
+export type EquipmentRarity = '銅' | '銀' | '金' | '赤神話';
 export type StatusKind = 'poison' | 'paralysis' | 'sleep' | 'blind' | 'silence' | 'seal' | 'slow' | 'freeze';
 
 export interface EquipmentEffect {
@@ -27,8 +28,8 @@ export interface EquipmentEffect {
   text?: string;
 }
 
-export type WeaponAbilityKind = 'power' | 'impact' | 'leech' | 'special';
-export type ArmorAbilityKind = 'vitality' | 'guard' | 'fortress' | 'special';
+export type WeaponAbilityKind = 'power' | 'impact' | 'leech' | 'critical' | 'gold' | 'special';
+export type ArmorAbilityKind = 'vitality' | 'guard' | 'fortress' | 'speed' | 'regen' | 'resist' | 'special';
 
 export interface WeaponAbility {
   kind: WeaponAbilityKind;
@@ -56,6 +57,8 @@ export interface BaseItem {
 
 export interface WeaponItem extends BaseItem {
   category: 'weapon';
+  dropRarity: EquipmentRarity;
+  powerLevel: number;
   attack: number;
   intrinsicAbility: WeaponAbility | null;
   abilitySlots: Array<WeaponAbility | null>;
@@ -63,6 +66,8 @@ export interface WeaponItem extends BaseItem {
 
 export interface ArmorItem extends BaseItem {
   category: 'armor';
+  dropRarity: EquipmentRarity;
+  powerLevel: number;
   defense: number;
   intrinsicAbility: ArmorAbility | null;
   abilitySlots: Array<ArmorAbility | null>;
@@ -78,18 +83,37 @@ export interface ConsumableItem extends BaseItem {
 export type Item = WeaponItem | ArmorItem | ConsumableItem;
 
 let nextItemId = 1;
-const EQUIPMENT_SLOT_COUNT = 8;
 
 const weaponAbilities: WeaponAbility[] = [
+  { kind: 'power', name: '攻勢', description: '攻撃 +1', value: 1 },
   { kind: 'power', name: '猛攻', description: '攻撃 +2', value: 2 },
-  { kind: 'impact', name: '衝撃', description: 'ノックバック +35%', value: 1.35 },
-  { kind: 'leech', name: '吸命', description: '敵撃破時 HP +4', value: 4 },
+  { kind: 'power', name: '豪腕', description: '攻撃 +4', value: 4 },
+  { kind: 'impact', name: '衝撃', description: 'ノックバック +15%', value: 1.15 },
+  { kind: 'impact', name: '破砕', description: 'ノックバック +30%', value: 1.3 },
+  { kind: 'impact', name: '重撃', description: 'ノックバック +50%', value: 1.5 },
+  { kind: 'leech', name: '吸命', description: '敵撃破時 HP +2', value: 2 },
+  { kind: 'leech', name: '吸血', description: '敵撃破時 HP +5', value: 5 },
+  { kind: 'critical', name: '会心', description: '近接攻撃 8%で会心×1.6', value: 0.08, effect: { type: 'critical', chance: 0.08, multiplier: 1.6 } },
+  { kind: 'critical', name: '必殺', description: '近接攻撃 14%で会心×2.0', value: 0.14, effect: { type: 'critical', chance: 0.14, multiplier: 2 } },
+  { kind: 'gold', name: '金運', description: '敵撃破時 +2G', value: 2 },
+  { kind: 'gold', name: '財宝運', description: '敵撃破時 +5G', value: 5 },
 ];
 
 const armorAbilities: ArmorAbility[] = [
-  { kind: 'vitality', name: '生命', description: '最大HP +10', value: 10 },
+  { kind: 'vitality', name: '生命', description: '最大HP +6', value: 6 },
+  { kind: 'vitality', name: '大生命', description: '最大HP +12', value: 12 },
+  { kind: 'vitality', name: '命脈', description: '最大HP +20', value: 20 },
   { kind: 'guard', name: '守護', description: '被ダメージ -1', value: 1 },
-  { kind: 'fortress', name: '堅牢', description: '防御 +2', value: 2 },
+  { kind: 'guard', name: '鉄壁', description: '被ダメージ -2', value: 2 },
+  { kind: 'fortress', name: '堅牢', description: '防御 +1', value: 1 },
+  { kind: 'fortress', name: '城塞', description: '防御 +2', value: 2 },
+  { kind: 'fortress', name: '重装', description: '防御 +3', value: 3 },
+  { kind: 'speed', name: '軽足', description: '移動速度 +5%', value: 1.05, effect: { type: 'moveSpeed', multiplier: 1.05 } },
+  { kind: 'speed', name: '風足', description: '移動速度 +10%', value: 1.1, effect: { type: 'moveSpeed', multiplier: 1.1 } },
+  { kind: 'regen', name: '再生', description: '3秒ごとにHP +1', value: 1, effect: { type: 'regen', amount: 1, interval: 3 } },
+  { kind: 'regen', name: '強再生', description: '3秒ごとにHP +2', value: 2, effect: { type: 'regen', amount: 2, interval: 3 } },
+  { kind: 'resist', name: '耐性', description: '状態異常付与率 -15%', value: 0.15, effect: { type: 'statusResist', resistance: 0.15 } },
+  { kind: 'resist', name: '強耐性', description: '状態異常付与率 -30%', value: 0.3, effect: { type: 'statusResist', resistance: 0.3 } },
 ];
 
 interface WeaponDefinition {
@@ -230,7 +254,9 @@ export function createRandomItem(floor: number): Item {
 function createWeapon(floor: number): WeaponItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
   const definition = pickDefinition(weaponDefinitions, floor);
-  const attack = Math.max(1, 1 + tier + Math.floor(Math.random() * 3) + definition.attackOffset);
+  const powerLevel = rollPowerLevel(floor);
+  const powerStatBonus = Math.floor((powerLevel - 1) / 3);
+  const attack = Math.max(1, 1 + tier + powerStatBonus + Math.floor(Math.random() * 3) + definition.attackOffset);
   const rarity = definition.designRarity;
 
   return {
@@ -239,16 +265,20 @@ function createWeapon(floor: number): WeaponItem {
     name: definition.name,
     rarity,
     designRarity: definition.designRarity,
+    dropRarity: equipmentRarityFromDesign(definition.designRarity),
+    powerLevel,
     attack,
     intrinsicAbility: definition.intrinsicAbility ? cloneAbility(definition.intrinsicAbility) : null,
-    abilitySlots: createAbilitySlots(weaponAbilities, floor, rarity),
+    abilitySlots: createAbilitySlots(weaponAbilities, powerLevel),
   };
 }
 
 function createArmor(floor: number): ArmorItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
   const definition = pickDefinition(armorDefinitions, floor);
-  const defense = Math.max(1, 1 + tier + Math.floor(Math.random() * 2) + definition.defenseOffset);
+  const powerLevel = rollPowerLevel(floor);
+  const powerStatBonus = Math.floor((powerLevel - 1) / 3);
+  const defense = Math.max(1, 1 + tier + powerStatBonus + Math.floor(Math.random() * 2) + definition.defenseOffset);
   const rarity = definition.designRarity;
 
   return {
@@ -257,9 +287,11 @@ function createArmor(floor: number): ArmorItem {
     name: definition.name,
     rarity,
     designRarity: definition.designRarity,
+    dropRarity: equipmentRarityFromDesign(definition.designRarity),
+    powerLevel,
     defense,
     intrinsicAbility: definition.intrinsicAbility ? cloneAbility(definition.intrinsicAbility) : null,
-    abilitySlots: createAbilitySlots(armorAbilities, floor, rarity),
+    abilitySlots: createAbilitySlots(armorAbilities, powerLevel),
   };
 }
 
@@ -327,20 +359,69 @@ function cloneAbility<T extends WeaponAbility | ArmorAbility>(ability: T): T {
 
 function createAbilitySlots<T extends WeaponAbility | ArmorAbility>(
   pool: readonly T[],
-  floor: number,
-  rarity: ItemRarity,
+  powerLevel: number,
 ): Array<T | null> {
-  const slots: Array<T | null> = Array.from({ length: EQUIPMENT_SLOT_COUNT }, () => null);
-  let filled = 1;
-  if (floor >= 3 || rarity !== '通常') filled += Math.random() < 0.55 ? 1 : 0;
-  if (floor >= 7 || rarity === '希少' || rarity === '激レア' || rarity === '伝説級') filled += Math.random() < 0.4 ? 1 : 0;
-  if ((rarity === '激レア' || rarity === '伝説級') && floor >= 6) filled += Math.random() < 0.22 ? 1 : 0;
+  const slotCount = slotCountForPower(powerLevel);
+  const fillChance = Math.min(0.95, 0.17 + powerLevel * 0.078);
+  const slots: Array<T | null> = Array.from({ length: slotCount }, () => null);
 
-  for (let i = 0; i < filled && i < EQUIPMENT_SLOT_COUNT; i += 1) {
+  for (let index = 0; index < slotCount; index += 1) {
+    if (Math.random() > fillChance) continue;
     const ability = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
-    slots[i] = ability ? cloneAbility(ability) : null;
+    slots[index] = ability ? cloneAbility(ability) : null;
   }
+
+  const minimumFilled =
+    powerLevel >= 10 ? 6 :
+    powerLevel >= 8 ? 4 :
+    powerLevel >= 6 ? 2 :
+    powerLevel >= 4 ? 1 :
+    0;
+
+  while (slots.filter((ability) => ability !== null).length < minimumFilled) {
+    const emptyIndexes = slots
+      .map((ability, index) => ability === null ? index : -1)
+      .filter((index) => index >= 0);
+    if (emptyIndexes.length === 0) break;
+    const slotIndex = emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)]!;
+    const ability = pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+    slots[slotIndex] = ability ? cloneAbility(ability) : null;
+  }
+
   return slots;
+}
+
+function slotCountForPower(powerLevel: number): number {
+  const counts = [1, 2, 2, 3, 4, 5, 5, 6, 7, 8];
+  return counts[Math.max(1, Math.min(10, powerLevel)) - 1] ?? 1;
+}
+
+function rollPowerLevel(floor: number): number {
+  const roll = Math.random();
+  let power =
+    roll < 0.18 ? 1 :
+    roll < 0.34 ? 2 :
+    roll < 0.48 ? 3 :
+    roll < 0.61 ? 4 :
+    roll < 0.72 ? 5 :
+    roll < 0.81 ? 6 :
+    roll < 0.88 ? 7 :
+    roll < 0.94 ? 8 :
+    roll < 0.98 ? 9 :
+    10;
+
+  const depthBonus = Math.min(2, Math.floor(Math.max(0, floor - 1) / 6));
+  if (depthBonus > 0 && Math.random() < 0.35) {
+    power += 1 + Math.floor(Math.random() * depthBonus);
+  }
+  return Math.max(1, Math.min(10, power));
+}
+
+function equipmentRarityFromDesign(rarity: DesignRarity): EquipmentRarity {
+  if (rarity === '伝説級') return '赤神話';
+  if (rarity === '激レア') return '金';
+  if (rarity === '希少') return '銀';
+  return '銅';
 }
 
 function pickDefinition<T extends { designRarity: DesignRarity }>(definitions: readonly T[], floor: number): T {

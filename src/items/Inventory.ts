@@ -111,6 +111,62 @@ export class Inventory {
       .reduce((sum, ability) => sum + ability.value, 0);
   }
 
+  get criticalChance(): number {
+    const weapon = this.equippedWeapon;
+    if (!weapon) return 0;
+    return Math.min(0.45, this.weaponAbilities(weapon)
+      .filter((ability) => ability.kind === 'critical')
+      .reduce((sum, ability) => sum + ability.value, 0));
+  }
+
+  get criticalMultiplier(): number {
+    const weapon = this.equippedWeapon;
+    if (!weapon) return 1;
+    return this.weaponAbilities(weapon)
+      .filter((ability) => ability.kind === 'critical')
+      .reduce((best, ability) => Math.max(best, ability.effect?.multiplier ?? 1.6), 1);
+  }
+
+  get goldFindBonus(): number {
+    const weapon = this.equippedWeapon;
+    if (!weapon) return 0;
+    return this.weaponAbilities(weapon)
+      .filter((ability) => ability.kind === 'gold')
+      .reduce((sum, ability) => sum + ability.value, 0);
+  }
+
+  get moveSpeedMultiplier(): number {
+    const armor = this.equippedArmor;
+    if (!armor) return 1;
+    return this.armorAbilities(armor).reduce((multiplier, ability) => {
+      if (ability.kind === 'speed') return multiplier * ability.value;
+      if (ability.effect?.type === 'moveSpeed') return multiplier * (ability.effect.multiplier ?? 1);
+      return multiplier;
+    }, 1);
+  }
+
+  get regenAmount(): number {
+    const armor = this.equippedArmor;
+    if (!armor) return 0;
+    return this.armorAbilities(armor).reduce((sum, ability) => {
+      if (ability.kind === 'regen') return sum + ability.value;
+      if (ability.effect?.type === 'regen') return sum + (ability.effect.amount ?? 0);
+      return sum;
+    }, 0);
+  }
+
+  get statusResistance(): number {
+    const armor = this.equippedArmor;
+    if (!armor) return 0;
+    const resistances = this.armorAbilities(armor).map((ability) => {
+      if (ability.kind === 'resist') return ability.value;
+      if (ability.effect?.type === 'statusResist') return ability.effect.resistance ?? 0;
+      return 0;
+    });
+    return Math.min(0.8, 1 - resistances.reduce((remaining, resistance) =>
+      remaining * (1 - Math.max(0, Math.min(1, resistance))), 1));
+  }
+
   getSlots(category: ItemCategory): ReadonlyArray<Item | null> {
     return this.slotsFor(category);
   }
