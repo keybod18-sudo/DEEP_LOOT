@@ -490,3 +490,66 @@ function rarityWeight(rarity: DesignRarity, floor: number): number {
   if (rarity === '上質') return 0.72;
   return 1.0;
 }
+export function createStarterFaultArmor(): ArmorItem {
+  return {
+    id: 'starter-fault-armor',
+    category: 'armor',
+    name: String.fromCodePoint(0x65ad, 0x5c64, 0x306e, 0x93a7),
+    rarity: String.fromCodePoint(0x5e0c, 0x5c11) as ItemRarity,
+    designRarity: String.fromCodePoint(0x5e0c, 0x5c11) as DesignRarity,
+    dropRarity: String.fromCodePoint(0x9280) as EquipmentRarity,
+    powerLevel: 7,
+    defense: 7,
+    intrinsicAbility: {
+      kind: 'special',
+      name: String.fromCodePoint(0x65ad, 0x5c64, 0x4e0d, 0x52d5),
+      description: String.fromCodePoint(
+        0x30ce, 0x30c3, 0x30af, 0x30d0, 0x30c3, 0x30af,
+        0xff1a, 0x5b8c, 0x5168, 0x7121, 0x52b9,
+      ),
+      value: 0,
+      effect: { type: 'knockbackResist', multiplier: 0 },
+    },
+    abilitySlots: [
+      {
+        kind: 'vitality',
+        name: String.fromCodePoint(0x751f, 0x547d),
+        description: String.fromCodePoint(0x6700, 0x5927, 0x48, 0x50, 0x20, 0x2b, 0x36),
+        value: 6,
+      },
+      {
+        kind: 'regen',
+        name: String.fromCodePoint(0x5f37, 0x518d, 0x751f),
+        description: String.fromCodePoint(
+          0x33, 0x79d2, 0x3054, 0x3068, 0x306b, 0x48, 0x50, 0x20, 0x2b, 0x32,
+        ),
+        value: 2,
+        effect: { type: 'regen', amount: 2, interval: 3 },
+      },
+      {
+        kind: 'vitality',
+        name: String.fromCodePoint(0x547d, 0x8108),
+        description: String.fromCodePoint(
+          0x6700, 0x5927, 0x48, 0x50, 0x20, 0x2b, 0x32, 0x30,
+        ),
+        value: 20,
+      },
+      {
+        kind: 'resist',
+        name: String.fromCodePoint(0x8010, 0x6027),
+        description: String.fromCodePoint(
+          0x72b6, 0x614b, 0x7570, 0x5e38, 0x4ed8, 0x4e0e, 0x7387,
+          0x20, 0x2d, 0x31, 0x35, 0x25,
+        ),
+        value: 0.15,
+        effect: { type: 'statusResist', resistance: 0.15 },
+      },
+      {
+        kind: 'fortress',
+        name: String.fromCodePoint(0x91cd, 0x88c5),
+        description: String.fromCodePoint(0x9632, 0x5fa1, 0x20, 0x2b, 0x33),
+        value: 3,
+      },
+    ],
+  };
+}

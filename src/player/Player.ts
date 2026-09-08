@@ -90,7 +90,12 @@ export class Player implements PhysicsBody {
     const canAct = !disabled && this.hp > 0;
     const upHeld = canAct && (input.isDown('w') || input.isDown('arrowup'));
     const downHeld = canAct && input.isDown('arrowdown');
+    const horizontalDismount = canAct &&
+      (input.isDown('arrowleft') !== input.isDown('arrowright'));
 
+    if (this.climbing && horizontalDismount) {
+      this.stopClimbing(false);
+    }
     if (this.climbing) {
       if (!canAct || !this.activeLadder) {
         this.stopClimbing(false);
@@ -101,7 +106,7 @@ export class Player implements PhysicsBody {
       }
     }
 
-    if (canAct && (upHeld || downHeld)) {
+    if (!horizontalDismount && canAct && (upHeld || downHeld)) {
       const ladder = this.findLadder(stage, upHeld ? -1 : 1);
       if (ladder) {
         this.beginClimbing(ladder);
@@ -379,27 +384,27 @@ export class Player implements PhysicsBody {
     this.frozenTime = Math.max(0, this.frozenTime - dt);
   }
 
-  hurt(damage: number, sourceX: number): boolean {
+  hurt(damage: number, sourceX: number, knockbackMultiplier = 1): boolean {
     if (this.invulnerability > 0 || this.hp <= 0) return false;
 
     this.wakeUp();
     const finalDamage = this.breakFrozenWithDamage(damage);
     this.hp = Math.max(0, this.hp - finalDamage);
     this.invulnerability = BALANCE.player.hurtInvulnerability;
-    this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
-    this.vy = -BALANCE.player.hurtKnockbackY;
+    this.vx = (this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX) * knockbackMultiplier;
+    this.vy = -BALANCE.player.hurtKnockbackY * knockbackMultiplier;
     return true;
   }
 
-  hurtProjectile(damage: number, sourceX: number): boolean {
+  hurtProjectile(damage: number, sourceX: number, knockbackMultiplier = 1): boolean {
     if (this.hp <= 0) return false;
 
     this.wakeUp();
     const finalDamage = this.breakFrozenWithDamage(damage);
     this.hp = Math.max(0, this.hp - finalDamage);
     this.invulnerability = Math.max(this.invulnerability, BALANCE.player.hurtInvulnerability * 0.7);
-    this.vx = this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX;
-    this.vy = -BALANCE.player.hurtKnockbackY;
+    this.vx = (this.x < sourceX ? -BALANCE.player.hurtKnockbackX : BALANCE.player.hurtKnockbackX) * knockbackMultiplier;
+    this.vy = -BALANCE.player.hurtKnockbackY * knockbackMultiplier;
     return true;
   }
 

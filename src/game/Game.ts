@@ -28,7 +28,7 @@ import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
 import { SkeletonArrow } from '../combat/SkeletonArrow';
 import { Inventory } from '../items/Inventory';
-import { createHealingPotion, createRandomItem, createRemedy, createTreasureItem, type ItemCategory } from '../items/Item';
+import { createHealingPotion, createStarterFaultArmor, createRandomItem, createRemedy, createTreasureItem, type ItemCategory } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
 import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
@@ -140,6 +140,10 @@ export class Game {
   reset(): void {
     this.player.reset();
     this.inventory.clear();
+    const starterArmor = createStarterFaultArmor();
+    this.inventory.add(starterArmor);
+    this.inventory.equipArmor(0);
+    this.player.heal(this.maxHp, this.maxHp);
     this.inventory.add(createHealingPotion());
     this.inventory.add(createHealingPotion());
     this.inventory.add(createRemedy());
@@ -237,7 +241,7 @@ export class Game {
         hurtPlayer: (damage, sourceX) => {
           const boostedDamage = Math.ceil(damage * enemy.attackPowerMultiplier);
           const reduced = Math.max(1, boostedDamage - this.totalDefense - this.inventory.flatDamageReduction);
-          const damaged = this.player.hurt(reduced, sourceX);
+          const damaged = this.player.hurt(reduced, sourceX, this.inventory.incomingKnockbackMultiplier);
           if (damaged) this.refreshUi();
           return damaged;
         },
@@ -674,7 +678,7 @@ export class Game {
       if (!shot.alive) continue;
 
       if (intersects(shot.rect, this.player)) {
-        const hit = this.player.hurt(shot.damage, shot.x);
+        const hit = this.player.hurt(shot.damage, shot.x, this.inventory.incomingKnockbackMultiplier);
         if (hit) this.refreshUi();
         shot.alive = false;
       }
@@ -693,7 +697,7 @@ export class Game {
       if (!lance.alive) continue;
 
       if (intersects(lance.rect, this.player)) {
-        const hit = this.player.hurt(lance.damage, lance.x);
+        const hit = this.player.hurt(lance.damage, lance.x, this.inventory.incomingKnockbackMultiplier);
         if (hit && !this.resistsStatusEffect()) {
           const wasFrozen = this.player.frozen;
           this.player.applyFrozen(BALANCE.ahriman.freezeDuration);
@@ -719,7 +723,7 @@ export class Game {
       if (!arrow.alive) continue;
 
       if (intersects(arrow.sweptRect, this.player)) {
-        const hit = this.player.hurtProjectile(arrow.damage, arrow.x);
+        const hit = this.player.hurtProjectile(arrow.damage, arrow.x, this.inventory.incomingKnockbackMultiplier);
 
         if (arrow.poisoned && !this.resistsStatusEffect()) {
           const wasPoisoned = this.player.poisoned;

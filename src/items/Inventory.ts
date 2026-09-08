@@ -177,6 +177,14 @@ export class Inventory {
       remaining * (1 - Math.max(0, Math.min(1, resistance))), 1));
   }
 
+  get incomingKnockbackMultiplier(): number {
+    const armor = this.equippedArmor;
+    if (!armor) return 1;
+    return this.armorAbilities(armor).reduce((multiplier, ability) => {
+      if (ability.effect?.type !== 'knockbackResist') return multiplier;
+      return multiplier * (ability.effect.multiplier ?? 1);
+    }, 1);
+  }
   getSlots(category: ItemCategory): ReadonlyArray<Item | null> {
     return this.slotsFor(category);
   }
