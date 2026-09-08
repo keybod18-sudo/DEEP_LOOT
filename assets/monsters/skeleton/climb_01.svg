@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="72" viewBox="0 0 44 72" shape-rendering="crispEdges">
+<rect width="44" height="72" fill="none"/>
+<path fill="#342f2a" d="M14 8h16v4h4v13h-4v4H14v-4h-4V12h4z"/>
+<path fill="#d8d0b9" d="M15 9h14v3h3v11h-4v4H16v-4h-4V13h3z"/>
+<rect x="19" y="27" width="6" height="8" fill="#c7bea7"/>
+<path fill="#d8d0b9" d="M14 34h16v4h-3v3H17v-3h-3z"/>
+<rect x="17" y="40" width="10" height="3" fill="#d8d0b9"/>
+<rect x="20" y="33" width="4" height="15" fill="#bdb49f"/>
+<path fill="#d8d0b9" d="M14 35h3v3h-5v4h5v3h-8v-9h5zm16 0h-3v3h5v4h-5v3h8v-9h-5z"/>
+<!-- A arms -->
+<path fill="#d8d0b9" d="M13 34H9v-8H7v-9h5v8h4v7z"/>
+<rect x="8" y="15" width="5" height="5" fill="#eee8d6"/>
+<path fill="#d8d0b9" d="M31 36h4v6h3v9h-5v-7h-5v-6z"/>
+<rect x="32" y="49" width="5" height="5" fill="#eee8d6"/>
+<!-- A legs -->
+<path fill="#d8d0b9" d="M17 47h6v7h-4v6h-7v-5h3z"/>
+<path fill="#d8d0b9" d="M24 47h6v11h2v12h-7V57h-2z"/>
+<rect x="10" y="58" width="10" height="5" fill="#eee8d6"/>
+<rect x="24" y="67" width="10" height="5" fill="#eee8d6"/>
+<!-- sword -->
+<path fill="#46362a" d="M11 31h4l19 25h-4z"/>
+<path fill="#9ba3a8" d="M12 29h3l21 25h-4z"/>
+<rect x="9" y="27" width="9" height="3" fill="#b47d38"/>
+</svg>

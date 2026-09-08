@@ -7,17 +7,23 @@ const walkFrameUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/player/walk/walk_0${index}.png`, import.meta.url).href,
 );
 
+const climbFrameUrls = [1, 2].map((index) =>
+  new URL(`../../assets/player/climb/climb_0${index}.svg`, import.meta.url).href,
+);
 export class PlayerRenderer {
   private readonly attackFrames: HTMLImageElement[] = [];
   private readonly walkFrames: HTMLImageElement[] = [];
+  private readonly climbFrames: HTMLImageElement[] = [];
 
   async load(): Promise<void> {
-    const [attack, walk] = await Promise.all([
+    const [attack, walk, climb] = await Promise.all([
       Promise.all(attackFrameUrls.map(loadImage)),
       Promise.all(walkFrameUrls.map(loadImage)),
+      Promise.all(climbFrameUrls.map(loadImage)),
     ]);
     this.attackFrames.push(...attack);
     this.walkFrames.push(...walk);
+    this.climbFrames.push(...climb);
   }
 
   draw(
@@ -44,11 +50,13 @@ export class PlayerRenderer {
   ): void {
     const now = performance.now() / 1000;
     const attacking = frame > 0 && !sleeping && !frozen && !climbing;
+    const climbIndex = Math.floor(climbTime * 5) % Math.max(1, this.climbFrames.length);
+    const climbImage = this.climbFrames[climbIndex];
     const image = climbing
       ? (
-          this.walkFrames[
-            Math.floor(climbTime * 12) % Math.max(1, this.walkFrames.length)
-          ] ?? this.walkFrames[0]
+          climbImage?.complete && climbImage.naturalWidth > 0
+            ? climbImage
+            : this.walkFrames[0]
         )
       : attacking
         ? (this.attackFrames[frame] ?? this.attackFrames[0])
@@ -69,7 +77,6 @@ export class PlayerRenderer {
         image,
         centerX,
         footY,
-        facing,
         invulnerability,
         climbTime,
         slowed,
@@ -133,7 +140,6 @@ export class PlayerRenderer {
     image: HTMLImageElement,
     centerX: number,
     footY: number,
-    facing: Facing,
     invulnerability: number,
     climbTime: number,
     slowed: boolean,
@@ -141,21 +147,10 @@ export class PlayerRenderer {
     const drawH = 78;
     const aspect = image.naturalWidth / Math.max(1, image.naturalHeight);
     const drawW = Math.round(drawH * aspect);
-    const phase = Math.sin(climbTime * 15);
-    const bob = Math.abs(Math.cos(climbTime * 15)) * 1.8;
-
-    const sourceW = Math.max(1, image.naturalWidth);
-    const sourceH = Math.max(1, image.naturalHeight);
-    const splitX = Math.floor(sourceW * 0.5);
-    const splitY = Math.floor(sourceH * 0.56);
-    const scaleX = drawW / sourceW;
-    const scaleY = drawH / sourceH;
-    const baseX = -drawW / 2;
-    const baseY = -drawH;
+    const bob = Math.abs(Math.sin(climbTime * 10)) * 1.2;
 
     ctx.save();
-    ctx.translate(centerX + phase * 0.7, footY - bob);
-    if (facing < 0) ctx.scale(-1, 1);
+    ctx.translate(centerX, footY - bob);
 
     if (invulnerability > 0 && Math.floor(invulnerability * 14) % 2 === 0) {
       ctx.globalAlpha = 0.35;
@@ -169,65 +164,7 @@ export class PlayerRenderer {
         'drop-shadow(0 0 4px ' + color + ')';
     }
 
-    const topShift = phase * 2.6;
-    const legShift = phase * 3.4;
-
-    ctx.drawImage(
-      image,
-      0,
-      0,
-      splitX,
-      splitY,
-      baseX,
-      baseY + topShift,
-      splitX * scaleX,
-      splitY * scaleY,
-    );
-    ctx.drawImage(
-      image,
-      splitX,
-      0,
-      sourceW - splitX,
-      splitY,
-      baseX + splitX * scaleX,
-      baseY - topShift,
-      (sourceW - splitX) * scaleX,
-      splitY * scaleY,
-    );
-    ctx.drawImage(
-      image,
-      0,
-      splitY,
-      splitX,
-      sourceH - splitY,
-      baseX,
-      baseY + splitY * scaleY - legShift,
-      splitX * scaleX,
-      (sourceH - splitY) * scaleY,
-    );
-    ctx.drawImage(
-      image,
-      splitX,
-      splitY,
-      sourceW - splitX,
-      sourceH - splitY,
-      baseX + splitX * scaleX,
-      baseY + splitY * scaleY + legShift,
-      (sourceW - splitX) * scaleX,
-      (sourceH - splitY) * scaleY,
-    );
-
-    ctx.filter = 'none';
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = '#e4bc93';
-    const handY = -drawH * 0.56;
-    const footLocalY = -drawH * 0.16;
-    ctx.fillRect(-9, handY + phase * 5 - 2, 4, 4);
-    ctx.fillRect(5, handY - phase * 5 - 2, 4, 4);
-    ctx.fillStyle = '#28374f';
-    ctx.fillRect(-10, footLocalY - phase * 5 - 2, 5, 4);
-    ctx.fillRect(5, footLocalY + phase * 5 - 2, 5, 4);
-
+    ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
     ctx.restore();
   }
   private drawStatusEffects(

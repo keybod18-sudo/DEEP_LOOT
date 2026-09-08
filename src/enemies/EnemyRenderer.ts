@@ -27,6 +27,9 @@ const batUrls = [1, 2, 3].map((index) =>
 const goblinWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/goblin/walk_0${index}.png`, import.meta.url).href,
 );
+const goblinClimbUrls = [1, 2].map((index) =>
+  new URL(`../../assets/monsters/goblin/climb_0${index}.svg`, import.meta.url).href,
+);
 const goblinSwingUrls = [1, 2, 3, 4, 5].map((index) =>
   new URL(`../../assets/monsters/goblin/swing_0${index}.png`, import.meta.url).href,
 );
@@ -63,6 +66,9 @@ const ratBiteUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 
 const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/skeleton/walk_0${index}.png`, import.meta.url).href,
+);
+const skeletonClimbUrls = [1, 2].map((index) =>
+  new URL(`../../assets/monsters/skeleton/climb_0${index}.svg`, import.meta.url).href,
 );
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
@@ -224,6 +230,25 @@ function drawCenteredSprite(
   ctx.restore();
 }
 
+function drawRearClimbSprite(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  footY: number,
+  targetVisibleHeight: number,
+): void {
+  const bounds = getOpaqueBounds(image);
+  const scale = targetVisibleHeight / Math.max(1, bounds.h);
+  const drawW = image.naturalWidth * scale;
+  const drawH = image.naturalHeight * scale;
+  const drawX = -(bounds.x + bounds.w / 2) * scale;
+  const drawY = -(bounds.y + bounds.h) * scale;
+
+  ctx.save();
+  ctx.translate(centerX, footY);
+  ctx.drawImage(image, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
 function drawClimbingSprite(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -322,6 +347,7 @@ export class EnemyRenderer {
   private readonly batImages: HTMLImageElement[] = [];
 
   private readonly goblinWalkImages: HTMLImageElement[] = [];
+  private readonly goblinClimbImages: HTMLImageElement[] = [];
   private readonly goblinSwingImages: HTMLImageElement[] = [];
   private readonly goblinLeapImages: HTMLImageElement[] = [];
   private readonly goblinSmashImages: HTMLImageElement[] = [];
@@ -337,6 +363,7 @@ export class EnemyRenderer {
   private readonly ratBiteImages: HTMLImageElement[] = [];
 
   private readonly skeletonWalkImages: HTMLImageElement[] = [];
+  private readonly skeletonClimbImages: HTMLImageElement[] = [];
   private readonly skeletonAttackImages: HTMLImageElement[] = [];
   private readonly skeletonHurtImages: HTMLImageElement[] = [];
 
@@ -361,6 +388,7 @@ export class EnemyRenderer {
       snake,
       bat,
       goblinWalk,
+      goblinClimb,
       goblinSwing,
       goblinLeap,
       goblinSmash,
@@ -372,6 +400,7 @@ export class EnemyRenderer {
       ratRun,
       ratBite,
       skeletonWalk,
+      skeletonClimb,
       skeletonAttack,
       skeletonHurt,
       skeletonArcherWalk,
@@ -386,6 +415,7 @@ export class EnemyRenderer {
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
+      Promise.all(goblinClimbUrls.map(loadImage)),
       Promise.all(goblinSwingUrls.map(loadImage)),
       Promise.all(goblinLeapUrls.map(loadImage)),
       Promise.all(goblinSmashUrls.map(loadImage)),
@@ -397,6 +427,7 @@ export class EnemyRenderer {
       Promise.all(ratRunUrls.map(loadImage)),
       Promise.all(ratBiteUrls.map(loadImage)),
       Promise.all(skeletonWalkUrls.map(loadImage)),
+      Promise.all(skeletonClimbUrls.map(loadImage)),
       Promise.all(skeletonAttackUrls.map(loadImage)),
       Promise.all(skeletonHurtUrls.map(loadImage)),
       Promise.all(skeletonArcherWalkUrls.map(loadImage)),
@@ -412,6 +443,7 @@ export class EnemyRenderer {
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
     this.goblinWalkImages.push(...goblinWalk);
+    this.goblinClimbImages.push(...goblinClimb);
     this.goblinSwingImages.push(...goblinSwing);
     this.goblinLeapImages.push(...goblinLeap);
     this.goblinSmashImages.push(...goblinSmash);
@@ -423,6 +455,7 @@ export class EnemyRenderer {
     this.ratRunImages.push(...ratRun);
     this.ratBiteImages.push(...ratBite);
     this.skeletonWalkImages.push(...skeletonWalk);
+    this.skeletonClimbImages.push(...skeletonClimb);
     this.skeletonAttackImages.push(...skeletonAttack);
     this.skeletonHurtImages.push(...skeletonHurt);
     this.skeletonArcherWalkImages.push(...skeletonArcherWalk);
@@ -511,17 +544,31 @@ export class EnemyRenderer {
 
     const scale = scaleFromReference(reference, 62);
     if (goblin.state === 'climb') {
-      drawClimbingSprite(
-        ctx,
-        image,
-        goblin.x + goblin.w / 2,
-        goblin.y + goblin.h + 2,
-        scale,
-        goblin.facing,
-        SOURCE_FACING.goblin,
-        goblin.actionTime,
-        '#8ca45a',
-      );
+      const climbIndex =
+        Math.floor(goblin.actionTime * 5) % Math.max(1, this.goblinClimbImages.length);
+      const climbImage = this.goblinClimbImages[climbIndex];
+
+      if (climbImage?.complete && climbImage.naturalWidth > 0) {
+        drawRearClimbSprite(
+          ctx,
+          climbImage,
+          goblin.x + goblin.w / 2,
+          goblin.y + goblin.h + 2,
+          62,
+        );
+      } else {
+        drawClimbingSprite(
+          ctx,
+          image,
+          goblin.x + goblin.w / 2,
+          goblin.y + goblin.h + 2,
+          scale,
+          goblin.facing,
+          SOURCE_FACING.goblin,
+          goblin.actionTime,
+          '#8ca45a',
+        );
+      }
       return;
     }
     drawGroundedSprite(
@@ -1013,17 +1060,31 @@ export class EnemyRenderer {
 
     const scale = scaleFromReference(reference, 72);
     if (skeleton.state === 'climb') {
-      drawClimbingSprite(
-        ctx,
-        image,
-        skeleton.x + skeleton.w / 2,
-        skeleton.y + skeleton.h + 1,
-        scale,
-        skeleton.facing,
-        SOURCE_FACING.skeleton,
-        skeleton.actionTime,
-        '#e0d6bd',
-      );
+      const climbIndex =
+        Math.floor(skeleton.actionTime * 5) % Math.max(1, this.skeletonClimbImages.length);
+      const climbImage = this.skeletonClimbImages[climbIndex];
+
+      if (climbImage?.complete && climbImage.naturalWidth > 0) {
+        drawRearClimbSprite(
+          ctx,
+          climbImage,
+          skeleton.x + skeleton.w / 2,
+          skeleton.y + skeleton.h + 1,
+          72,
+        );
+      } else {
+        drawClimbingSprite(
+          ctx,
+          image,
+          skeleton.x + skeleton.w / 2,
+          skeleton.y + skeleton.h + 1,
+          scale,
+          skeleton.facing,
+          SOURCE_FACING.skeleton,
+          skeleton.actionTime,
+          '#e0d6bd',
+        );
+      }
       return;
     }
     drawGroundedSprite(
