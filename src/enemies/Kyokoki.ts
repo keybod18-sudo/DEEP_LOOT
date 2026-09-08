@@ -18,7 +18,7 @@ const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
 const DRAW_W = 44;
-const DRAW_H = 46;
+const DRAW_H = 40;
 
 const frameUrls: Record<KyokokiPose, string> = {
   idleA: new URL('../../assets/monsters/kyokoki/idleA.svg', import.meta.url).href,
@@ -145,9 +145,12 @@ export class Kyokoki extends Enemy {
       Math.floor(this.actionTime * 4) % 2 === 0 ? 'idleA' : 'idleB';
     const image = frameImages[pose] ?? frameImages.idleA;
     if (!image) return;
+
     const centerX = this.x + this.w / 2;
     const footY = this.y + this.h + 2;
-    const bob = this.state === 'drum' ? Math.sin(this.actionTime * 18) * 1.2 : Math.sin(this.actionTime * 4) * 0.7;
+    const bob = this.state === 'drum'
+      ? Math.sin(this.actionTime * 18) * 1.2
+      : Math.sin(this.actionTime * 4) * 0.55;
 
     ctx.save();
     ctx.globalAlpha = 1;
@@ -156,10 +159,12 @@ export class Kyokoki extends Enemy {
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(centerX), Math.round(footY + bob));
     if (this.facing < 0) ctx.scale(-1, 1);
+
     if (this.state === 'drum') {
-      ctx.shadowColor = this.supportKind === 'haste' ? '#76e8ff' : '#ff3c4c';
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = this.supportKind === 'haste' ? '#ff9a20' : '#ff303c';
+      ctx.shadowBlur = 12;
     }
+
     ctx.drawImage(image, -DRAW_W / 2, -DRAW_H, DRAW_W, DRAW_H);
     ctx.restore();
   }

@@ -1260,37 +1260,83 @@ export class Game {
 
   private drawEnemyBuffAura(enemy: Enemy): void {
     if (!enemy.hasteActive && !enemy.berserkActive) return;
+    const ctx = this.ctx;
+    const now = performance.now() / 1000;
     const cx = enemy.x + enemy.w / 2;
     const cy = enemy.y + enemy.h / 2;
-    const pulse = (Math.sin(performance.now() / 95) + 1) / 2;
-    this.ctx.save();
-    this.ctx.globalCompositeOperation = 'screen';
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
     if (enemy.hasteActive) {
-      this.ctx.strokeStyle = 'rgba(90, 225, 255, 0.85)';
-      this.ctx.lineWidth = 2;
-      for (let i = 0; i < 3; i += 1) {
-        const y = enemy.y + 5 + i * Math.max(5, enemy.h / 4);
-        this.ctx.beginPath();
-        this.ctx.moveTo(enemy.x - 9 - pulse * 5 - i * 3, y);
-        this.ctx.lineTo(enemy.x + 2, y);
-        this.ctx.stroke();
+      const hasteColors = ['#ffd83a', '#ff9626', '#ff4330'];
+      const color = hasteColors[Math.floor(now * 14) % hasteColors.length] ?? hasteColors[0];
+      const rx = enemy.w * 0.62 + 8;
+      const ry = enemy.h * 0.55 + 7;
+      const pulse = 0.88 + Math.sin(now * 20) * 0.1;
+
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.96;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx * pulse, ry * pulse, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let i = 0; i < 4; i += 1) {
+        const angle = now * 12 + i * Math.PI / 2;
+        const ox = Math.cos(angle) * rx;
+        const oy = Math.sin(angle) * ry;
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.round(cx + ox - 2), Math.round(cy + oy - 2), 4, 4);
       }
     }
-    if (enemy.berserkActive) {
-      this.ctx.globalAlpha = 0.35 + pulse * 0.25;
-      this.ctx.strokeStyle = '#ff3546';
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.ellipse(cx, cy, enemy.w * 0.75 + 5, enemy.h * 0.72 + 6, 0, 0, Math.PI * 2);
-      this.ctx.stroke();
-      this.ctx.globalAlpha = 0.9;
-      this.ctx.fillStyle = '#ff3344';
-      this.ctx.fillRect(cx - 6, enemy.y + 5, 3, 2);
-      this.ctx.fillRect(cx + 3, enemy.y + 5, 3, 2);
-    }
-    this.ctx.restore();
-  }
 
+    if (enemy.berserkActive) {
+      const jx = Math.sin(now * 22) * 1.2;
+      const jy = Math.cos(now * 18) * 0.8;
+      const px = Math.round(enemy.x + enemy.w + 3 + jx);
+      const py = Math.round(enemy.y - 8 + jy);
+
+      const drawAnger = (strokeStyle: string, lineWidth: number): void => {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(px - 11, py);
+        ctx.lineTo(px - 5, py - 6);
+        ctx.lineTo(px - 6, py - 13);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(px, py - 12);
+        ctx.lineTo(px + 2, py - 4);
+        ctx.lineTo(px + 9, py - 3);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(px + 9, py + 5);
+        ctx.lineTo(px + 2, py + 6);
+        ctx.lineTo(px - 1, py + 13);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(px - 12, py + 9);
+        ctx.lineTo(px - 7, py + 3);
+        ctx.lineTo(px - 11, py - 2);
+        ctx.stroke();
+      };
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.98;
+      drawAnger('rgba(45, 0, 0, 0.95)', 6);
+      drawAnger('#ff1712', 4);
+    }
+
+    ctx.restore();
+  }
   private draw(): void {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.globalAlpha = 1;
