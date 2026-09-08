@@ -12,8 +12,8 @@ const SUPPORT_RADIUS_X = 330;
 const SUPPORT_RADIUS_Y = 190;
 const SUPPORT_HIT_TIME = 0.27;
 const SUPPORT_ANIM_TIME = 0.62;
-const SUPPORT_COOLDOWN_MIN = 4.2;
-const SUPPORT_COOLDOWN_SPAN = 1.6;
+const SUPPORT_COOLDOWN_MIN = 2.8;
+const SUPPORT_COOLDOWN_SPAN = 1.07;
 const BUFF_DURATION = 30;
 const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
@@ -37,7 +37,7 @@ export class Kyokoki extends Enemy {
 
   constructor(x: number, y: number) {
     super(x, y, 26, 30, MAX_HP, MAX_HP);
-    this.cooldown = 1.5 + Math.random() * 1.8;
+    this.cooldown = 1.0 + Math.random() * 1.2;
   }
 
   static async loadAssets(): Promise<void> {
@@ -58,61 +58,35 @@ export class Kyokoki extends Enemy {
     this.state = 'roam';
     this.supportTriggered = false;
     this.supportTarget = null;
-    this.cooldown = Math.max(this.cooldown, 1.0);
+    this.cooldown = Math.max(this.cooldown, 0.7);
+  }
+
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    // Kyokoki support is independent of player detection.
+    // It can drum for nearby allies even when the player is off-screen.
+    if (this.state === 'drum') {
+      this.updateDrum(context);
+      return;
+    }
+
+    if (this.tryStartSupport(context)) return;
+
+    super.updateUnaware(dt, context);
   }
 
   protected updateAi(_dt: number, context: EnemyContext): void {
+    if (this.state === 'drum') {
+      this.updateDrum(context);
+      return;
+    }
+
+    if (this.tryStartSupport(context)) return;
+
     const playerCenter = context.player.x + context.player.w / 2;
     const centerX = this.x + this.w / 2;
     const dx = playerCenter - centerX;
     const distance = Math.abs(dx);
     this.facing = dx >= 0 ? 1 : -1;
-
-    if (this.state === 'drum') {
-      this.vx = 0;
-      if (!this.supportTriggered && this.actionTime >= SUPPORT_HIT_TIME) {
-        this.supportTriggered = true;
-        const target = this.supportTarget;
-        if (target?.alive) {
-          if (this.supportKind === 'haste') {
-            target.applyHaste(BUFF_DURATION);
-          } else if (this.supportKind === 'berserk') {
-            target.applyBerserk(BUFF_DURATION);
-          } else {
-            target.applyRegeneration(BUFF_DURATION);
-          }
-        }
-      }
-      this.applyGravity(context);
-      if (this.actionTime >= SUPPORT_ANIM_TIME) {
-        this.state = 'roam';
-        this.actionTime = 0;
-        this.supportTriggered = false;
-        this.supportTarget = null;
-        this.cooldown = SUPPORT_COOLDOWN_MIN + Math.random() * SUPPORT_COOLDOWN_SPAN;
-      }
-      return;
-    }
-
-    if (this.cooldown <= 0) {
-      const target = this.pickSupportTarget(context);
-      if (target) {
-        const roll = Math.random();
-        this.supportTarget = target;
-        this.supportKind =
-          roll < 1 / 3
-            ? 'haste'
-            : roll < 2 / 3
-              ? 'berserk'
-              : 'regeneration';
-        this.state = 'drum';
-        this.actionTime = 0;
-        this.supportTriggered = false;
-        this.vx = 0;
-        return;
-      }
-      this.cooldown = 0.75;
-    }
 
     if (distance < KEEP_DISTANCE) {
       const away = this.facing === 1 ? -1 : 1;
@@ -123,10 +97,71 @@ export class Kyokoki extends Enemy {
       this.x += this.vx;
     } else {
       const sway = Math.sin(this.actionTime * 2.7);
-      this.vx = sway > 0.55 ? WALK_SPEED * 0.45 : sway < -0.55 ? -WALK_SPEED * 0.45 : 0;
+      this.vx =
+        sway > 0.55
+          ? WALK_SPEED * 0.45
+          : sway < -0.55
+            ? -WALK_SPEED * 0.45
+            : 0;
       this.x += this.vx;
     }
+
     this.applyGravity(context);
+  }
+
+  private tryStartSupport(context: EnemyContext): boolean {
+    if (this.cooldown > 0) return false;
+
+    const target = this.pickSupportTarget(context);
+    if (!target) {
+      this.cooldown = 0.5;
+      return false;
+    }
+
+    const roll = Math.random();
+    this.supportTarget = target;
+    this.supportKind =
+      roll < 1 / 3
+        ? 'haste'
+        : roll < 2 / 3
+          ? 'berserk'
+          : 'regeneration';
+    this.state = 'drum';
+    this.actionTime = 0;
+    this.supportTriggered = false;
+    this.vx = 0;
+    return true;
+  }
+
+  private updateDrum(context: EnemyContext): void {
+    this.vx = 0;
+
+    if (!this.supportTriggered && this.actionTime >= SUPPORT_HIT_TIME) {
+      this.supportTriggered = true;
+      const target = this.supportTarget;
+
+      if (target?.alive) {
+        if (this.supportKind === 'haste') {
+          target.applyHaste(BUFF_DURATION);
+        } else if (this.supportKind === 'berserk') {
+          target.applyBerserk(BUFF_DURATION);
+        } else {
+          target.applyRegeneration(BUFF_DURATION);
+        }
+      }
+    }
+
+    this.applyGravity(context);
+
+    if (this.actionTime >= SUPPORT_ANIM_TIME) {
+      this.state = 'roam';
+      this.actionTime = 0;
+      this.supportTriggered = false;
+      this.supportTarget = null;
+      this.cooldown =
+        SUPPORT_COOLDOWN_MIN +
+        Math.random() * SUPPORT_COOLDOWN_SPAN;
+    }
   }
 
   private pickSupportTarget(context: EnemyContext): Enemy | null {
@@ -134,6 +169,7 @@ export class Kyokoki extends Enemy {
     const centerY = this.y + this.h / 2;
     const candidates = context.allies.filter((enemy) => {
       if (!enemy.alive || enemy === this || enemy.type === 'kyokoki') return false;
+
       const dx = Math.abs((enemy.x + enemy.w / 2) - centerX);
       const dy = Math.abs((enemy.y + enemy.h / 2) - centerY);
       return dx <= SUPPORT_RADIUS_X && dy <= SUPPORT_RADIUS_Y;
@@ -154,28 +190,41 @@ export class Kyokoki extends Enemy {
     const previousY = this.y;
     this.vy += GRAVITY;
     this.y += this.vy;
-    resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
+    resolveFloor(
+      this,
+      previousY,
+      context.stage.platforms,
+      context.stage.width,
+    );
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
     const pose: KyokokiPose =
-      this.state === 'drum' ? 'drum' :
-      Math.floor(this.actionTime * 4) % 2 === 0 ? 'idleA' : 'idleB';
+      this.state === 'drum'
+        ? 'drum'
+        : Math.floor(this.actionTime * 4) % 2 === 0
+          ? 'idleA'
+          : 'idleB';
     const image = frameImages[pose] ?? frameImages.idleA;
     if (!image) return;
 
     const centerX = this.x + this.w / 2;
     const footY = this.y + this.h + 2;
-    const bob = this.state === 'drum'
-      ? Math.sin(this.actionTime * 18) * 1.2
-      : Math.sin(this.actionTime * 4) * 0.55;
+    const bob =
+      this.state === 'drum'
+        ? Math.sin(this.actionTime * 18) * 1.2
+        : Math.sin(this.actionTime * 4) * 0.55;
 
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.filter = 'none';
     ctx.imageSmoothingEnabled = false;
-    ctx.translate(Math.round(centerX), Math.round(footY + bob));
+    ctx.translate(
+      Math.round(centerX),
+      Math.round(footY + bob),
+    );
+
     if (this.facing < 0) ctx.scale(-1, 1);
 
     if (this.state === 'drum') {
@@ -188,7 +237,13 @@ export class Kyokoki extends Enemy {
       ctx.shadowBlur = 12;
     }
 
-    ctx.drawImage(image, -DRAW_W / 2, -DRAW_H, DRAW_W, DRAW_H);
+    ctx.drawImage(
+      image,
+      -DRAW_W / 2,
+      -DRAW_H,
+      DRAW_W,
+      DRAW_H,
+    );
     ctx.restore();
   }
 }
@@ -197,7 +252,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Kyokoki image load failed: ${src}`));
+    image.onerror = () =>
+      reject(new Error(`Kyokoki image load failed: ${src}`));
     image.src = src;
   });
 }
