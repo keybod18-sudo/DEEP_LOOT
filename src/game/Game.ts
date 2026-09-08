@@ -26,7 +26,7 @@ import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
 import { SkeletonArrow } from '../combat/SkeletonArrow';
 import { Inventory } from '../items/Inventory';
-import { createHealingPotion, createRandomItem, createRemedy, type ItemCategory } from '../items/Item';
+import { createHealingPotion, createRandomItem, createRemedy, createTreasureItem, type ItemCategory } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
 import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
@@ -34,7 +34,7 @@ import { createDungeonStage } from '../stage/DungeonGenerator';
 import { GameLoop } from './GameLoop';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
-import { TreasureChest } from '../items/TreasureChest';
+import { TreasureChest, type ChestRarity } from '../items/TreasureChest';
 
 export interface HudElements {
   floor: HTMLElement;
@@ -1048,6 +1048,7 @@ export class Game {
       return new TreasureChest(
         platform.x + margin + Math.random() * usable,
         platform.y - 28,
+        rollTreasureChestRarity(this.floor),
       );
     });
   }
@@ -1066,12 +1067,12 @@ export class Game {
     chest.opened = true;
     const goldReward = 12 + Math.floor(Math.random() * 19) + this.floor * 2;
     this.gold += goldReward;
-    const item = createRandomItem(this.floor + 1);
+    const item = createTreasureItem(this.floor + 1, chest.rarity);
     if (this.inventory.add(item)) {
-      this.showNotice(`宝箱: ${item.name} / ${goldReward}G`);
+      this.showNotice(`${chest.rarity}宝箱: ${item.name} / ${goldReward}G`);
     } else {
       this.loot.push(new LootDrop(chest.x + 8, chest.y - 5, item));
-      this.showNotice(`宝箱: ${goldReward}G（アイテムは床へ）`);
+      this.showNotice(`${chest.rarity}宝箱: ${goldReward}G（アイテムは床へ）`);
     }
     this.refreshUi();
   }
@@ -1442,6 +1443,19 @@ export class Game {
   private get maxHp(): number {
     return BALANCE.player.maxHp + this.inventory.maxHpBonus;
   }
+}
+
+function rollTreasureChestRarity(floor: number): ChestRarity {
+  const depth = Math.max(1, floor);
+  const redChance = Math.min(0.05, 0.005 + depth * 0.0015);
+  const goldChance = Math.min(0.18, 0.035 + depth * 0.006);
+  const silverChance = Math.min(0.34, 0.18 + depth * 0.008);
+  const roll = Math.random();
+
+  if (roll < redChance) return '赤神話';
+  if (roll < redChance + goldChance) return '金';
+  if (roll < redChance + goldChance + silverChance) return '銀';
+  return '銅';
 }
 
 function shuffle<T>(values: readonly T[]): T[] {

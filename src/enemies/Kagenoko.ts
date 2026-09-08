@@ -31,11 +31,14 @@ export class Kagenoko extends Enemy {
   private blinkTimer = 0.7 + Math.random() * 1.8;
   private blink = 0;
   private readonly orbs: ShadowOrb[] = [];
+  private scuttleDirection: -1 | 1 = 1;
 
   constructor(x: number, y: number) {
     super(x, y, 28, 28, BALANCE.kagenoko.maxHp, BALANCE.kagenoko.maxHp);
     this.cooldown = 0.7 + Math.random() * 0.7;
-    this.facing = Math.random() < 0.5 ? -1 : 1;
+    const initialDirection: -1 | 1 = Math.random() < 0.5 ? -1 : 1;
+    this.facing = initialDirection;
+    this.scuttleDirection = initialDirection;
   }
 
   static async loadAssets(): Promise<void> {
@@ -105,11 +108,23 @@ export class Kagenoko extends Enemy {
     const centerX = this.x + this.w / 2;
     const dx = playerX - centerX;
     const distance = Math.abs(dx);
-    this.facing = dx >= 0 ? 1 : -1;
+    const desiredDirection: -1 | 1 = dx >= 0 ? 1 : -1;
 
-    if (this.grounded && !this.hasGroundAhead(context)) this.facing = this.facing === 1 ? -1 : 1;
+    if (this.grounded) {
+      if (!this.hasGroundAhead(context, this.scuttleDirection)) {
+        this.scuttleDirection = this.scuttleDirection === 1 ? -1 : 1;
+      } else if (
+        desiredDirection !== this.scuttleDirection &&
+        distance > 20 &&
+        this.hasGroundAhead(context, desiredDirection)
+      ) {
+        this.scuttleDirection = desiredDirection;
+      }
+    }
+
+    this.facing = this.scuttleDirection;
     const hop = Math.sin(this.actionTime * 10.5);
-    this.vx = this.facing * BALANCE.kagenoko.scuttleSpeed * (0.86 + Math.abs(hop) * 0.22);
+    this.vx = this.scuttleDirection * BALANCE.kagenoko.scuttleSpeed * (0.86 + Math.abs(hop) * 0.22);
 
     const previousY = this.y;
     this.vy += GRAVITY;
@@ -134,7 +149,9 @@ export class Kagenoko extends Enemy {
   private beginPounce(context: EnemyContext): void {
     const playerX = context.player.x + context.player.w / 2;
     const centerX = this.x + this.w / 2;
-    this.facing = playerX >= centerX ? 1 : -1;
+    const direction: -1 | 1 = playerX >= centerX ? 1 : -1;
+    this.facing = direction;
+    this.scuttleDirection = direction;
     this.state = 'pounce';
     this.stateTime = 0;
     this.pounceHit = false;
@@ -230,8 +247,8 @@ export class Kagenoko extends Enemy {
     this.vx *= 0.3;
   }
 
-  private hasGroundAhead(context: EnemyContext): boolean {
-    const probeX = this.facing > 0 ? this.x + this.w + 5 : this.x - 5;
+  private hasGroundAhead(context: EnemyContext, direction: -1 | 1): boolean {
+    const probeX = direction > 0 ? this.x + this.w + 5 : this.x - 5;
     const footY = this.y + this.h;
     return context.stage.platforms.some((platform) =>
       probeX >= platform.x && probeX <= platform.x + platform.w &&

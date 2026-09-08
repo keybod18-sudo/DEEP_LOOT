@@ -251,9 +251,21 @@ export function createRandomItem(floor: number): Item {
   return createConsumable(floor);
 }
 
-function createWeapon(floor: number): WeaponItem {
+export function createTreasureItem(floor: number, chestRarity: EquipmentRarity): Item {
+  if (chestRarity === '銅' && Math.random() < 0.28) {
+    return createConsumable(floor + 1);
+  }
+
+  return Math.random() < 0.5
+    ? createWeapon(floor, chestRarity)
+    : createArmor(floor, chestRarity);
+}
+
+function createWeapon(floor: number, forcedRarity?: EquipmentRarity): WeaponItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
-  const definition = pickDefinition(weaponDefinitions, floor);
+  const definition = forcedRarity
+    ? pickDefinitionForEquipmentRarity(weaponDefinitions, forcedRarity, floor)
+    : pickDefinition(weaponDefinitions, floor);
   const powerLevel = rollPowerLevel(floor);
   const powerStatBonus = Math.floor((powerLevel - 1) / 3);
   const attack = Math.max(1, 1 + tier + powerStatBonus + Math.floor(Math.random() * 3) + definition.attackOffset);
@@ -273,9 +285,11 @@ function createWeapon(floor: number): WeaponItem {
   };
 }
 
-function createArmor(floor: number): ArmorItem {
+function createArmor(floor: number, forcedRarity?: EquipmentRarity): ArmorItem {
   const tier = Math.min(3, Math.floor((floor - 1) / 3));
-  const definition = pickDefinition(armorDefinitions, floor);
+  const definition = forcedRarity
+    ? pickDefinitionForEquipmentRarity(armorDefinitions, forcedRarity, floor)
+    : pickDefinition(armorDefinitions, floor);
   const powerLevel = rollPowerLevel(floor);
   const powerStatBonus = Math.floor((powerLevel - 1) / 3);
   const defense = Math.max(1, 1 + tier + powerStatBonus + Math.floor(Math.random() * 2) + definition.defenseOffset);
@@ -426,6 +440,26 @@ function equipmentRarityFromDesign(rarity: DesignRarity): EquipmentRarity {
   if (rarity === '激レア') return '金';
   if (rarity === '希少') return '銀';
   return '銅';
+}
+
+function pickDefinitionForEquipmentRarity<T extends { designRarity: DesignRarity }>(
+  definitions: readonly T[],
+  rarity: EquipmentRarity,
+  floor: number,
+): T {
+  const pool = definitions.filter((definition) =>
+    equipmentRarityFromDesign(definition.designRarity) === rarity
+  );
+  if (pool.length === 0) return pickDefinition(definitions, floor);
+
+  const weights = pool.map((definition) => rarityWeight(definition.designRarity, floor));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let roll = Math.random() * total;
+  for (let index = 0; index < pool.length; index += 1) {
+    roll -= weights[index] ?? 0;
+    if (roll <= 0) return pool[index] ?? pool[0]!;
+  }
+  return pool[pool.length - 1] ?? definitions[0]!;
 }
 
 function pickDefinition<T extends { designRarity: DesignRarity }>(definitions: readonly T[], floor: number): T {
