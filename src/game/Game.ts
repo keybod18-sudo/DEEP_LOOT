@@ -18,6 +18,7 @@ import { Caterpillar } from '../enemies/Caterpillar';
 import { FrostMite } from '../enemies/FrostMite';
 import { CrystalEye } from '../enemies/CrystalEye';
 import { Kagenoko } from '../enemies/Kagenoko';
+import { Elemental, type ElementalKind } from '../enemies/Elemental';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { LightOrb } from '../combat/LightOrb';
@@ -43,6 +44,14 @@ export interface HudElements {
   gold: HTMLElement;
 }
 
+interface DamageNumber {
+  x: number;
+  y: number;
+  value: number;
+  age: number;
+  life: number;
+}
+
 export class Game {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly input = new Input();
@@ -62,6 +71,7 @@ export class Game {
   private ahrimanFireballs: AhrimanFireball[] = [];
   private freezeLancers: FreezeLancer[] = [];
   private skeletonArrows: SkeletonArrow[] = [];
+  private readonly damageNumbers: DamageNumber[] = [];
   private fireballCooldown = 0;
   private thunderCooldown = 0;
   private lightCooldown = 0;
@@ -119,6 +129,7 @@ export class Game {
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
+    this.damageNumbers.length = 0;
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
     this.lightCooldown = 0;
@@ -169,10 +180,12 @@ export class Game {
     }
 
     this.noticeTime = Math.max(0, this.noticeTime - dt);
+    this.updateDamageNumbers(dt);
     if (this.menu.isOpen || this.player.hp <= 0) return;
 
     const hpBeforeUpdate = this.player.hp;
     this.player.update(dt, this.input, this.stage);
+    if (this.player.hp < hpBeforeUpdate) this.addDamageNumber(hpBeforeUpdate - this.player.hp);
     if (this.player.hp !== hpBeforeUpdate) this.refreshUi();
 
     this.fireballCooldown = Math.max(0, this.fireballCooldown - dt);
@@ -205,6 +218,8 @@ export class Game {
     this.updateFireballs(dt);
     this.updateThunderStrikes(dt);
     this.updateLightOrbs(dt);
+
+    const hpBeforeEnemyPhase = this.player.hp;
 
     for (const enemy of this.enemies) {
       enemy.update(dt, {
@@ -307,6 +322,9 @@ export class Game {
     this.updateAhrimanFireballs(dt);
     this.updateFreezeLancers(dt);
     this.updateSkeletonArrows(dt);
+    if (this.player.hp < hpBeforeEnemyPhase) {
+      this.addDamageNumber(hpBeforeEnemyPhase - this.player.hp);
+    }
 
     for (const drop of this.loot) drop.update(dt, this.stage);
     this.collectLoot();
@@ -632,6 +650,7 @@ export class Game {
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
+    this.damageNumbers.length = 0;
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
     this.lightCooldown = 0;
@@ -785,7 +804,8 @@ export class Game {
       | 'caterpillar'
       | 'frostMite'
       | 'kagenoko'
-      | 'crystalEye';
+      | 'crystalEye'
+      | 'elemental';
 
     const weightedKinds: EnemyKind[] = [
       'slime', 'slime', 'slime',
@@ -801,6 +821,7 @@ export class Game {
       'ahriman',
       'roper',
       'frostMite',
+      'elemental', 'elemental',
       'kagenoko',
       'clingSlime',
       'crystalEye',
@@ -813,6 +834,7 @@ export class Game {
       frostMite: 3,
       kagenoko: 3,
       skeletonArcher: 3,
+      elemental: 4,
       clingSlime: 3,
     };
 
@@ -896,6 +918,12 @@ export class Game {
         case 'kagenoko': {
           const p = randomGroundPoint(28, 34);
           return new Kagenoko(p.x, p.y);
+        }
+        case 'elemental': {
+          const p = randomAirPoint(30, 38, 120, Math.max(180, this.stage.height - 210));
+          const elementalKinds: ElementalKind[] = ['fire', 'ice', 'thunder', 'wind', 'light', 'dark'];
+          const element = elementalKinds[Math.floor(Math.random() * elementalKinds.length)]!;
+          return new Elemental(p.x, p.y, element);
         }
         case 'crystalEye': {
           const p = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
@@ -1042,16 +1070,54 @@ export class Game {
       if (!enemy.alive) continue;
       if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
       else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(this.ctx);
+      else if (enemy.type === 'elemental') (enemy as Elemental).draw(this.ctx);
       else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
       else this.enemyRenderer.draw(this.ctx, enemy);
     }
     this.player.draw(this.ctx);
+    this.drawDamageNumbers();
     this.drawEnemyHpBars();
     this.drawPlayerHpBar();
     this.ctx.restore();
 
     this.drawInteractionPrompt();
     this.drawNotice();
+  }
+
+  private updateDamageNumbers(dt: number): void {
+    for (const number of this.damageNumbers) number.age += dt;
+    for (let index = this.damageNumbers.length - 1; index >= 0; index -= 1) {
+      if (this.damageNumbers[index]!.age >= this.damageNumbers[index]!.life) {
+        this.damageNumbers.splice(index, 1);
+      }
+    }
+  }
+
+  private addDamageNumber(value: number): void {
+    const amount = Math.max(1, Math.round(value));
+    this.damageNumbers.push({
+      x: this.player.x + this.player.w / 2 + (Math.random() - 0.5) * 10,
+      y: this.player.y - 8,
+      value: amount,
+      age: 0,
+      life: 0.72,
+    });
+  }
+
+  private drawDamageNumbers(): void {
+    for (const number of this.damageNumbers) {
+      const progress = Math.min(1, number.age / number.life);
+      this.ctx.save();
+      this.ctx.globalAlpha = 1 - progress;
+      this.ctx.fillStyle = '#ff3838';
+      this.ctx.font = 'bold 10px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      this.ctx.shadowBlur = 2;
+      this.ctx.fillText('-' + number.value, number.x, number.y - progress * 24);
+      this.ctx.restore();
+    }
   }
 
   private drawPlayerHpBar(): void {
@@ -1129,6 +1195,7 @@ export class Game {
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
         enemy.type === 'crystalEye' ? 58 :
+        enemy.type === 'elemental' ? 42 :
         enemy.type === 'kagenoko' ? 38 :
         36;
 
@@ -1146,6 +1213,7 @@ export class Game {
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
         enemy.type === 'crystalEye' ? enemy.y - 46 :
+        enemy.type === 'elemental' ? enemy.y - 24 :
         enemy.type === 'kagenoko' ? enemy.y - 22 :
         enemy.y - 16;
 
