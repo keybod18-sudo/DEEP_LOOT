@@ -428,3 +428,77 @@ canvas {
     overflow-x: visible;
   }
 }
+
+/* menu-pages-and-magic-memory-v1 */
+.menu-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+.menu-tabs button {
+  border-color: #415466;
+  background: #101820;
+  color: #8fa4b8;
+  font-weight: 700;
+}
+.menu-tabs button.is-active {
+  border-color: #d7b45f;
+  background: #2a261d;
+  color: #ffe19a;
+}
+.menu-page { display: none; }
+.menu-page.is-active { display: block; }
+
+.magic-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.magic-layout h3 {
+  margin: 0 0 8px;
+  color: #c7d8e8;
+  font-size: 12px;
+}
+.known-magic,
+.memory-slots {
+  display: grid;
+  gap: 7px;
+}
+.spell-entry,
+.memory-slot {
+  width: 100%;
+  border: 1px solid #506274;
+  background: #18232d;
+  color: #e8edf2;
+  text-align: left;
+}
+.spell-entry.is-selected {
+  border-color: #9f7dff;
+  background: #29213d;
+  box-shadow: inset 0 0 0 1px rgba(183, 146, 255, .28);
+}
+.memory-slot {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.memory-slot b {
+  color: #e6c470;
+  font-size: 10px;
+}
+.memory-slot span {
+  color: #ffffff;
+  font-size: 12px;
+}
+.memory-help {
+  margin: 0 0 8px;
+  color: #8294a5;
+  font-size: 10px;
+  line-height: 1.45;
+}
+@media (max-width: 760px) {
+  .menu-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .magic-layout { grid-template-columns: 1fr; }
+}

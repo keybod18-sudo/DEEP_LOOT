@@ -72,6 +72,11 @@ export class Game {
   private freezeLancers: FreezeLancer[] = [];
   private skeletonArrows: SkeletonArrow[] = [];
   private readonly damageNumbers: DamageNumber[] = [];
+  private readonly memorySpells: Array<'fireball' | 'thunder' | 'shining'> = [
+    'fireball',
+    'thunder',
+    'shining',
+  ];
   private fireballCooldown = 0;
   private thunderCooldown = 0;
   private lightCooldown = 0;
@@ -91,6 +96,18 @@ export class Game {
     if (!context) throw new Error('2D Canvasを初期化できません。');
     this.ctx = context;
     this.ctx.imageSmoothingEnabled = false;
+
+    window.addEventListener('deep-loot-memory-change', (event) => {
+      const slots = (event as CustomEvent<{ slots?: string[] }>).detail?.slots;
+      if (!Array.isArray(slots)) return;
+      const valid = new Set<string>(['fireball', 'thunder', 'shining']);
+      for (let index = 0; index < Math.min(3, slots.length); index += 1) {
+        const spell = slots[index];
+        if (spell && valid.has(spell)) {
+          this.memorySpells[index] = spell as 'fireball' | 'thunder' | 'shining';
+        }
+      }
+    });
 
     this.menu = new MenuUI(menuRoot, {
       onWeapon: (index) => this.equipWeapon(index),
@@ -192,27 +209,9 @@ export class Game {
     this.thunderCooldown = Math.max(0, this.thunderCooldown - dt);
     this.lightCooldown = Math.max(0, this.lightCooldown - dt);
 
-    if (this.input.consumePress('s')) {
-      if (this.player.silenced) {
-        this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.fireballCooldown <= 0) {
-        this.castFireball();
-      }
-    }
-    if (this.input.consumePress('d')) {
-      if (this.player.silenced) {
-        this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.thunderCooldown <= 0) {
-        this.castThunder();
-      }
-    }
-    if (this.input.consumePress('f')) {
-      if (this.player.silenced) {
-        this.showNotice('沈黙で呪文を唱えられない');
-      } else if (!this.player.paralysisStunned && !this.player.sleeping && !this.player.frozen && this.lightCooldown <= 0) {
-        this.castLight();
-      }
-    }
+    if (this.input.consumePress('s')) this.castMemorySpell(this.memorySpells[0]);
+    if (this.input.consumePress('d')) this.castMemorySpell(this.memorySpells[1]);
+    if (this.input.consumePress('f')) this.castMemorySpell(this.memorySpells[2]);
 
     this.resolvePlayerAttack();
     this.updateFireballs(dt);
@@ -353,6 +352,26 @@ export class Game {
       }
       this.refreshUi();
       break;
+    }
+  }
+
+  private castMemorySpell(spell: 'fireball' | 'thunder' | 'shining'): void {
+    if (this.player.silenced) {
+      this.showNotice('沈黙で呪文を唱えられない');
+      return;
+    }
+    if (this.player.paralysisStunned || this.player.sleeping || this.player.frozen) return;
+
+    if (spell === 'fireball' && this.fireballCooldown <= 0) {
+      this.castFireball();
+      return;
+    }
+    if (spell === 'thunder' && this.thunderCooldown <= 0) {
+      this.castThunder();
+      return;
+    }
+    if (spell === 'shining' && this.lightCooldown <= 0) {
+      this.castLight();
     }
   }
 
@@ -807,25 +826,54 @@ export class Game {
       | 'crystalEye'
       | 'elemental';
 
-    const weightedKinds: EnemyKind[] = [
-      'slime', 'slime', 'slime',
-      'goblin', 'goblin', 'goblin',
-      'snake', 'snake',
-      'bat', 'bat',
-      'caterpillar', 'caterpillar',
-      'slug',
-      'rat',
-      'skeleton', 'skeleton',
-      'skeletonArcher',
-      'bomb',
-      'ahriman',
-      'roper',
-      'frostMite',
-      'elemental', 'elemental',
-      'kagenoko',
-      'clingSlime',
-      'crystalEye',
-    ];
+    const baseWeights: Record<EnemyKind, number> = {
+      slime: 3,
+      clingSlime: 1,
+      goblin: 3,
+      ahriman: 1,
+      snake: 2,
+      bat: 2,
+      roper: 1,
+      slug: 1,
+      rat: 1,
+      skeleton: 2,
+      skeletonArcher: 1,
+      bomb: 1,
+      caterpillar: 2,
+      frostMite: 1,
+      kagenoko: 1,
+      crystalEye: 1,
+      elemental: 2,
+    };
+
+    const allKinds = Object.keys(baseWeights) as EnemyKind[];
+    const floorWeights = {} as Record<EnemyKind, number>;
+
+    for (const kind of allKinds) {
+      const roll = Math.random();
+      const multiplier =
+        roll < 0.12 ? 0 :
+        roll < 0.34 ? 0.5 :
+        roll < 0.70 ? 1 :
+        roll < 0.90 ? 1.75 :
+        2.75;
+      floorWeights[kind] = Math.max(0, Math.round(baseWeights[kind] * multiplier));
+    }
+
+    // Each floor gets 2-3 featured species. This intentionally allows
+    // floors such as bomb-heavy, rat-heavy, skeleton-heavy, or no-bomb floors.
+    const featuredCount = 2 + Math.floor(Math.random() * 2);
+    for (const kind of shuffle(allKinds).slice(0, featuredCount)) {
+      floorWeights[kind] += 2 + Math.floor(Math.random() * 4);
+    }
+
+    const weightedKinds: EnemyKind[] = [];
+    for (const kind of allKinds) {
+      for (let count = 0; count < floorWeights[kind]; count += 1) {
+        weightedKinds.push(kind);
+      }
+    }
+    if (weightedKinds.length === 0) weightedKinds.push('slime', 'goblin');
 
     const caps: Partial<Record<EnemyKind, number>> = {
       crystalEye: 2,

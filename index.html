@@ -8,13 +8,13 @@
   <body>
     <main id="app">
       <div class="hud">
-        <span>階層 <b id="floor">1</b></span>
+        <span>&#x968E;&#x5C64; <b id="floor">1</b></span>
         <span>HP <b id="hp">100/100</b></span>
-        <span>攻撃 <b id="attack">10</b></span>
-        <span>防御 <b id="defense">0</b></span>
-        <span>所持金 <b id="gold">0</b>G</span>
-        <button id="menu-button" type="button">メニュー</button>
-        <button id="reset" type="button">最初から</button>
+        <span>&#x653B;&#x6483; <b id="attack">10</b></span>
+        <span>&#x9632;&#x5FA1; <b id="defense">0</b></span>
+        <span>&#x6240;&#x6301;&#x91D1; <b id="gold">0</b>G</span>
+        <button id="menu-button" type="button">&#x30E1;&#x30CB;&#x30E5;&#x30FC;</button>
+        <button id="reset" type="button">&#x6700;&#x521D;&#x304B;&#x3089;</button>
       </div>
 
       <div class="game-shell">
@@ -25,31 +25,58 @@
             <header class="menu-header">
               <div>
                 <p class="menu-kicker">DEEP LOOT</p>
-                <h1>メニュー</h1>
+                <h1>&#x30E1;&#x30CB;&#x30E5;&#x30FC;</h1>
               </div>
-              <button id="menu-close" type="button">閉じる</button>
+              <button id="menu-close" type="button">&#x9589;&#x3058;&#x308B;</button>
             </header>
+
+            <nav class="menu-tabs" aria-label="menu pages">
+              <button type="button" class="is-active" data-menu-page="items">&#x30A2;&#x30A4;&#x30C6;&#x30E0;&#x6B04;</button>
+              <button type="button" data-menu-page="weapons">&#x6B66;&#x5668;</button>
+              <button type="button" data-menu-page="armor">&#x9632;&#x5177;</button>
+              <button type="button" data-menu-page="magic">&#x9B54;&#x6CD5;</button>
+            </nav>
 
             <div class="menu-layout">
               <section class="status-panel">
-                <h2>ステータス</h2>
+                <h2>&#x30B9;&#x30C6;&#x30FC;&#x30BF;&#x30B9;</h2>
                 <div id="menu-status" class="status-grid"></div>
-                <p class="menu-help">M / Esc / Tab で開閉</p>
-                <p class="menu-help">武器・防具はクリックで装備。回復アイテムはクリックで使用。</p>
+                <p class="menu-help">M / Esc / Tab &#x3067;&#x958B;&#x9589;</p>
               </section>
 
               <section class="inventory-panel">
-                <div class="inventory-group">
-                  <h2>武器 <span data-inventory-header="weapon">0 / 8　空き 8</span></h2>
+                <div class="inventory-group menu-page is-active" data-menu-panel="items">
+                  <h2>&#x30A2;&#x30A4;&#x30C6;&#x30E0;&#x6B04; <span data-inventory-header="consumable">0 / 8</span></h2>
+                  <div id="item-slots" class="slot-grid"></div>
+                </div>
+
+                <div class="inventory-group menu-page" data-menu-panel="weapons">
+                  <h2>&#x6B66;&#x5668; <span data-inventory-header="weapon">0 / 8</span></h2>
                   <div id="weapon-slots" class="equipment-list"></div>
                 </div>
-                <div class="inventory-group">
-                  <h2>防具 <span data-inventory-header="armor">0 / 8　空き 8</span></h2>
+
+                <div class="inventory-group menu-page" data-menu-panel="armor">
+                  <h2>&#x9632;&#x5177; <span data-inventory-header="armor">0 / 8</span></h2>
                   <div id="armor-slots" class="equipment-list"></div>
                 </div>
-                <div class="inventory-group">
-                  <h2>アイテム <span data-inventory-header="consumable">0 / 8　空き 8</span></h2>
-                  <div id="item-slots" class="slot-grid"></div>
+
+                <div class="inventory-group menu-page" data-menu-panel="magic">
+                  <h2>&#x9B54;&#x6CD5;</h2>
+                  <div class="magic-layout">
+                    <section>
+                      <h3>&#x7FD2;&#x5F97;&#x9B54;&#x6CD5;</h3>
+                      <div class="known-magic">
+                        <button type="button" class="spell-entry is-selected" data-spell-id="fireball">&#x30D5;&#x30A1;&#x30A4;&#x30A2;&#x30FC;&#x30DC;&#x30FC;&#x30EB;</button>
+                        <button type="button" class="spell-entry" data-spell-id="thunder">&#x30B5;&#x30F3;&#x30C0;&#x30FC;</button>
+                        <button type="button" class="spell-entry" data-spell-id="shining">&#x30B7;&#x30E3;&#x30A4;&#x30CB;&#x30F3;&#x30B0;</button>
+                      </div>
+                    </section>
+                    <section>
+                      <h3>&#x8A18;&#x61B6;&#x30B9;&#x30ED;&#x30C3;&#x30C8;</h3>
+                      <p class="memory-help">&#x9B54;&#x6CD5;&#x3092;&#x9078;&#x3073;&#x3001;&#x30B9;&#x30ED;&#x30C3;&#x30C8;&#x3092;&#x30AF;&#x30EA;&#x30C3;&#x30AF;&#x3057;&#x3066;&#x30BB;&#x30C3;&#x30C8;</p>
+                      <div id="memory-slots" class="memory-slots"></div>
+                    </section>
+                  </div>
                 </div>
               </section>
             </div>
@@ -57,8 +84,90 @@
         </section>
       </div>
 
-      <p class="controls">← / →：移動　W / ↑ / Space：ジャンプ　A：剣攻撃　S：ファイアーボール　D：サンダー　F：シャイニング　M / Esc / Tab：メニュー　E / Enter：宝箱・階段</p>
+      <p class="controls">&#x2190; / &#x2192;&#xFF1A;&#x79FB;&#x52D5;&#x3000;W / &#x2191; / Space&#xFF1A;&#x30B8;&#x30E3;&#x30F3;&#x30D7;&#x3000;A&#xFF1A;&#x5263;&#x653B;&#x6483;&#x3000;S / D / F&#xFF1A;&#x8A18;&#x61B6;&#x30B9;&#x30ED;&#x30C3;&#x30C8;1 / 2 / 3&#x3000;M / Esc / Tab&#xFF1A;&#x30E1;&#x30CB;&#x30E5;&#x30FC;&#x3000;E / Enter&#xFF1A;&#x5B9D;&#x7BB1;&#x30FB;&#x968E;&#x6BB5;</p>
     </main>
+
+    <script>
+      (() => {
+        const root = document.getElementById('game-menu');
+        if (!root) return;
+
+        const spellNames = {
+          fireball: '\u30d5\u30a1\u30a4\u30a2\u30fc\u30dc\u30fc\u30eb',
+          thunder: '\u30b5\u30f3\u30c0\u30fc',
+          shining: '\u30b7\u30e3\u30a4\u30cb\u30f3\u30b0',
+        };
+        const keys = ['S', 'D', 'F'];
+        let activePage = 'items';
+        let selectedSpell = 'fireball';
+        const memorySlots = ['fireball', 'thunder', 'shining'];
+
+        const setPage = (page) => {
+          activePage = page;
+          root.querySelectorAll('[data-menu-page]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.menuPage === page);
+          });
+          root.querySelectorAll('[data-menu-panel]').forEach((panel) => {
+            panel.classList.toggle('is-active', panel.dataset.menuPanel === page);
+          });
+        };
+
+        const renderMemory = () => {
+          root.querySelectorAll('[data-spell-id]').forEach((button) => {
+            button.classList.toggle('is-selected', button.dataset.spellId === selectedSpell);
+          });
+          const holder = root.querySelector('#memory-slots');
+          if (!holder) return;
+          holder.innerHTML = memorySlots.map((spell, index) =>
+            '<button type="button" class="memory-slot" data-memory-slot="' + index + '">' +
+            '<b>' + (index + 1) + ' [' + keys[index] + ']</b>' +
+            '<span>' + spellNames[spell] + '</span>' +
+            '</button>'
+          ).join('');
+        };
+
+        const notifyGame = () => {
+          window.dispatchEvent(new CustomEvent('deep-loot-memory-change', {
+            detail: { slots: [...memorySlots] },
+          }));
+        };
+
+        root.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+
+          const pageButton = target.closest('[data-menu-page]');
+          if (pageButton instanceof HTMLElement) {
+            setPage(pageButton.dataset.menuPage || 'items');
+            return;
+          }
+
+          const spellButton = target.closest('[data-spell-id]');
+          if (spellButton instanceof HTMLElement) {
+            selectedSpell = spellButton.dataset.spellId || selectedSpell;
+            renderMemory();
+            return;
+          }
+
+          const slotButton = target.closest('[data-memory-slot]');
+          if (slotButton instanceof HTMLElement) {
+            const index = Number(slotButton.dataset.memorySlot);
+            if (Number.isInteger(index) && index >= 0 && index < memorySlots.length) {
+              memorySlots[index] = selectedSpell;
+              renderMemory();
+              notifyGame();
+            }
+          }
+        });
+
+        new MutationObserver(() => {
+          if (root.classList.contains('is-open')) setPage('items');
+        }).observe(root, { attributes: true, attributeFilter: ['class'] });
+
+        setPage(activePage);
+        renderMemory();
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
