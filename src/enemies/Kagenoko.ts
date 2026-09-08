@@ -300,7 +300,7 @@ export class Kagenoko extends Enemy {
 
     ctx.save();
     ctx.translate(centerX, footY + bob);
-    ctx.scale(this.facing, 1);
+    ctx.scale(-this.facing, 1);
 
     if (this.state === 'orbCharge') {
       const p = Math.min(1, this.stateTime / BALANCE.kagenoko.orbChargeDuration);

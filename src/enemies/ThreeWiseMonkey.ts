@@ -5,7 +5,7 @@ import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
 export type ThreeWiseMonkeyKind = 'mizaru' | 'iwazaru' | 'kikazaru';
-type MonkeyState = 'run' | 'jump' | 'attack';
+type MonkeyState = 'run' | 'jump' | 'attack' | 'retreat';
 type MonkeyPose = 'runA' | 'runB' | 'jump' | 'attack';
 
 const MONKEY_MAX_HP = 38;
@@ -17,6 +17,9 @@ const MONKEY_ATTACK_RANGE = 44;
 const MONKEY_ATTACK_DURATION = 0.28;
 const MONKEY_HIT_TIME = 0.11;
 const MONKEY_COOLDOWN = 0.48;
+const MONKEY_RETREAT_SPEED = 5.60;
+const MONKEY_RETREAT_LIFT = 8.60;
+const MONKEY_RETREAT_MAX_TIME = 0.72;
 
 const DRAW_W = 32;
 const DRAW_H = 34;
@@ -56,6 +59,8 @@ export class ThreeWiseMonkey extends Enemy {
   state: MonkeyState = 'run';
   private hitDone = false;
   private jumpTimer = 0.18 + Math.random() * 0.42;
+  private retreatDirection: -1 | 1 = 1;
+  private reengageTimer = 0;
 
   constructor(
     x: number,
@@ -84,19 +89,23 @@ export class ThreeWiseMonkey extends Enemy {
     this.state = 'run';
     this.hitDone = false;
     this.jumpTimer = 0.12;
+    this.reengageTimer = 0.20;
   }
 
   protected onKnockbackEnd(): void {
     this.state = 'run';
     this.hitDone = false;
     this.jumpTimer = 0.12 + Math.random() * 0.28;
+    this.reengageTimer = 0.18 + Math.random() * 0.18;
   }
 
   protected updateAi(dt: number, context: EnemyContext): void {
     const player = context.player;
     const dx = (player.x + player.w / 2) - (this.x + this.w / 2);
     const distance = Math.abs(dx);
+    const playerDirection: -1 | 1 = dx >= 0 ? 1 : -1;
     this.jumpTimer = Math.max(0, this.jumpTimer - dt);
+    this.reengageTimer = Math.max(0, this.reengageTimer - dt);
 
     if (this.state === 'attack') {
       if (!this.hitDone && this.actionTime >= MONKEY_HIT_TIME) {
@@ -112,12 +121,13 @@ export class ThreeWiseMonkey extends Enemy {
       }
 
       if (this.actionTime >= MONKEY_ATTACK_DURATION) {
-        this.state = 'run';
-        this.actionTime = 0;
-        this.cooldown = MONKEY_COOLDOWN;
-        this.hitDone = false;
-        this.jumpTimer = 0.10 + Math.random() * 0.24;
+        this.beginRetreat(context);
       }
+      return;
+    }
+
+    if (this.state === 'retreat') {
+      this.updateRetreat(context);
       return;
     }
 
@@ -137,7 +147,23 @@ export class ThreeWiseMonkey extends Enemy {
       return;
     }
 
-    this.facing = dx >= 0 ? 1 : -1;
+    this.facing = playerDirection;
+
+    if (this.reengageTimer > 0) {
+      const awayDirection: -1 | 1 = playerDirection === 1 ? -1 : 1;
+      if (this.grounded && this.hasGroundAhead(context, awayDirection)) {
+        this.vx = awayDirection * MONKEY_RUN_SPEED * 0.82;
+        this.x += this.vx;
+      } else {
+        this.vx = 0;
+      }
+
+      const previousY = this.y;
+      this.vy += GRAVITY;
+      this.y += this.vy;
+      resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
+      return;
+    }
 
     if (distance <= MONKEY_ATTACK_RANGE && this.cooldown <= 0) {
       this.state = 'attack';
@@ -165,6 +191,45 @@ export class ThreeWiseMonkey extends Enemy {
     this.vy += GRAVITY;
     this.y += this.vy;
     resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
+  }
+
+  private beginRetreat(context: EnemyContext): void {
+    const playerCenter = context.player.x + context.player.w / 2;
+    const centerX = this.x + this.w / 2;
+    const playerDirection: -1 | 1 = playerCenter >= centerX ? 1 : -1;
+
+    this.retreatDirection = playerDirection === 1 ? -1 : 1;
+    this.facing = playerDirection;
+    this.state = 'retreat';
+    this.actionTime = 0;
+    this.hitDone = false;
+    this.cooldown = MONKEY_COOLDOWN + 0.18;
+    this.reengageTimer = 0.35 + Math.random() * 0.25;
+    this.grounded = false;
+    this.vx = this.retreatDirection * MONKEY_RETREAT_SPEED;
+    this.vy = -MONKEY_RETREAT_LIFT;
+  }
+
+  private updateRetreat(context: EnemyContext): void {
+    const playerCenter = context.player.x + context.player.w / 2;
+    const centerX = this.x + this.w / 2;
+    this.facing = playerCenter >= centerX ? 1 : -1;
+
+    const previousY = this.y;
+    this.vy += GRAVITY;
+    this.x += this.vx;
+    this.y += this.vy;
+    resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
+
+    if (
+      (this.grounded && this.actionTime >= 0.16) ||
+      this.actionTime >= MONKEY_RETREAT_MAX_TIME
+    ) {
+      this.state = 'run';
+      this.actionTime = 0;
+      this.vx = 0;
+      this.jumpTimer = 0.18 + Math.random() * 0.28;
+    }
   }
 
   private hasGroundAhead(context: EnemyContext, direction: -1 | 1): boolean {
@@ -228,7 +293,7 @@ export class ThreeWiseMonkey extends Enemy {
   }
 
   private currentPose(): MonkeyPose {
-    if (this.state === 'jump') return 'jump';
+    if (this.state === 'jump' || this.state === 'retreat') return 'jump';
     if (this.state === 'attack') return 'attack';
     return Math.floor(this.actionTime * 12) % 2 === 0 ? 'runA' : 'runB';
   }
