@@ -70,7 +70,7 @@ export interface ArmorItem extends BaseItem {
 
 export interface ConsumableItem extends BaseItem {
   category: 'consumable';
-  effect: 'heal' | 'remedy';
+  effect: 'heal' | 'remedy' | 'antidote';
   heal: number;
   description: string;
 }
@@ -264,15 +264,18 @@ function createArmor(floor: number): ArmorItem {
 }
 
 function createConsumable(floor: number): ConsumableItem {
+  const medicineRoll = Math.random();
+  if (medicineRoll < 0.10) return createRemedy();
+  if (medicineRoll < 0.35) return createAntidote();
   const strong = floor >= 4 && Math.random() < 0.35;
   return {
     id: `item-${nextItemId++}`,
     category: 'consumable',
-    name: strong ? '上級回復薬' : '回復薬',
+    name: strong ? String.fromCodePoint(0x56de, 0x5fa9, 0x85ac, 0x30fb, 0x5927) : String.fromCodePoint(0x56de, 0x5fa9, 0x85ac, 0x30fb, 0x5c0f),
     rarity: strong ? '上質' : '通常',
     effect: 'heal',
-    heal: strong ? 45 : 25,
-    description: strong ? 'HPを45回復する' : 'HPを25回復する',
+    heal: strong ? 60 : 25,
+    description: strong ? String.fromCodePoint(0x48, 0x50, 0x3092, 0x36, 0x30, 0x56de, 0x5fa9, 0x3059, 0x308b) : String.fromCodePoint(0x48, 0x50, 0x3092, 0x32, 0x35, 0x56de, 0x5fa9, 0x3059, 0x308b),
   };
 }
 
@@ -280,7 +283,7 @@ export function createHealingPotion(): ConsumableItem {
   return {
     id: `starter-heal-${nextItemId++}`,
     category: 'consumable',
-    name: '回復薬',
+    name: String.fromCodePoint(0x56de, 0x5fa9, 0x85ac, 0x30fb, 0x5c0f),
     rarity: '通常',
     effect: 'heal',
     heal: 25,
@@ -288,6 +291,17 @@ export function createHealingPotion(): ConsumableItem {
   };
 }
 
+export function createAntidote(): ConsumableItem {
+  return {
+    id: 'antidote-' + nextItemId++,
+    category: 'consumable',
+    name: String.fromCodePoint(0x6bd2, 0x6d88, 0x3057),
+    rarity: String.fromCodePoint(0x901a, 0x5e38) as ItemRarity,
+    effect: 'antidote',
+    heal: 0,
+    description: String.fromCodePoint(0x6bd2, 0x72b6, 0x614b, 0x3060, 0x3051, 0x3092, 0x89e3, 0x9664, 0x3059, 0x308b),
+  };
+}
 export function createRemedy(): ConsumableItem {
   return {
     id: `starter-remedy-${nextItemId++}`,

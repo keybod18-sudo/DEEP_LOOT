@@ -1015,6 +1015,17 @@ export class Game {
     const item = this.inventory.getConsumable(index);
     if (!item) return;
 
+    if (item.effect === 'antidote') {
+      if (!this.player.poisoned) {
+        this.showNotice(String.fromCodePoint(0x6bd2, 0x72b6, 0x614b, 0x3067, 0x306f, 0x306a, 0x3044));
+        return;
+      }
+      this.inventory.takeConsumable(index);
+      this.player.clearPoison();
+      this.showNotice(item.name + ': ' + String.fromCodePoint(0x6bd2, 0x3092, 0x89e3, 0x9664));
+      this.refreshUi();
+      return;
+    }
     if (item.effect === 'remedy') {
       if (!this.player.hasStatusEffects) {
         this.showNotice('状態異常はない');

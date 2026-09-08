@@ -167,6 +167,11 @@ export class Player implements PhysicsBody {
     this.sleepTime = 0;
   }
 
+  clearPoison(): void {
+    this.poisonTime = 0;
+    this.poisonTickTimer = 0;
+    this.poisonDamage = 0;
+  }
   clearStatusEffects(): void {
     this.poisonTime = 0;
     this.poisonTickTimer = 0;
