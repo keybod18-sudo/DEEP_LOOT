@@ -272,7 +272,10 @@ export class Kagenoko extends Enemy {
     let frameIndex = 0;
 
     if (this.state === 'scuttle') {
-      frameIndex = 2 + (Math.floor(this.actionTime * 8) % 2);
+      // frame_03 is the canonical scuttle-facing frame.
+      // Do not alternate frame_03/frame_04 because their baked orientation
+      // can make Kagenoko appear to flip left/right while moving.
+      frameIndex = 2;
     } else if (this.state === 'sink') {
       frameIndex = 4;
     } else if (this.state === 'pounce') {
