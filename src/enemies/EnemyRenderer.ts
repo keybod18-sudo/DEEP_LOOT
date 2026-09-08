@@ -366,8 +366,8 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 46;
-    let drawH = 30;
+    let drawW = 34;
+    let drawH = 22;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
@@ -377,8 +377,8 @@ export class EnemyRenderer {
       drawH = 22;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 44;
-      drawH = 27;
+      drawW = 34;
+      drawH = 22;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -715,12 +715,12 @@ export class EnemyRenderer {
   ): void {
     let images: HTMLImageElement[];
     let index = 0;
-    let drawH = 38;
+    let drawH = 44;
 
     if (caterpillar.phase === 'larva') {
       images = this.caterpillarLarvaImages;
       index = Math.floor(caterpillar.actionTime * 9) % Math.max(1, images.length);
-      drawH = 38;
+      drawH = 44;
     } else if (caterpillar.phase === 'pupa') {
       images = this.caterpillarPupaImages;
       const progress = Math.min(
@@ -728,22 +728,22 @@ export class EnemyRenderer {
         caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
       );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 46;
+      drawH = 52;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
-      drawH = 72;
+      drawH = 80;
     } else if (
       caterpillar.butterflyState === 'ram' ||
       caterpillar.butterflyState === 'ramWindup'
     ) {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
-      drawH = 70;
+      drawH = 78;
     } else {
       images = this.caterpillarFlyImages;
       index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
-      drawH = 76;
+      drawH = 84;
     }
 
     const image = images[index] ?? images[0];
@@ -851,7 +851,7 @@ export class EnemyRenderer {
     if (!image || !swordReference || !archerReference) return;
 
     const swordBounds = getOpaqueBounds(swordReference);
-    const swordScale = scaleFromReference(swordReference, 80);
+    const swordScale = scaleFromReference(swordReference, 72);
     const targetVisibleH = swordBounds.h * swordScale;
     const archerReferenceBounds = getOpaqueBounds(archerReference);
     const scale = targetVisibleH / Math.max(1, archerReferenceBounds.h);
@@ -904,7 +904,7 @@ export class EnemyRenderer {
     const reference = this.skeletonWalkImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 80);
+    const scale = scaleFromReference(reference, 72);
     drawGroundedSprite(
       ctx,
       image,
