@@ -14,6 +14,7 @@ export function damageEnemy(
     return true;
   }
 
+  enemy.alertByDamage();
   applyEnemyKnockback(enemy, playerCenterX, knockbackMultiplier);
   return false;
 }

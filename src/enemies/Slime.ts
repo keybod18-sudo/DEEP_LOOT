@@ -35,6 +35,18 @@ export class Slime extends Enemy {
     }
   }
 
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    if (this.state === 'cling') {
+      this.x = this.anchorX;
+      this.y = this.anchorY;
+      this.vx = 0;
+      this.vy = 0;
+      return;
+    }
+
+    super.updateUnaware(dt, context);
+  }
+
   protected updateAi(_dt: number, context: EnemyContext): void {
     const player = context.player;
     const dx = (player.x + player.w / 2) - (this.x + this.w / 2);

@@ -1,5 +1,5 @@
 import { BALANCE } from '../config/balance';
-import { KNOCKBACK_GRAVITY } from '../config/constants';
+import { GRAVITY, KNOCKBACK_GRAVITY } from '../config/constants';
 import { resolveFloor } from '../game/Collision';
 import type { Facing, PhysicsBody } from '../game/types';
 import type { Player } from '../player/Player';
@@ -22,8 +22,122 @@ export interface EnemyContext {
   spawnSkeletonArrow: (x: number, y: number, vx: number, vy: number, damage: number, poisoned: boolean) => void;
 }
 
+export type EnemyKind =
+  | 'slime'
+  | 'goblin'
+  | 'ahriman'
+  | 'snake'
+  | 'bat'
+  | 'roper'
+  | 'slug'
+  | 'rat'
+  | 'skeleton'
+  | 'skeletonArcher'
+  | 'bomb'
+  | 'caterpillar'
+  | 'frostMite'
+  | 'crystalEye'
+  | 'kagenoko'
+  | 'elemental'
+  | 'mizaru'
+  | 'iwazaru'
+  | 'kikazaru';
+
+type IdleStyle = 'still' | 'creep' | 'patrol' | 'lurk' | 'skitter' | 'hover' | 'hoverWide';
+
+interface AwarenessProfile {
+  detectX: number;
+  detectY: number;
+  loseX: number;
+  loseY: number;
+  memory: number;
+  idleStyle: IdleStyle;
+  idleSpeed: number;
+  idleRadius: number;
+  moveChance: number;
+}
+
+const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
+  slime: {
+    detectX: 165, detectY: 90, loseX: 245, loseY: 145, memory: 1.4,
+    idleStyle: 'creep', idleSpeed: 0.16, idleRadius: 64, moveChance: 0.72,
+  },
+  goblin: {
+    detectX: 285, detectY: 135, loseX: 410, loseY: 205, memory: 2.0,
+    idleStyle: 'patrol', idleSpeed: 0.30, idleRadius: 118, moveChance: 0.90,
+  },
+  ahriman: {
+    detectX: 340, detectY: 225, loseX: 480, loseY: 325, memory: 2.8,
+    idleStyle: 'hoverWide', idleSpeed: 0.28, idleRadius: 125, moveChance: 1,
+  },
+  snake: {
+    detectX: 180, detectY: 80, loseX: 275, loseY: 125, memory: 1.6,
+    idleStyle: 'lurk', idleSpeed: 0.10, idleRadius: 34, moveChance: 0.28,
+  },
+  bat: {
+    detectX: 400, detectY: 270, loseX: 545, loseY: 370, memory: 3.0,
+    idleStyle: 'hoverWide', idleSpeed: 0.44, idleRadius: 155, moveChance: 1,
+  },
+  roper: {
+    detectX: 210, detectY: 140, loseX: 295, loseY: 205, memory: 2.2,
+    idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
+  },
+  slug: {
+    detectX: 105, detectY: 60, loseX: 165, loseY: 95, memory: 1.0,
+    idleStyle: 'creep', idleSpeed: 0.10, idleRadius: 58, moveChance: 0.52,
+  },
+  rat: {
+    detectX: 250, detectY: 100, loseX: 370, loseY: 160, memory: 1.5,
+    idleStyle: 'skitter', idleSpeed: 0.48, idleRadius: 105, moveChance: 0.86,
+  },
+  skeleton: {
+    detectX: 295, detectY: 130, loseX: 425, loseY: 205, memory: 2.2,
+    idleStyle: 'patrol', idleSpeed: 0.26, idleRadius: 96, moveChance: 0.78,
+  },
+  skeletonArcher: {
+    detectX: 385, detectY: 185, loseX: 535, loseY: 275, memory: 3.2,
+    idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
+  },
+  bomb: {
+    detectX: 165, detectY: 105, loseX: 250, loseY: 165, memory: 5.0,
+    idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
+  },
+  caterpillar: {
+    detectX: 165, detectY: 85, loseX: 250, loseY: 130, memory: 1.4,
+    idleStyle: 'creep', idleSpeed: 0.11, idleRadius: 52, moveChance: 0.70,
+  },
+  frostMite: {
+    detectX: 225, detectY: 110, loseX: 335, loseY: 170, memory: 1.9,
+    idleStyle: 'lurk', idleSpeed: 0.14, idleRadius: 62, moveChance: 0.34,
+  },
+  crystalEye: {
+    detectX: 420, detectY: 290, loseX: 575, loseY: 395, memory: 3.4,
+    idleStyle: 'hover', idleSpeed: 0.10, idleRadius: 36, moveChance: 1,
+  },
+  kagenoko: {
+    detectX: 305, detectY: 140, loseX: 445, loseY: 220, memory: 2.2,
+    idleStyle: 'skitter', idleSpeed: 0.40, idleRadius: 88, moveChance: 0.76,
+  },
+  elemental: {
+    detectX: 365, detectY: 250, loseX: 520, loseY: 355, memory: 3.0,
+    idleStyle: 'hover', idleSpeed: 0.18, idleRadius: 82, moveChance: 1,
+  },
+  mizaru: {
+    detectX: 325, detectY: 155, loseX: 480, loseY: 245, memory: 2.2,
+    idleStyle: 'skitter', idleSpeed: 0.58, idleRadius: 125, moveChance: 0.94,
+  },
+  iwazaru: {
+    detectX: 325, detectY: 155, loseX: 480, loseY: 245, memory: 2.2,
+    idleStyle: 'skitter', idleSpeed: 0.58, idleRadius: 125, moveChance: 0.94,
+  },
+  kikazaru: {
+    detectX: 325, detectY: 155, loseX: 480, loseY: 245, memory: 2.2,
+    idleStyle: 'skitter', idleSpeed: 0.58, idleRadius: 125, moveChance: 0.94,
+  },
+};
+
 export abstract class Enemy implements PhysicsBody {
-  abstract readonly type: 'slime' | 'goblin' | 'ahriman' | 'snake' | 'bat' | 'roper' | 'slug' | 'rat' | 'skeleton' | 'skeletonArcher' | 'bomb' | 'caterpillar' | 'frostMite' | 'crystalEye' | 'kagenoko' | 'elemental' | 'mizaru' | 'iwazaru' | 'kikazaru';
+  abstract readonly type: EnemyKind;
 
   vx = 0;
   vy = 0;
@@ -33,6 +147,16 @@ export abstract class Enemy implements PhysicsBody {
   cooldown = 0;
   knockbackTime = 0;
 
+  private aware = false;
+  private loseSightTime = 0;
+  private damageAlertTime = 0;
+  private readonly homeX: number;
+  private readonly homeY: number;
+  private idleDirection: Facing = Math.random() < 0.5 ? -1 : 1;
+  private idleDecisionTime = 0.5 + Math.random() * 1.1;
+  private idleMoving = Math.random() < 0.65;
+  private readonly idlePhase = Math.random() * Math.PI * 2;
+
   constructor(
     public x: number,
     public y: number,
@@ -40,10 +164,23 @@ export abstract class Enemy implements PhysicsBody {
     public h: number,
     public hp: number,
     public readonly maxHp: number,
-  ) {}
+  ) {
+    this.homeX = x;
+    this.homeY = y;
+  }
 
   get alive(): boolean {
     return this.hp > 0;
+  }
+
+  get hasDetectedPlayer(): boolean {
+    return this.aware;
+  }
+
+  alertByDamage(): void {
+    this.aware = true;
+    this.loseSightTime = 0;
+    this.damageAlertTime = 4.0;
   }
 
   update(dt: number, context: EnemyContext): void {
@@ -51,9 +188,15 @@ export abstract class Enemy implements PhysicsBody {
 
     this.actionTime += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
+    this.damageAlertTime = Math.max(0, this.damageAlertTime - dt);
 
     if (this.knockbackTime > 0) {
       this.updateKnockback(dt, context.stage);
+      return;
+    }
+
+    if (!this.updateAwareness(dt, context)) {
+      this.updateUnaware(dt, context);
       return;
     }
 
@@ -62,6 +205,17 @@ export abstract class Enemy implements PhysicsBody {
 
   abstract interruptForKnockback(): void;
   protected abstract updateAi(dt: number, context: EnemyContext): void;
+
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    const profile = AWARENESS[this.type];
+
+    if (profile.idleStyle === 'hover' || profile.idleStyle === 'hoverWide') {
+      this.updateIdleHover(dt, context, profile);
+      return;
+    }
+
+    this.updateIdleGround(dt, context, profile);
+  }
 
   protected updateKnockback(dt: number, stage: Stage): void {
     const previousY = this.y;
@@ -78,4 +232,159 @@ export abstract class Enemy implements PhysicsBody {
   }
 
   protected abstract onKnockbackEnd(): void;
+
+  private updateAwareness(dt: number, context: EnemyContext): boolean {
+    const profile = AWARENESS[this.type];
+    const enemyCenterX = this.x + this.w / 2;
+    const enemyCenterY = this.y + this.h / 2;
+    const playerCenterX = context.player.x + context.player.w / 2;
+    const playerCenterY = context.player.y + context.player.h / 2;
+    const dx = Math.abs(playerCenterX - enemyCenterX);
+    const dy = Math.abs(playerCenterY - enemyCenterY);
+
+    if (this.damageAlertTime > 0) {
+      this.aware = true;
+      this.loseSightTime = 0;
+      return true;
+    }
+
+    if (!this.aware) {
+      if (dx <= profile.detectX && dy <= profile.detectY) {
+        this.aware = true;
+        this.loseSightTime = 0;
+      }
+      return this.aware;
+    }
+
+    if (dx <= profile.loseX && dy <= profile.loseY) {
+      this.loseSightTime = 0;
+      return true;
+    }
+
+    this.loseSightTime += dt;
+    if (this.loseSightTime >= profile.memory) {
+      this.aware = false;
+      this.loseSightTime = 0;
+      this.idleDecisionTime = 0.15 + Math.random() * 0.45;
+      this.idleMoving = false;
+      this.vx *= 0.35;
+    }
+    return this.aware;
+  }
+
+  private updateIdleGround(
+    dt: number,
+    context: EnemyContext,
+    profile: AwarenessProfile,
+  ): void {
+    this.idleDecisionTime -= dt;
+
+    if (profile.idleStyle === 'still') {
+      if (this.idleDecisionTime <= 0) {
+        if (Math.random() < 0.38) this.idleDirection = this.idleDirection === 1 ? -1 : 1;
+        this.facing = this.idleDirection;
+        this.idleDecisionTime = 1.6 + Math.random() * 2.8;
+      }
+      this.vx *= 0.65;
+      this.applyIdleGravity(context);
+      return;
+    }
+
+    if (this.idleDecisionTime <= 0) {
+      this.idleMoving = Math.random() < profile.moveChance;
+      if (Math.random() < this.turnChance(profile.idleStyle)) {
+        this.idleDirection = this.idleDirection === 1 ? -1 : 1;
+      }
+      this.idleDecisionTime = this.nextIdleDecision(profile.idleStyle);
+    }
+
+    const offsetFromHome = this.x - this.homeX;
+    if (offsetFromHome > profile.idleRadius) this.idleDirection = -1;
+    if (offsetFromHome < -profile.idleRadius) this.idleDirection = 1;
+
+    if (this.grounded && !this.hasIdleGroundAhead(context.stage, this.idleDirection)) {
+      this.idleDirection = this.idleDirection === 1 ? -1 : 1;
+      this.idleDecisionTime = 0.4 + Math.random() * 0.5;
+    }
+
+    this.facing = this.idleDirection;
+
+    if (this.idleMoving) {
+      const burst =
+        profile.idleStyle === 'skitter'
+          ? 0.84 + Math.abs(Math.sin(this.actionTime * 9 + this.idlePhase)) * 0.35
+          : 1;
+      this.vx = this.idleDirection * profile.idleSpeed * burst;
+      this.x += this.vx;
+    } else {
+      this.vx *= 0.55;
+    }
+
+    this.applyIdleGravity(context);
+  }
+
+  private updateIdleHover(
+    dt: number,
+    context: EnemyContext,
+    profile: AwarenessProfile,
+  ): void {
+    this.idleDecisionTime -= dt;
+
+    if (this.idleDecisionTime <= 0) {
+      if (Math.random() < 0.55) this.idleDirection = this.idleDirection === 1 ? -1 : 1;
+      this.idleDecisionTime =
+        profile.idleStyle === 'hoverWide'
+          ? 1.0 + Math.random() * 1.6
+          : 1.6 + Math.random() * 2.4;
+    }
+
+    const offsetFromHome = this.x - this.homeX;
+    if (offsetFromHome > profile.idleRadius) this.idleDirection = -1;
+    if (offsetFromHome < -profile.idleRadius) this.idleDirection = 1;
+
+    this.facing = this.idleDirection;
+    this.vx = this.idleDirection * profile.idleSpeed;
+    this.x += this.vx;
+
+    const amplitude = profile.idleStyle === 'hoverWide' ? 18 : 10;
+    const frequency = profile.idleStyle === 'hoverWide' ? 1.9 : 1.35;
+    const targetY = this.homeY + Math.sin(this.actionTime * frequency + this.idlePhase) * amplitude;
+    this.y += (targetY - this.y) * 0.055;
+    this.vy = 0;
+
+    this.x = Math.max(6, Math.min(context.stage.width - this.w - 6, this.x));
+    this.y = Math.max(55, Math.min(context.stage.height - this.h - 55, this.y));
+  }
+
+  private applyIdleGravity(context: EnemyContext): void {
+    const previousY = this.y;
+    this.vy += GRAVITY;
+    this.y += this.vy;
+    resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
+  }
+
+  private hasIdleGroundAhead(stage: Stage, direction: Facing): boolean {
+    const probeX = direction > 0 ? this.x + this.w + 5 : this.x - 5;
+    const footY = this.y + this.h;
+    return stage.platforms.some((platform) =>
+      probeX >= platform.x &&
+      probeX <= platform.x + platform.w &&
+      platform.y >= footY - 5 &&
+      platform.y <= footY + 15
+    );
+  }
+
+  private turnChance(style: IdleStyle): number {
+    if (style === 'skitter') return 0.58;
+    if (style === 'lurk') return 0.42;
+    if (style === 'creep') return 0.30;
+    return 0.22;
+  }
+
+  private nextIdleDecision(style: IdleStyle): number {
+    if (style === 'skitter') return 0.28 + Math.random() * 0.72;
+    if (style === 'lurk') return 0.75 + Math.random() * 1.9;
+    if (style === 'creep') return 0.9 + Math.random() * 1.7;
+    return 1.1 + Math.random() * 1.8;
+  }
 }
