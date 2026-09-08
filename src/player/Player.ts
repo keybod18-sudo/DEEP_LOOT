@@ -300,6 +300,10 @@ export class Player implements PhysicsBody {
       this.sleeping,
       this.frozen,
       this.poisoned,
+      this.slowed,
+      this.paralyzed,
+      this.silenced,
+      this.blinded,
       this.paralysisStunned,
     );
   }

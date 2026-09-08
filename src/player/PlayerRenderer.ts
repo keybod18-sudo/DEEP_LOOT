@@ -34,6 +34,10 @@ export class PlayerRenderer {
     sleeping: boolean,
     frozen: boolean,
     poisoned: boolean,
+    slowed: boolean,
+    paralyzed: boolean,
+    silenced: boolean,
+    blinded: boolean,
     paralysisStunned: boolean,
   ): void {
     const now = performance.now() / 1000;
@@ -50,7 +54,7 @@ export class PlayerRenderer {
 
     if (sleeping) {
       this.drawSleeping(ctx, image, centerX, footY, facing, invulnerability, now);
-      this.drawStatusEffects(ctx, centerX, footY, now, poisoned, paralysisStunned);
+      this.drawStatusEffects(ctx, centerX, footY, now, poisoned, slowed, paralyzed, silenced, blinded, paralysisStunned);
       return;
     }
 
@@ -69,7 +73,7 @@ export class PlayerRenderer {
     ctx.restore();
 
     if (frozen) this.drawFrozenShell(ctx, centerX, footY, now);
-    this.drawStatusEffects(ctx, centerX, footY, now, poisoned, paralysisStunned);
+    this.drawStatusEffects(ctx, centerX, footY, now, poisoned, slowed, paralyzed, silenced, blinded, paralysisStunned);
   }
 
   private drawStatusEffects(
@@ -78,12 +82,126 @@ export class PlayerRenderer {
     footY: number,
     time: number,
     poisoned: boolean,
+    slowed: boolean,
+    paralyzed: boolean,
+    silenced: boolean,
+    blinded: boolean,
     paralysisStunned: boolean,
   ): void {
+    if (slowed) this.drawSlowFrame(ctx, centerX, footY, time);
     if (poisoned) this.drawPoisonBubbles(ctx, centerX, footY, time);
+    if (paralyzed) this.drawParalysisMark(ctx, centerX, footY, time);
     if (paralysisStunned) this.drawParalysisShock(ctx, centerX, footY, time);
+    if (silenced) this.drawSilenceBubble(ctx, centerX, footY, time);
+    if (blinded) this.drawBlindMark(ctx, centerX, footY, time);
   }
 
+  private drawSlowFrame(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    const colors = ['#72e7ff', '#2f7dff', '#8d4cff', '#72e7ff'];
+    const color = colors[Math.floor(time * 7) % colors.length] ?? colors[0];
+    const pulse = 0.62 + (Math.sin(time * 18) + 1) * 0.16;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(Math.round(centerX - 29), Math.round(footY - 86), 58, 87);
+    ctx.globalAlpha = pulse * 0.42;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(centerX - 33), Math.round(footY - 90), 66, 95);
+    ctx.restore();
+  }
+  private drawSilenceBubble(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    const y = footY - 98 + Math.sin(time * 3.2) * 1.2;
+    ctx.save();
+    ctx.fillStyle = '#e8e8e4';
+    ctx.strokeStyle = '#7d7d78';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(centerX, y, 18, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX - 4, y + 10);
+    ctx.lineTo(centerX - 8, y + 17);
+    ctx.lineTo(centerX + 1, y + 11);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#3d3d3a';
+    for (let i = -1; i <= 1; i += 1) {
+      ctx.beginPath();
+      ctx.arc(centerX + i * 7, y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  private drawParalysisMark(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    const x = centerX + 25;
+    const y = footY - 79 + Math.sin(time * 5) * 1.4;
+    ctx.save();
+    ctx.fillStyle = '#fff06a';
+    ctx.strokeStyle = '#9a7810';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#5d4500';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 2, y - 7);
+    ctx.lineTo(x - 3, y);
+    ctx.lineTo(x + 2, y);
+    ctx.lineTo(x - 2, y + 7);
+    ctx.stroke();
+    ctx.restore();
+  }
+  private drawBlindMark(
+    ctx: CanvasRenderingContext2D,
+    centerX: number,
+    footY: number,
+    time: number,
+  ): void {
+    const x = centerX - 25;
+    const y = footY - 79 + Math.sin(time * 4.3) * 1.2;
+    ctx.save();
+    ctx.fillStyle = '#2b2834';
+    ctx.strokeStyle = '#9f94c4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#e1daf7';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y);
+    ctx.quadraticCurveTo(x, y - 5, x + 6, y);
+    ctx.quadraticCurveTo(x, y + 5, x - 6, y);
+    ctx.stroke();
+    ctx.strokeStyle = '#ff7d9c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y - 7);
+    ctx.lineTo(x + 7, y + 7);
+    ctx.stroke();
+    ctx.restore();
+  }
   private drawPoisonBubbles(
     ctx: CanvasRenderingContext2D,
     centerX: number,

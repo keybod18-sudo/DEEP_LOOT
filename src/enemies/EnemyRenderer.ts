@@ -671,20 +671,24 @@ export class EnemyRenderer {
 
   private drawSlug(ctx: CanvasRenderingContext2D, slug: Slug): void {
     const squashed = slug.knockbackTime > 0 && this.slugSquashImages.length > 0;
+    const idle = slug.paused ? !squashed : false;
     const images = squashed ? this.slugSquashImages : this.slugMoveImages;
     const speed = squashed ? 12 : 9;
-    const frame = Math.floor(slug.actionTime * speed) % Math.max(1, images.length);
+    const frame = idle ? 0 : Math.floor(slug.actionTime * speed) % Math.max(1, images.length);
     const image = images[frame] ?? images[0];
     const reference = this.slugMoveImages[0] ?? image;
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 22);
+    const idlePulse = idle ? Math.sin(slug.actionTime * 2.6) : 0;
+    const drawScale = scale * (1 + idlePulse * 0.035);
+    const idleLift = idle ? -Math.abs(idlePulse) * 0.65 : 0;
     drawGroundedSprite(
       ctx,
       image,
       slug.x + slug.w / 2,
-      slug.y + slug.h + 1,
-      scale,
+      slug.y + slug.h + 1 + idleLift,
+      drawScale,
       slug.facing,
       SOURCE_FACING.slug,
     );

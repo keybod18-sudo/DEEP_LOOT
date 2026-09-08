@@ -15,6 +15,10 @@ export class Slug extends Enemy {
     this.facing = this.wanderDirection;
   }
 
+  get paused(): boolean {
+    return this.pauseTimer > 0;
+  }
+
   interruptForKnockback(): void {}
 
   protected onKnockbackEnd(): void {}
@@ -61,7 +65,10 @@ export class Slug extends Enemy {
     resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
 
     if (intersects(context.player, this)) {
-      context.hurtPlayer(BALANCE.slug.contactDamage, this.x);
+      const hit = context.hurtPlayer(BALANCE.slug.contactDamage, this.x);
+      if (hit && Math.random() < 0.35) {
+        context.slowPlayer(2.8);
+      }
     }
   }
 

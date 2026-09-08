@@ -19,6 +19,7 @@ import { FrostMite } from '../enemies/FrostMite';
 import { CrystalEye } from '../enemies/CrystalEye';
 import { Kagenoko } from '../enemies/Kagenoko';
 import { Elemental, type ElementalKind } from '../enemies/Elemental';
+import { ThreeWiseMonkey } from '../enemies/ThreeWiseMonkey';
 import { Fireball } from '../combat/Fireball';
 import { ThunderStrike } from '../combat/ThunderStrike';
 import { LightOrb } from '../combat/LightOrb';
@@ -866,6 +867,9 @@ export class Game {
       | 'frostMite'
       | 'kagenoko'
       | 'crystalEye'
+      | 'mizaru'
+      | 'iwazaru'
+      | 'kikazaru'
       | 'elemental';
 
     const baseWeights: Record<EnemyKind, number> = {
@@ -886,6 +890,9 @@ export class Game {
       kagenoko: 1,
       crystalEye: 1,
       elemental: 2,
+      mizaru: 1,
+      iwazaru: 1,
+      kikazaru: 1,
     };
 
     const allKinds = Object.keys(baseWeights) as EnemyKind[];
@@ -925,6 +932,9 @@ export class Game {
       kagenoko: 3,
       skeletonArcher: 3,
       elemental: 4,
+      mizaru: 3,
+      iwazaru: 3,
+      kikazaru: 3,
       clingSlime: 3,
     };
 
@@ -1014,6 +1024,18 @@ export class Game {
           const elementalKinds: ElementalKind[] = ['fire', 'ice', 'thunder', 'wind', 'light', 'dark'];
           const element = elementalKinds[Math.floor(Math.random() * elementalKinds.length)]!;
           return new Elemental(p.x, p.y, element);
+        }
+        case 'mizaru': {
+          const p = randomGroundPoint(34, 30);
+          return new ThreeWiseMonkey(p.x, p.y, 'mizaru');
+        }
+        case 'iwazaru': {
+          const p = randomGroundPoint(34, 30);
+          return new ThreeWiseMonkey(p.x, p.y, 'iwazaru');
+        }
+        case 'kikazaru': {
+          const p = randomGroundPoint(34, 30);
+          return new ThreeWiseMonkey(p.x, p.y, 'kikazaru');
         }
         case 'crystalEye': {
           const p = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
@@ -1192,6 +1214,7 @@ export class Game {
       if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
       else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(this.ctx);
       else if (enemy.type === 'elemental') (enemy as Elemental).draw(this.ctx);
+      else if (enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru') (enemy as ThreeWiseMonkey).draw(this.ctx);
       else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
       else this.enemyRenderer.draw(this.ctx, enemy);
     }
