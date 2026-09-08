@@ -1132,7 +1132,7 @@ export class Game {
     const floorBonus = Math.min(4, Math.floor((this.floor - 1) / 3));
     const minEnemies = 12 + floorBonus;
     const maxEnemies = 22 + floorBonus;
-    const enemyCount = minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1));
+    const enemyCount = Math.ceil((minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1))) * 1.5);
 
     const generatedEnemies: Enemy[] = [];
     for (let index = 0; index < enemyCount; index += 1) {

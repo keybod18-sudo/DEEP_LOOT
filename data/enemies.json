@@ -101,7 +101,7 @@
   },
   "skeleton": {
     "maxHp": 52,
-    "walkSpeed": 1.02,
+    "walkSpeed": 1.20,
     "swordDamage": 14,
     "attackRange": 50,
     "attackDuration": 0.48,

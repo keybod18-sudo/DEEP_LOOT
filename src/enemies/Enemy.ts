@@ -105,7 +105,7 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
     idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
   },
   caterpillar: {
-    detectX: 165, detectY: 85, loseX: 250, loseY: 130, memory: 1.4,
+    detectX: 215, detectY: 115, loseX: 320, loseY: 180, memory: 1.8,
     idleStyle: 'creep', idleSpeed: 0.11, idleRadius: 52, moveChance: 0.70,
   },
   frostMite: {

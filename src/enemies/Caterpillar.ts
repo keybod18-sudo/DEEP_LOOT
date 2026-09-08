@@ -17,6 +17,12 @@ export class Caterpillar extends Enemy {
   private attackTargetY = 0;
   private powderReleased = false;
   private ramHit = false;
+  private readonly larvaEvolutionTime =
+    this.larvaEvolutionTime * (0.65 + Math.random() * 0.70);
+  private readonly pupaEvolutionTime =
+    this.pupaEvolutionTime * (0.65 + Math.random() * 0.70);
+  private wanderAngle = Math.random() * Math.PI * 2;
+  private wanderTime = 0.8 + Math.random() * 1.8;
 
   constructor(x: number, y: number) {
     super(x, y, 34, 20, BALANCE.caterpillar.maxHp, BALANCE.caterpillar.maxHp);
@@ -50,7 +56,7 @@ export class Caterpillar extends Enemy {
 
     if (this.phase === 'larva') {
       this.updateLarva(context);
-      if (this.phaseTime >= BALANCE.caterpillar.larvaDuration) {
+      if (this.phaseTime >= this.larvaEvolutionTime) {
         this.becomePupa();
       }
       return;
@@ -58,26 +64,26 @@ export class Caterpillar extends Enemy {
 
     if (this.phase === 'pupa') {
       this.updatePupa(context);
-      if (this.phaseTime >= BALANCE.caterpillar.pupaDuration) {
+      if (this.phaseTime >= this.pupaEvolutionTime) {
         this.becomeButterfly();
       }
       return;
     }
 
-    super.updateUnaware(dt, context);
+    this.updateButterflyWander(dt, context);
   }
   protected updateAi(dt: number, context: EnemyContext): void {
     this.phaseTime += dt;
 
     if (this.phase === 'larva') {
       this.updateLarva(context);
-      if (this.phaseTime >= BALANCE.caterpillar.larvaDuration) this.becomePupa();
+      if (this.phaseTime >= this.larvaEvolutionTime) this.becomePupa();
       return;
     }
 
     if (this.phase === 'pupa') {
       this.updatePupa(context);
-      if (this.phaseTime >= BALANCE.caterpillar.pupaDuration) this.becomeButterfly();
+      if (this.phaseTime >= this.pupaEvolutionTime) this.becomeButterfly();
       return;
     }
 
@@ -107,6 +113,33 @@ export class Caterpillar extends Enemy {
     resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
   }
 
+  private updateButterflyWander(dt: number, context: EnemyContext): void {
+    this.wanderTime -= dt;
+    if (this.wanderTime <= 0) {
+      this.wanderAngle += (Math.random() - 0.5) * 1.9;
+      this.wanderTime = 0.8 + Math.random() * 1.8;
+    }
+
+    const speed = BALANCE.caterpillar.butterflySpeed * 0.52;
+    const maxX = Math.max(0, context.stage.width - this.w);
+    const maxY = Math.max(40, context.stage.height - this.h - 50);
+    let targetVx = Math.cos(this.wanderAngle) * speed;
+    let targetVy = Math.sin(this.wanderAngle) * speed * 0.62;
+
+    if (this.x < 65) targetVx = Math.abs(targetVx) + speed * 0.28;
+    if (this.x > maxX - 65) targetVx = -Math.abs(targetVx) - speed * 0.28;
+    if (this.y < 60) targetVy = Math.abs(targetVy) + speed * 0.18;
+    if (this.y > maxY - 60) targetVy = -Math.abs(targetVy) - speed * 0.18;
+
+    const steering = Math.min(1, dt * 4.5);
+    this.vx += (targetVx - this.vx) * steering;
+    this.vy += (targetVy - this.vy) * steering;
+    this.vy += Math.sin(this.phaseTime * 4.8) * 0.035;
+    this.x += this.vx;
+    this.y += this.vy;
+    if (Math.abs(this.vx) > 0.04) this.facing = this.vx >= 0 ? 1 : -1;
+    this.keepButterflyInStage(context);
+  }
   private updateButterfly(dt: number, context: EnemyContext): void {
     const playerCenterX = context.player.x + context.player.w / 2;
     const playerCenterY = context.player.y + context.player.h / 2;
