@@ -55,6 +55,16 @@ export class Inventory {
     return item;
   }
 
+  discard(category: ItemCategory, index: number): Item | null {
+    const slots = this.slotsFor(category);
+    const item = slots[index];
+    if (!item) return null;
+    if (category === 'weapon' && item.id === this.equippedWeaponId) return null;
+    if (category === 'armor' && item.id === this.equippedArmorId) return null;
+    slots[index] = null;
+    return item;
+  }
+
   get equippedWeapon(): WeaponItem | null {
     return this.weapons.find((item) => item?.id === this.equippedWeaponId) ?? null;
   }

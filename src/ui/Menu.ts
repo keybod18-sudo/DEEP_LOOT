@@ -22,6 +22,7 @@ export interface MenuActions {
   onWeapon: (index: number) => void;
   onArmor: (index: number) => void;
   onConsumable: (index: number) => void;
+  onDiscard: (category: ItemCategory, index: number) => void;
   onClose: () => void;
 }
 
@@ -77,6 +78,21 @@ export class MenuUI {
       this.actions.onClose();
       return;
     }
+
+    const discardButton = target.closest<HTMLElement>('[data-discard-category][data-discard-index]');
+    if (discardButton) {
+      event.stopPropagation();
+      const index = Number(discardButton.dataset.discardIndex);
+      const category = discardButton.dataset.discardCategory as ItemCategory;
+      if (
+        Number.isInteger(index) &&
+        (category === 'weapon' || category === 'armor' || category === 'consumable')
+      ) {
+        this.actions.onDiscard(category, index);
+      }
+      return;
+    }
+
     const slot = target.closest<HTMLElement>('[data-slot-index][data-category]');
     if (!slot) return;
     const index = Number(slot.dataset.slotIndex);
@@ -115,31 +131,37 @@ function equipmentListHtml(
 function weaponCardHtml(item: WeaponItem, index: number, equipped: boolean): string {
   const rarity = item.dropRarity ?? equipmentRarityForDesign(item.designRarity ?? designRarityFor(item.name));
   const palette = previewPalette(item.name, rarity);
-  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="weapon" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
+  return `<div class="equipment-entry${equipped ? ' equipped' : ''}" data-category="weapon" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span>${escapeHtml(item.name)}</span>
       ${equipped ? '<span style="padding:2px 8px;border-radius:999px;border:1px solid rgba(255,220,120,.38);background:rgba(255,210,80,.09);font-size:10px;font-weight:700;color:#ffd777;white-space:nowrap;">装備中</span>' : ''}
     </span>
+    <span class="equipment-actions">
+      <button class="discard-button" type="button" data-discard-category="weapon" data-discard-index="${index}" ${equipped ? 'disabled title="装備中は捨てられません"' : ''}>捨てる</button>
+    </span>
     <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
     <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots, rarity)}</span>
-  </button>`;
+  </div>`;
 }
 
 function armorCardHtml(item: ArmorItem, index: number, equipped: boolean): string {
   const rarity = item.dropRarity ?? equipmentRarityForDesign(item.designRarity ?? designRarityFor(item.name));
   const palette = previewPalette(item.name, rarity);
-  return `<button class="equipment-entry${equipped ? ' equipped' : ''}" type="button" data-category="armor" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
+  return `<div class="equipment-entry${equipped ? ' equipped' : ''}" data-category="armor" data-slot-index="${index}" style="border-color:${palette.border};background:${palette.bg};box-shadow:inset 0 0 22px rgba(0,0,0,.26);">
     <span class="inventory-slot-index">所持枠 ${index + 1}</span>
     <span class="equipment-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span>${escapeHtml(item.name)}</span>
       ${equipped ? '<span style="padding:2px 8px;border-radius:999px;border:1px solid rgba(255,220,120,.38);background:rgba(255,210,80,.09);font-size:10px;font-weight:700;color:#ffd777;white-space:nowrap;">装備中</span>' : ''}
     </span>
+    <span class="equipment-actions">
+      <button class="discard-button" type="button" data-discard-category="armor" data-discard-index="${index}" ${equipped ? 'disabled title="装備中は捨てられません"' : ''}>捨てる</button>
+    </span>
     <span class="equipment-summary"></span>
     ${equipmentPreviewHtml(item)}
     <span class="ability-slot-grid">${abilitySlotsHtml(item.abilitySlots, rarity)}</span>
-  </button>`;
+  </div>`;
 }
 
 function abilitySlotsHtml(
@@ -166,12 +188,13 @@ function consumableSlotsHtml(slots: ReadonlyArray<Item | null>): string {
 }
 
 function consumableCardHtml(item: ConsumableItem, index: number): string {
-  return `<button class="item-slot" type="button" data-category="consumable" data-slot-index="${index}">
+  return `<div class="item-slot" data-category="consumable" data-slot-index="${index}">
     <span class="slot-index">${index + 1}</span>
     <strong>${escapeHtml(item.name)}</strong>
     <small>${escapeHtml(item.description)}</small>
     <em>クリックで使用</em>
-  </button>`;
+    <button class="discard-button item-discard-button" type="button" data-discard-category="consumable" data-discard-index="${index}">捨てる</button>
+  </div>`;
 }
 
 function updateGroupCount(root: HTMLElement, category: ItemCategory, slots: ReadonlyArray<Item | null>): void {

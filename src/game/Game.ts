@@ -26,7 +26,7 @@ import { AhrimanFireball } from '../combat/AhrimanFireball';
 import { FreezeLancer } from '../combat/FreezeLancer';
 import { SkeletonArrow } from '../combat/SkeletonArrow';
 import { Inventory } from '../items/Inventory';
-import { createHealingPotion, createRandomItem, createRemedy } from '../items/Item';
+import { createHealingPotion, createRandomItem, createRemedy, type ItemCategory } from '../items/Item';
 import { LootDrop } from '../items/LootDrop';
 import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
@@ -114,6 +114,7 @@ export class Game {
       onWeapon: (index) => this.equipWeapon(index),
       onArmor: (index) => this.equipArmor(index),
       onConsumable: (index) => this.useConsumable(index),
+      onDiscard: (category, index) => this.discardItem(category, index),
       onClose: () => this.setMenuOpen(false),
     });
   }
@@ -1085,6 +1086,25 @@ export class Game {
     const clampedY = Math.max(0, Math.min(maxY, targetY));
     this.cameraX += (clampedX - this.cameraX) * 0.14;
     this.cameraY += (clampedY - this.cameraY) * 0.14;
+  }
+
+  private discardItem(category: ItemCategory, index: number): void {
+    const item = this.inventory.getSlots(category)[index];
+    if (!item) return;
+
+    if (category === 'weapon' && item.id === this.inventory.equippedWeaponId) {
+      this.showNotice('装備中の武器は捨てられない');
+      return;
+    }
+    if (category === 'armor' && item.id === this.inventory.equippedArmorId) {
+      this.showNotice('装備中の防具は捨てられない');
+      return;
+    }
+
+    const discarded = this.inventory.discard(category, index);
+    if (!discarded) return;
+    this.showNotice(`${discarded.name}を捨てた`);
+    this.refreshUi();
   }
 
   private equipWeapon(index: number): void {

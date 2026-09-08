@@ -502,3 +502,46 @@ canvas {
   .menu-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .magic-layout { grid-template-columns: 1fr; }
 }
+
+
+/* discard-buttons-v1 */
+.equipment-entry,
+.item-slot:not(.empty) {
+  cursor: pointer;
+}
+
+.equipment-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 5px;
+}
+
+.discard-button {
+  min-height: 24px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 102, 102, .58);
+  border-radius: 5px;
+  background: rgba(92, 20, 24, .82);
+  color: #ffd7d7;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.discard-button:hover:not(:disabled) {
+  border-color: rgba(255, 135, 135, .9);
+  background: rgba(128, 26, 31, .94);
+  color: #ffffff;
+}
+
+.discard-button:disabled {
+  border-color: rgba(120, 120, 120, .35);
+  background: rgba(40, 45, 51, .7);
+  color: #727b84;
+  cursor: not-allowed;
+}
+
+.item-discard-button {
+  width: 100%;
+  margin-top: 6px;
+}
