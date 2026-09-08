@@ -3,7 +3,7 @@ import { GRAVITY } from '../config/constants';
 import { resolveFloor } from '../game/Collision';
 import type { Input } from '../game/Input';
 import type { Facing, PhysicsBody, Rect } from '../game/types';
-import type { Stage } from '../stage/Stage';
+import type { Stage, StageLadder } from '../stage/Stage';
 import { PlayerAttack } from './PlayerAttack';
 import { PlayerRenderer } from './PlayerRenderer';
 
@@ -21,6 +21,9 @@ export class Player implements PhysicsBody {
   readonly attack = new PlayerAttack();
   walkTime = 0;
   moveSpeedMultiplier = 1;
+  climbing = false;
+  climbTime = 0;
+  private activeLadder: StageLadder | null = null;
 
   poisonTime = 0;
   poisonTickTimer = 0;
@@ -72,6 +75,9 @@ export class Player implements PhysicsBody {
     this.grounded = false;
     this.facing = 1;
     this.walkTime = 0;
+    this.climbing = false;
+    this.climbTime = 0;
+    this.activeLadder = null;
   }
 
   update(dt: number, input: Input, stage: Stage): void {
@@ -82,6 +88,29 @@ export class Player implements PhysicsBody {
     const disabled = this.paralysisStunned || this.sleeping || this.frozen;
     const speedFactor = (this.slowed ? 0.48 : 1) * this.moveSpeedMultiplier;
     const canAct = !disabled && this.hp > 0;
+    const upHeld = canAct && (input.isDown('w') || input.isDown('arrowup'));
+    const downHeld = canAct && input.isDown('arrowdown');
+
+    if (this.climbing) {
+      if (!canAct || !this.activeLadder) {
+        this.stopClimbing(false);
+      } else {
+        this.attack.cancel();
+        this.updateClimbing(dt, stage, upHeld, downHeld, speedFactor);
+        return;
+      }
+    }
+
+    if (canAct && (upHeld || downHeld)) {
+      const ladder = this.findLadder(stage, upHeld ? -1 : 1);
+      if (ladder) {
+        this.beginClimbing(ladder);
+        this.attack.cancel();
+        this.updateClimbing(dt, stage, upHeld, downHeld, speedFactor);
+        return;
+      }
+    }
+
     const left = canAct && input.isDown('arrowleft');
     const right = canAct && input.isDown('arrowright');
 
@@ -94,7 +123,9 @@ export class Player implements PhysicsBody {
       this.facing = 1;
     }
     if (!left && !right) {
-      this.vx *= disabled ? (this.frozen ? 0.2 : 0.72) : BALANCE.player.moveFriction;
+      this.vx *= disabled
+        ? (this.frozen ? 0.2 : 0.72)
+        : BALANCE.player.moveFriction;
     }
 
     const maxMoveSpeed = BALANCE.player.maxMoveSpeed * speedFactor;
@@ -111,7 +142,12 @@ export class Player implements PhysicsBody {
     if (disabled) this.attack.cancel();
     else this.attack.update(dt);
 
-    const movingOnGround = this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !disabled;
+    const movingOnGround =
+      this.grounded &&
+      Math.abs(this.vx) > 0.15 &&
+      this.attack.timer <= 0 &&
+      !disabled;
+
     if (movingOnGround) this.walkTime += dt;
 
     const previousY = this.y;
@@ -121,6 +157,101 @@ export class Player implements PhysicsBody {
     resolveFloor(this, previousY, stage.platforms, stage.width);
   }
 
+  private findLadder(stage: Stage, direction: -1 | 1): StageLadder | null {
+    const centerX = this.x + this.w / 2;
+    const footY = this.y + this.h;
+
+    const candidates = stage.ladders.filter((ladder) => {
+      const horizontal =
+        centerX >= ladder.x - 24 &&
+        centerX <= ladder.x + ladder.w + 24;
+      if (!horizontal) return false;
+
+      const topY = ladder.y;
+      const bottomY = ladder.y + ladder.h;
+
+      if (direction < 0) {
+        return footY >= topY + 8 && footY <= bottomY + 12;
+      }
+
+      return footY >= topY - 10 && footY <= bottomY - 8;
+    });
+
+    if (!candidates.length) return null;
+
+    return candidates.reduce((best, ladder) => {
+      const centerDistance = Math.abs(
+        ladder.x + ladder.w / 2 - centerX,
+      );
+      const bestDistance = Math.abs(
+        best.x + best.w / 2 - centerX,
+      );
+      return centerDistance < bestDistance ? ladder : best;
+    });
+  }
+
+  private beginClimbing(ladder: StageLadder): void {
+    this.activeLadder = ladder;
+    this.climbing = true;
+    this.climbTime = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.grounded = false;
+  }
+
+  private updateClimbing(
+    dt: number,
+    stage: Stage,
+    upHeld: boolean,
+    downHeld: boolean,
+    speedFactor: number,
+  ): void {
+    const ladder = this.activeLadder;
+    if (!ladder) {
+      this.stopClimbing(false);
+      return;
+    }
+
+    const targetCenter = ladder.x + ladder.w / 2;
+    const centerX = this.x + this.w / 2;
+    this.x += Math.max(
+      -2.8,
+      Math.min(2.8, (targetCenter - centerX) * 0.45),
+    );
+
+    let direction = 0;
+    if (upHeld && !downHeld) direction = -1;
+    else if (downHeld && !upHeld) direction = 1;
+
+    const climbSpeed = 2.55 * Math.max(0.42, speedFactor);
+    this.vx = 0;
+    this.vy = direction * climbSpeed;
+    this.y += this.vy;
+    this.grounded = false;
+
+    if (direction !== 0) this.climbTime += dt;
+
+    const topY = ladder.y;
+    const bottomY = ladder.y + ladder.h;
+
+    if (direction < 0 && this.y + this.h <= topY + 2) {
+      this.y = topY - this.h;
+      this.stopClimbing(true);
+    } else if (direction > 0 && this.y + this.h >= bottomY) {
+      this.y = bottomY - this.h;
+      this.stopClimbing(true);
+    }
+
+    this.x = Math.max(0, Math.min(stage.width - this.w, this.x));
+  }
+
+  private stopClimbing(grounded: boolean): void {
+    this.climbing = false;
+    this.activeLadder = null;
+    this.vx = 0;
+    this.vy = 0;
+    this.grounded = grounded;
+  }
   applyPoison(_duration: number, tickInterval: number, damage: number): void {
     this.poisonTime = Number.POSITIVE_INFINITY;
     this.poisonTickInterval = Math.max(0.1, tickInterval);
@@ -297,6 +428,8 @@ export class Player implements PhysicsBody {
       this.invulnerability,
       this.grounded && Math.abs(this.vx) > 0.15 && this.attack.timer <= 0 && !disabled,
       this.walkTime,
+      this.climbing,
+      this.climbTime,
       this.sleeping,
       this.frozen,
       this.poisoned,

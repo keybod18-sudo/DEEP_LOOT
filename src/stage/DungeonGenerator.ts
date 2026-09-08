@@ -1,6 +1,6 @@
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../config/constants';
 import type { Platform } from './Platform';
-import { Stage, type StageRoom } from './Stage';
+import { Stage, type StageLadder, type StageRoom } from './Stage';
 
 export function createDungeonStage(
   floor: number,
@@ -10,36 +10,55 @@ export function createDungeonStage(
   const rng = mulberry32(mixedSeed);
   const platforms: Platform[] = [];
   const rooms: StageRoom[] = [];
+  const mainPlatforms: Platform[] = [];
 
-  const bandY = [190, 370, 550, 730];
-  const mainDrops = [1250, 120, 1240];
+  // Eight strata instead of four: the vertical exploration length is doubled.
+  const bandY = Array.from({ length: 8 }, (_, index) => 190 + index * 180);
 
-  // Four large horizontal strata, connected by alternating drop shafts.
   bandY.forEach((y, row) => {
-    if (row < 3) {
-      const dropCenter = mainDrops[row]! + Math.floor((rng() - 0.5) * 70);
-      addFloorWithGaps(platforms, y, [
-        { center: dropCenter, width: 118 },
-        { center: 420 + Math.floor(rng() * 220), width: 58 + Math.floor(rng() * 22) },
-        { center: 860 + Math.floor(rng() * 170), width: 58 + Math.floor(rng() * 18) },
-      ]);
-    } else {
-      addFloorWithGaps(platforms, y, [
-        { center: 520 + Math.floor(rng() * 160), width: 62 },
-        { center: 940 + Math.floor(rng() * 130), width: 62 },
-      ]);
-    }
+    const dropCenter =
+      row % 2 === 0
+        ? 1220 + Math.floor((rng() - 0.5) * 90)
+        : 150 + Math.floor((rng() - 0.5) * 90);
 
-    // Floating shelves, side chambers and alternate paths.
-    for (let i = 0; i < 8; i += 1) {
-      const w = 72 + Math.floor(rng() * 96);
-      const x = 34 + Math.floor(rng() * (WORLD_WIDTH - w - 68));
+    const gaps =
+      row < bandY.length - 1
+        ? [
+            { center: dropCenter, width: 112 + Math.floor(rng() * 24) },
+            { center: 420 + Math.floor(rng() * 220), width: 52 + Math.floor(rng() * 28) },
+            { center: 850 + Math.floor(rng() * 190), width: 52 + Math.floor(rng() * 24) },
+          ]
+        : [
+            { center: 500 + Math.floor(rng() * 180), width: 58 },
+            { center: 950 + Math.floor(rng() * 160), width: 58 },
+          ];
+
+    const segments = addFloorWithGaps(platforms, y, gaps);
+    mainPlatforms.push(...segments);
+
+    // Floating shelves are generated over a main segment, so every shelf
+    // always has a vertical ladder route to a lower platform.
+    for (let i = 0; i < 5; i += 1) {
+      const base = segments[Math.floor(rng() * segments.length)];
+      if (!base || base.w < 86) continue;
+
+      const maxShelfW = Math.max(58, Math.min(150, base.w - 24));
+      const minShelfW = Math.min(72, maxShelfW);
+      const w = minShelfW + Math.floor(rng() * Math.max(1, maxShelfW - minShelfW + 1));
+      const usable = Math.max(1, base.w - w - 24);
+      const x = base.x + 12 + Math.floor(rng() * usable);
       const layer = i % 3;
-      const py = y - 46 - layer * 43 - Math.floor(rng() * 24);
-      platforms.push({ x, y: py, w, h: 30 + Math.floor(rng() * 18) });
+      const py = Math.max(42, y - 48 - layer * 42 - Math.floor(rng() * 18));
+
+      platforms.push({
+        x,
+        y: py,
+        w,
+        h: 28 + Math.floor(rng() * 14),
+      });
     }
 
-    const roomCount = 4 + Math.floor(rng() * 2);
+    const roomCount = 3 + Math.floor(rng() * 2);
     for (let i = 0; i < roomCount; i += 1) {
       const rw = 170 + Math.floor(rng() * 190);
       const rh = 90 + Math.floor(rng() * 55);
@@ -53,25 +72,59 @@ export function createDungeonStage(
     }
   });
 
-  // Deep safety floor under the last stratum; player can never fall out of the map.
-  platforms.push({ x: 0, y: WORLD_HEIGHT - 24, w: WORLD_WIDTH, h: 24 });
+  // Safety floor under the eighth stratum.
+  const safetyFloor: Platform = {
+    x: 0,
+    y: WORLD_HEIGHT - 24,
+    w: WORLD_WIDTH,
+    h: 24,
+  };
+  platforms.push(safetyFloor);
 
-  // Short stepping platforms near the alternating shafts to prevent soft-locks.
-  platforms.push({ x: 1160, y: 292, w: 170, h: 26 });
-  platforms.push({ x: 55, y: 472, w: 180, h: 26 });
-  platforms.push({ x: 1160, y: 652, w: 180, h: 26 });
+  // One climbable ladder for every platform except the final safety floor.
+  const ladders = buildLadders(platforms, safetyFloor);
 
-  const spawn = { x: 44, y: bandY[0]! - 36 };
-  const staircase = { x: 76, y: bandY[3]! - 34 };
+  const spawnCandidates = mainPlatforms.filter((platform) => platform.w >= 150);
+  const safeCandidates = spawnCandidates.length ? spawnCandidates : mainPlatforms;
 
-  return new Stage(WORLD_WIDTH, WORLD_HEIGHT, platforms, spawn, staircase, rooms, mixedSeed);
+  const spawnPlatform =
+    safeCandidates[Math.floor(rng() * safeCandidates.length)] ??
+    platforms[0] ??
+    safetyFloor;
+
+  const stairPool = safeCandidates.filter((platform) =>
+    platform !== spawnPlatform &&
+    (
+      Math.abs(platform.y - spawnPlatform.y) >= 180 ||
+      Math.abs(platform.x - spawnPlatform.x) >= 360
+    )
+  );
+  const staircasePlatform =
+    stairPool[Math.floor(rng() * stairPool.length)] ??
+    safeCandidates.find((platform) => platform !== spawnPlatform) ??
+    spawnPlatform;
+
+  const spawn = pointOnPlatform(spawnPlatform, 18, 28, rng);
+  const staircase = pointOnPlatform(staircasePlatform, 34, 34, rng);
+
+  return new Stage(
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
+    platforms,
+    ladders,
+    spawn,
+    staircase,
+    rooms,
+    mixedSeed,
+  );
 }
 
 function addFloorWithGaps(
   platforms: Platform[],
   y: number,
   rawGaps: ReadonlyArray<{ center: number; width: number }>,
-): void {
+): Platform[] {
+  const created: Platform[] = [];
   const gaps = rawGaps
     .map((gap) => ({
       start: Math.max(10, gap.center - gap.width / 2),
@@ -82,13 +135,99 @@ function addFloorWithGaps(
   let cursor = 0;
   for (const gap of gaps) {
     if (gap.start - cursor > 55) {
-      platforms.push({ x: cursor, y, w: gap.start - cursor, h: 34 });
+      const platform = {
+        x: cursor,
+        y,
+        w: gap.start - cursor,
+        h: 34,
+      };
+      platforms.push(platform);
+      created.push(platform);
     }
     cursor = Math.max(cursor, gap.end);
   }
+
   if (WORLD_WIDTH - cursor > 55) {
-    platforms.push({ x: cursor, y, w: WORLD_WIDTH - cursor, h: 34 });
+    const platform = {
+      x: cursor,
+      y,
+      w: WORLD_WIDTH - cursor,
+      h: 34,
+    };
+    platforms.push(platform);
+    created.push(platform);
   }
+
+  return created;
+}
+
+function buildLadders(
+  platforms: readonly Platform[],
+  safetyFloor: Platform,
+): StageLadder[] {
+  const ladders: StageLadder[] = [];
+  const eligible = platforms.filter((platform) =>
+    platform !== safetyFloor &&
+    platform.w >= 58 &&
+    platform.y < safetyFloor.y - 18
+  );
+
+  for (const upper of eligible) {
+    const candidates = platforms
+      .filter((lower) =>
+        lower.y > upper.y + 38 &&
+        horizontalOverlap(upper, lower) >= 28
+      )
+      .sort((a, b) => a.y - b.y);
+
+    const lower = candidates[0];
+    if (!lower) continue;
+
+    const overlapLeft = Math.max(upper.x, lower.x) + 10;
+    const overlapRight = Math.min(upper.x + upper.w, lower.x + lower.w) - 10;
+    if (overlapRight - overlapLeft < 20) continue;
+
+    const ladderW = 24;
+    const preferred = upper.x + upper.w * 0.5 - ladderW * 0.5;
+    const x = clamp(preferred, overlapLeft, overlapRight - ladderW);
+    const topY = upper.y;
+    const bottomY = lower.y;
+
+    ladders.push({
+      x,
+      y: topY,
+      w: ladderW,
+      h: Math.max(42, bottomY - topY),
+    });
+  }
+
+  return ladders;
+}
+
+function pointOnPlatform(
+  platform: Platform,
+  width: number,
+  height: number,
+  rng: () => number,
+): { x: number; y: number } {
+  const margin = Math.min(48, Math.max(14, platform.w * 0.12));
+  const usable = Math.max(1, platform.w - margin * 2 - width);
+  return {
+    x: platform.x + margin + rng() * usable,
+    y: platform.y - height,
+  };
+}
+
+function horizontalOverlap(a: Platform, b: Platform): number {
+  return Math.max(
+    0,
+    Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x),
+  );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (max < min) return min;
+  return Math.max(min, Math.min(max, value));
 }
 
 function mulberry32(seed: number): () => number {

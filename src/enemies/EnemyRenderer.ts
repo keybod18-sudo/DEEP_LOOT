@@ -397,7 +397,7 @@ export class EnemyRenderer {
 
   private drawGoblin(ctx: CanvasRenderingContext2D, goblin: Goblin): void {
     let images: HTMLImageElement[] = this.goblinWalkImages;
-    let index = Math.floor(goblin.actionTime * 10) % Math.max(1, images.length);
+    let index = Math.floor(goblin.actionTime * (goblin.state === 'climb' ? 14 : 10)) % Math.max(1, images.length);
 
     if (goblin.state === 'swing') {
       images = this.goblinSwingImages;
@@ -901,7 +901,7 @@ export class EnemyRenderer {
         Math.floor((skeleton.actionTime / 0.42) * images.length),
       );
     } else {
-      frame = Math.floor(skeleton.actionTime * 8) % Math.max(1, images.length);
+      frame = Math.floor(skeleton.actionTime * (skeleton.state === 'climb' ? 12 : 8)) % Math.max(1, images.length);
     }
 
     const image = images[frame] ?? images[0];

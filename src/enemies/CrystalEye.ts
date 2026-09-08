@@ -66,6 +66,23 @@ export class CrystalEye extends Enemy {
     this.y = this.anchorY;
   }
 
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    // The body never drifts while unaware. If an attack is already in progress,
+    // let it finish; otherwise only the eye tracks the player.
+    if (this.state !== 'idle') {
+      this.updateAi(dt, context);
+      return;
+    }
+
+    this.x = this.anchorX;
+    this.y = this.anchorY;
+    this.vx = 0;
+    this.vy = 0;
+    this.knockbackTime = 0;
+    this.updateEyeTracking(context);
+    this.updateOrbs(dt, context);
+    this.stateTime += dt;
+  }
   protected updateAi(dt: number, context: EnemyContext): void {
     // Crystal Eye is a fixed turret. It never translates, even after knockback.
     this.x = this.anchorX;
@@ -125,7 +142,7 @@ export class CrystalEye extends Enemy {
       this.targetY = playerY;
       this.stateTime = 0;
       this.beamHit = false;
-      this.state = (this.attackCycle++ & 1) === 0 ? 'beamCharge' : 'orbCharge';
+      this.attackCycle += 1; this.state = this.attackCycle >= 5 ? 'beamCharge' : 'orbCharge'; if (this.attackCycle >= 5) this.attackCycle = 0;
     }
   }
 
@@ -265,45 +282,56 @@ export class CrystalEye extends Enemy {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    let frameIndex = 0;
-    if (this.state === 'idle') {
-      frameIndex = Math.floor(this.actionTime * 2.2) % 2;
-    } else if (this.state === 'beamCharge' || this.state === 'beamFire') {
-      frameIndex = 2;
-    } else if (this.state === 'orbCharge') {
-      frameIndex = 4;
-    } else if (this.state === 'recover') {
-      frameIndex = this.stateTime < 0.16 ? 6 : 1;
-    }
-
-    const image = crystalEyeFrameImages[frameIndex] ?? crystalEyeFrameImages[0];
+    const image = crystalEyeFrameImages[0];
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
 
     if (image) {
-      const hover = Math.sin(this.actionTime * 2.7) * 1.6;
-      const pulse = this.state === 'beamCharge' || this.state === 'orbCharge'
-        ? 1 + Math.sin(this.stateTime * 11) * 0.016
-        : 1;
-      const drawH = 160 * pulse;
-      const drawW = 128 * pulse;
-
       ctx.save();
-      ctx.translate(centerX, centerY + hover);
-      ctx.shadowColor = this.state === 'beamCharge' || this.state === 'orbCharge'
-        ? 'rgba(189, 94, 255, 0.78)'
-        : 'rgba(104, 82, 232, 0.38)';
-      ctx.shadowBlur = this.state === 'beamCharge' || this.state === 'orbCharge' ? 14 : 6;
-      ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.translate(centerX, centerY);
+      ctx.shadowColor =
+        this.state === 'beamCharge' || this.state === 'orbCharge'
+          ? 'rgba(189, 94, 255, 0.72)'
+          : 'rgba(104, 82, 232, 0.30)';
+      ctx.shadowBlur =
+        this.state === 'beamCharge' || this.state === 'orbCharge'
+          ? 12
+          : 4;
+      ctx.drawImage(image, -64, -80, 128, 160);
       ctx.restore();
     }
 
-    if (this.state === 'beamCharge') this.drawBeamCharge(ctx, centerX, centerY);
-    if (this.state === 'beamFire') this.drawBeam(ctx, centerX, centerY);
-    if (this.state === 'orbCharge') this.drawOrbCharge(ctx, centerX, centerY);
+    // Only the eye itself moves.
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle =
+      this.state === 'beamCharge'
+        ? '#ffb4ff'
+        : this.state === 'orbCharge'
+          ? '#d28cff'
+          : '#9f7cff';
+    ctx.beginPath();
+    ctx.arc(
+      centerX + this.lookX,
+      centerY + this.lookY,
+      4.2,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.restore();
+
+    if (this.state === 'beamCharge') {
+      this.drawBeamCharge(ctx, centerX, centerY);
+    }
+    if (this.state === 'beamFire') {
+      this.drawBeam(ctx, centerX, centerY);
+    }
+    if (this.state === 'orbCharge') {
+      this.drawOrbCharge(ctx, centerX, centerY);
+    }
     this.drawOrbs(ctx);
   }
-
   private drawBeamCharge(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const p = Math.min(1, this.stateTime / Math.max(0.01, BALANCE.crystalEye.beamCharge));
     const radius = 8 + p * 18;

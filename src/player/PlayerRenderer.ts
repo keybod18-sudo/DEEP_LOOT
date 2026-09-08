@@ -31,6 +31,8 @@ export class PlayerRenderer {
     invulnerability: number,
     moving: boolean,
     walkTime: number,
+    climbing: boolean,
+    climbTime: number,
     sleeping: boolean,
     frozen: boolean,
     poisoned: boolean,
@@ -41,12 +43,22 @@ export class PlayerRenderer {
     paralysisStunned: boolean,
   ): void {
     const now = performance.now() / 1000;
-    const attacking = frame > 0 && !sleeping && !frozen;
-    const image = attacking
-      ? (this.attackFrames[frame] ?? this.attackFrames[0])
-      : moving
-        ? (this.walkFrames[Math.floor(walkTime * 11) % this.walkFrames.length] ?? this.walkFrames[0])
-        : this.attackFrames[0];
+    const attacking = frame > 0 && !sleeping && !frozen && !climbing;
+    const image = climbing
+      ? (
+          this.walkFrames[
+            Math.floor(climbTime * 12) % Math.max(1, this.walkFrames.length)
+          ] ?? this.walkFrames[0]
+        )
+      : attacking
+        ? (this.attackFrames[frame] ?? this.attackFrames[0])
+        : moving
+          ? (
+              this.walkFrames[
+                Math.floor(walkTime * 11) % Math.max(1, this.walkFrames.length)
+              ] ?? this.walkFrames[0]
+            )
+          : this.attackFrames[0];
     if (!image) return;
 
     const centerX = x + w / 2;
@@ -59,7 +71,7 @@ export class PlayerRenderer {
     }
 
     ctx.save();
-    ctx.translate(centerX, footY);
+    ctx.translate(centerX + (climbing ? Math.sin(climbTime * 14) * 1.8 : 0), footY);
     if (facing < 0) ctx.scale(-1, 1);
 
     if (invulnerability > 0 && Math.floor(invulnerability * 14) % 2 === 0) {
