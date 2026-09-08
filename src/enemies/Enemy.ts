@@ -8,6 +8,7 @@ import type { Stage } from '../stage/Stage';
 export interface EnemyContext {
   player: Player;
   stage: Stage;
+  allies: Enemy[];
   hurtPlayer: (damage: number, sourceX: number) => boolean;
   poisonPlayer: (duration: number, tickInterval: number, damage: number) => void;
   paralyzePlayer: (duration: number) => void;
@@ -38,6 +39,7 @@ export type EnemyKind =
   | 'frostMite'
   | 'crystalEye'
   | 'kagenoko'
+  | 'kyokoki'
   | 'elemental'
   | 'mizaru'
   | 'iwazaru'
@@ -118,6 +120,10 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
     detectX: 305, detectY: 140, loseX: 445, loseY: 220, memory: 2.2,
     idleStyle: 'skitter', idleSpeed: 0.40, idleRadius: 88, moveChance: 0.76,
   },
+  kyokoki: {
+    detectX: 360, detectY: 180, loseX: 500, loseY: 260, memory: 3.0,
+    idleStyle: 'patrol', idleSpeed: 0.18, idleRadius: 100, moveChance: 0.70,
+  },
   elemental: {
     detectX: 365, detectY: 250, loseX: 520, loseY: 355, memory: 3.0,
     idleStyle: 'hover', idleSpeed: 0.18, idleRadius: 82, moveChance: 1,
@@ -146,6 +152,8 @@ export abstract class Enemy implements PhysicsBody {
   actionTime = 0;
   cooldown = 0;
   knockbackTime = 0;
+  private hasteTime = 0;
+  private berserkTime = 0;
 
   private aware = false;
   private loseSightTime = 0;
@@ -177,6 +185,16 @@ export abstract class Enemy implements PhysicsBody {
     return this.aware;
   }
 
+  get hasteActive(): boolean { return this.hasteTime > 0; }
+
+  get berserkActive(): boolean { return this.berserkTime > 0; }
+
+  get attackPowerMultiplier(): number { return this.berserkActive ? 1.55 : 1; }
+
+  applyHaste(duration: number): void { this.hasteTime = Math.max(this.hasteTime, duration); }
+
+  applyBerserk(duration: number): void { this.berserkTime = Math.max(this.berserkTime, duration); }
+
   alertByDamage(): void {
     this.aware = true;
     this.loseSightTime = 0;
@@ -189,18 +207,23 @@ export abstract class Enemy implements PhysicsBody {
     this.actionTime += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.damageAlertTime = Math.max(0, this.damageAlertTime - dt);
+    this.hasteTime = Math.max(0, this.hasteTime - dt);
+    this.berserkTime = Math.max(0, this.berserkTime - dt);
 
     if (this.knockbackTime > 0) {
       this.updateKnockback(dt, context.stage);
       return;
     }
 
+    const movementStartX = this.x;
     if (!this.updateAwareness(dt, context)) {
       this.updateUnaware(dt, context);
+      this.applyHasteMovement(movementStartX, context.stage);
       return;
     }
 
     this.updateAi(dt, context);
+    this.applyHasteMovement(movementStartX, context.stage);
   }
 
   abstract interruptForKnockback(): void;
@@ -215,6 +238,13 @@ export abstract class Enemy implements PhysicsBody {
     }
 
     this.updateIdleGround(dt, context, profile);
+  }
+
+  private applyHasteMovement(startX: number, stage: Stage): void {
+    if (!this.hasteActive) return;
+    const deltaX = this.x - startX;
+    this.x = Math.max(0, Math.min(stage.width - this.w, startX + deltaX * 1.55));
+    this.vx *= 1.55;
   }
 
   protected updateKnockback(dt: number, stage: Stage): void {

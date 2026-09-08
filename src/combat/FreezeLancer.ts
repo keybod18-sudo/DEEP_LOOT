@@ -13,6 +13,7 @@ export class FreezeLancer {
     public readonly vx: number,
     public readonly vy: number,
     public life: number,
+    public readonly damageMultiplier = 1,
   ) {}
 
   get rect(): Rect {
@@ -20,7 +21,7 @@ export class FreezeLancer {
   }
 
   get damage(): number {
-    return BALANCE.ahriman.freezeDamage;
+    return BALANCE.ahriman.freezeDamage * this.damageMultiplier;
   }
 
   update(dt: number): void {

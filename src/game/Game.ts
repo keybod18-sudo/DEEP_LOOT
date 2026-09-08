@@ -18,6 +18,7 @@ import { Caterpillar } from '../enemies/Caterpillar';
 import { FrostMite } from '../enemies/FrostMite';
 import { CrystalEye } from '../enemies/CrystalEye';
 import { Kagenoko } from '../enemies/Kagenoko';
+import { Kyokoki } from '../enemies/Kyokoki';
 import { Elemental, type ElementalKind } from '../enemies/Elemental';
 import { ThreeWiseMonkey } from '../enemies/ThreeWiseMonkey';
 import { Fireball } from '../combat/Fireball';
@@ -126,6 +127,7 @@ export class Game {
       this.enemyRenderer.load(),
       CrystalEye.loadAssets(),
       Kagenoko.loadAssets(),
+      Kyokoki.loadAssets(),
       ThreeWiseMonkey.loadAssets(),
       TreasureChest.loadAssets(),
       Fireball.loadAssets(),
@@ -230,8 +232,10 @@ export class Game {
       enemy.update(dt, {
         player: this.player,
         stage: this.stage,
+        allies: this.enemies,
         hurtPlayer: (damage, sourceX) => {
-          const reduced = Math.max(1, damage - this.totalDefense - this.inventory.flatDamageReduction);
+          const boostedDamage = Math.ceil(damage * enemy.attackPowerMultiplier);
+          const reduced = Math.max(1, boostedDamage - this.totalDefense - this.inventory.flatDamageReduction);
           const damaged = this.player.hurt(reduced, sourceX);
           if (damaged) this.refreshUi();
           return damaged;
@@ -302,6 +306,7 @@ export class Game {
             facing * BALANCE.ahriman.fireballSpeed,
             facing,
             BALANCE.ahriman.fireballLife,
+            enemy.attackPowerMultiplier,
           ));
         },
         spawnFreezeLancer: (x, y, targetX, targetY) => {
@@ -316,6 +321,7 @@ export class Game {
             (dx / distance) * speed,
             (dy / distance) * speed,
             BALANCE.ahriman.freezeLife,
+            enemy.attackPowerMultiplier,
           ));
         },
         spawnSkeletonArrow: (x, y, vx, vy, damage, poisoned) => {
@@ -324,7 +330,7 @@ export class Game {
             y,
             vx,
             vy,
-            damage,
+            damage * enemy.attackPowerMultiplier,
             poisoned,
             BALANCE.skeletonArcher.arrowLife,
           ));
@@ -931,6 +937,7 @@ export class Game {
       | 'caterpillar'
       | 'frostMite'
       | 'kagenoko'
+      | 'kyokoki'
       | 'crystalEye'
       | 'mizaru'
       | 'iwazaru'
@@ -953,6 +960,7 @@ export class Game {
       caterpillar: 2,
       frostMite: 1,
       kagenoko: 1,
+      kyokoki: 1,
       crystalEye: 1,
       elemental: 2,
       mizaru: 1,
@@ -995,6 +1003,7 @@ export class Game {
       roper: 3,
       frostMite: 3,
       kagenoko: 3,
+      kyokoki: 2,
       skeletonArcher: 3,
       elemental: 4,
       mizaru: 3,
@@ -1083,6 +1092,10 @@ export class Game {
         case 'kagenoko': {
           const p = randomGroundPoint(28, 34);
           return new Kagenoko(p.x, p.y);
+        }
+        case 'kyokoki': {
+          const p = randomGroundPoint(30, 34);
+          return new Kyokoki(p.x, p.y);
         }
         case 'elemental': {
           const p = randomAirPoint(30, 38, 120, Math.max(180, this.stage.height - 210));
@@ -1245,6 +1258,39 @@ export class Game {
     this.refreshUi();
   }
 
+  private drawEnemyBuffAura(enemy: Enemy): void {
+    if (!enemy.hasteActive && !enemy.berserkActive) return;
+    const cx = enemy.x + enemy.w / 2;
+    const cy = enemy.y + enemy.h / 2;
+    const pulse = (Math.sin(performance.now() / 95) + 1) / 2;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = 'screen';
+    if (enemy.hasteActive) {
+      this.ctx.strokeStyle = 'rgba(90, 225, 255, 0.85)';
+      this.ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i += 1) {
+        const y = enemy.y + 5 + i * Math.max(5, enemy.h / 4);
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x - 9 - pulse * 5 - i * 3, y);
+        this.ctx.lineTo(enemy.x + 2, y);
+        this.ctx.stroke();
+      }
+    }
+    if (enemy.berserkActive) {
+      this.ctx.globalAlpha = 0.35 + pulse * 0.25;
+      this.ctx.strokeStyle = '#ff3546';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy, enemy.w * 0.75 + 5, enemy.h * 0.72 + 6, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.globalAlpha = 0.9;
+      this.ctx.fillStyle = '#ff3344';
+      this.ctx.fillRect(cx - 6, enemy.y + 5, 3, 2);
+      this.ctx.fillRect(cx + 3, enemy.y + 5, 3, 2);
+    }
+    this.ctx.restore();
+  }
+
   private draw(): void {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.globalAlpha = 1;
@@ -1283,10 +1329,12 @@ export class Game {
       if (!enemy.alive) continue;
       if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(this.ctx);
       else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(this.ctx);
+      else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(this.ctx);
       else if (enemy.type === 'elemental') (enemy as Elemental).draw(this.ctx);
       else if (enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru') (enemy as ThreeWiseMonkey).draw(this.ctx);
       else if (enemy.type === 'frostMite') (enemy as FrostMite).draw(this.ctx);
       else this.enemyRenderer.draw(this.ctx, enemy);
+      this.drawEnemyBuffAura(enemy);
     }
     this.player.draw(this.ctx);
     this.drawDamageNumbers();

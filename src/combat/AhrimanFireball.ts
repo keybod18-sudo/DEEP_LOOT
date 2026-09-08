@@ -13,6 +13,7 @@ export class AhrimanFireball {
     public readonly vx: number,
     public readonly facing: Facing,
     public life: number,
+    public readonly damageMultiplier = 1,
   ) {}
 
   get rect(): Rect {
@@ -20,7 +21,7 @@ export class AhrimanFireball {
   }
 
   get damage(): number {
-    return BALANCE.ahriman.fireballDamage;
+    return BALANCE.ahriman.fireballDamage * this.damageMultiplier;
   }
 
   update(dt: number): void {
