@@ -1,5 +1,5 @@
 {
-  "version": "kyokoki-chibi-notice-ui-v1",
+  "version": "monkey-kyokoki-bee-powder-v1",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -172,11 +172,29 @@
     "assets/monsters/crystal_eye/frame_06.png": "cd7e4134938715d94085f152de53a4e51bcd931ec64c8eb0b53d3a73d40c0af1",
     "assets/monsters/crystal_eye/frame_07.png": "d21309c115fd4d634065683d11bea75928187c2984af6be7e5f00f39da6f9b7a",
     "assets/monsters/crystal_eye/frame_08.png": "cb62eea23bacd8318880aa53c51fc35b6b7f92aa43073c394825ce388d18321c",
-    "assets/monsters/kyokoki/idle_01.png": "28300baa0b9e59bd8028a48bbc5acdc8b9f98fd71dff87be728fb1ead508b05d",
-    "assets/monsters/kyokoki/idle_02.png": "c92e5f51fbf69f3edd4c32415ba82fb42b7bec5687034dda2607d2c08e43d3c2",
-    "assets/monsters/kyokoki/drum_01.png": "2a3376165702fcc13cdcd4d53c1156b88938748add4fe201bdd0a3748ec57522",
-    "assets/monsters/kyokoki/drum_02.png": "900c962466ac104b112758dde950b7330e33fcdc8d681a7bebaec00cef4fefd4",
-    "assets/monsters/kyokoki/drum_03.png": "b96659f79397369d33bb9b29bf66b0c2f55126b7c2df42a439eef80c6d50651b",
-    "assets/monsters/kyokoki/drum_04.png": "102adaba409163f2f50d90c134da8325b9f8c8e114b73f1268038ba100e18fb9"
+    "assets/monsters/kyokoki/idle_01.png": "7380c2b475c16fdc08b15825bc9a7d88fb842351b0546b6398bc1e01071bfb0a",
+    "assets/monsters/kyokoki/idle_02.png": "c93da36afe922508c5b279f1d2e4155797e15828fa44990cc1e3f2cc72c027bf",
+    "assets/monsters/kyokoki/drum_01.png": "f6ebf896dc3929462680c4b3f88d699bb6cc7f1db0592838373f12b1d4f00901",
+    "assets/monsters/kyokoki/drum_02.png": "44e373d51245b68fbe199601347569f5085cdc83b01eef234e4895345adfb16b",
+    "assets/monsters/kyokoki/drum_03.png": "c21433d3aa1450596a162f6778b3b81c1361983c17e10fb0c794b63cdeba440f",
+    "assets/monsters/kyokoki/drum_04.png": "138d57bc4b5916c23ccbf1f9b1cb80e5826c4952489caaedb07b8a4f7ca55ddc",
+    "assets/monsters/three_wise_monkeys/mizaru/runA.png": "1ba26dd80de2c859cd8b2a1faeb844535d769cb1a709ecbc7575cb1a194e6b3f",
+    "assets/monsters/three_wise_monkeys/mizaru/runB.png": "3d81f810fb15ea67e1db1eebc088a50f048a3718e67157c934f1ce3ca6b11aba",
+    "assets/monsters/three_wise_monkeys/mizaru/attack.png": "cc017f30fc21d68c98c6aaca19c77325de8871b4f2e121c1321d721c9dc9355f",
+    "assets/monsters/three_wise_monkeys/mizaru/jump.png": "2223a6654deee587535a2de1270d444a30ff1e410b3217f4eea9160fde3e8203",
+    "assets/monsters/three_wise_monkeys/iwazaru/runA.png": "db95e675e11e67e27a8aa51affa39801633a4233e12e28e470fe54c44620430c",
+    "assets/monsters/three_wise_monkeys/iwazaru/runB.png": "d816a39e66cbb33911e0de8ed30535456ab4706748e461ff8e97deac457b3083",
+    "assets/monsters/three_wise_monkeys/iwazaru/attack.png": "a09ed5857168a0cca5d7266bf703ac43f2a37b51df08dadb168711bce1d3d198",
+    "assets/monsters/three_wise_monkeys/iwazaru/jump.png": "1e877d84ddc1350a264a1a698e7a7434fa3a8be1aa38b887d64507f619bd3ee7",
+    "assets/monsters/three_wise_monkeys/kikazaru/runA.png": "3c453c52cd6c6f0583cde81e888210fd5d2841717b85d548c90bcc596979aacf",
+    "assets/monsters/three_wise_monkeys/kikazaru/runB.png": "7361af504dd1f785e3d18fd3214326acf30517f4ecf3dc5dfb9acd8b14af806b",
+    "assets/monsters/three_wise_monkeys/kikazaru/attack.png": "8bb76dbef94598ecb3e7c576b01ffd7fdad59c9aac29151e2fd53b9946cdc84f",
+    "assets/monsters/three_wise_monkeys/kikazaru/jump.png": "5bf2acf4537dda78ca030bbb53151b38cb257dd791b2bd1b1ff2485791b4183f",
+    "assets/monsters/bee/fly_01.png": "e2560e0d061d2d4125d670c10db04a81e3a5cfd19361116bc9785ee87fa70d6c",
+    "assets/monsters/bee/fly_02.png": "d201199c4dd5d09aeb1d33c93cfccab060cdb2986ae6f971a56b760408a47a08",
+    "assets/monsters/bee/fly_03.png": "0562180692c395990266fb0d9127e951bc23cd9ff4a8fb35eccb73f2c0385121",
+    "assets/monsters/bee/fly_04.png": "cecea3e824d9d5a21ddb09e704ce75abb3f85692dceb9c7bd41a007bed8dacd1",
+    "assets/monsters/bee/sting_01.png": "f11311542207697aa467a91e68a344e8629d358a69dff1402faf3ea496ea3717",
+    "assets/monsters/bee/sting_02.png": "14ee10fbcaa5cc3bb95e2830745a7338ec30668255e15b71c5075a7d0ced13ad"
   }
 }

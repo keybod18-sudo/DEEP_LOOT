@@ -7,6 +7,8 @@ import { Enemy } from './Enemy';
 export type CaterpillarPhase = 'larva' | 'pupa' | 'butterfly';
 export type ButterflyState = 'fly' | 'ramWindup' | 'ram' | 'powder';
 
+const POWDER_RANGE_SCALE = 1.65;
+
 export class Caterpillar extends Enemy {
   readonly type = 'caterpillar' as const;
   phase: CaterpillarPhase = 'larva';
@@ -291,7 +293,8 @@ export class Caterpillar extends Enemy {
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
 
-    if (Math.hypot(playerCenterX - centerX, playerCenterY - centerY) > BALANCE.caterpillar.powderRange) {
+    const effectivePowderRange = BALANCE.caterpillar.powderRange * POWDER_RANGE_SCALE;
+    if (Math.hypot(playerCenterX - centerX, playerCenterY - centerY) > effectivePowderRange) {
       return;
     }
 

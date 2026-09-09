@@ -29,6 +29,7 @@ export type EnemyKind =
   | 'ahriman'
   | 'snake'
   | 'bat'
+  | 'bee'
   | 'roper'
   | 'slug'
   | 'rat'
@@ -79,6 +80,10 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
   bat: {
     detectX: 400, detectY: 270, loseX: 545, loseY: 370, memory: 3.0,
     idleStyle: 'hoverWide', idleSpeed: 0.44, idleRadius: 155, moveChance: 1,
+  },
+  bee: {
+    detectX: 360, detectY: 235, loseX: 510, loseY: 340, memory: 2.6,
+    idleStyle: 'hoverWide', idleSpeed: 0.34, idleRadius: 120, moveChance: 1,
   },
   roper: {
     detectX: 210, detectY: 140, loseX: 295, loseY: 205, memory: 2.2,

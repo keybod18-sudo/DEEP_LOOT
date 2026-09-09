@@ -920,23 +920,35 @@ export class EnemyRenderer {
         1,
         caterpillar.actionTime / Math.max(0.01, release),
       );
-      const cloudRadius = 24 + progress * 112;
+      const effectiveRange = BALANCE.caterpillar.powderRange * 1.65;
+      const cloudRadius = effectiveRange * (0.34 + progress * 0.66);
+      const centerY = caterpillar.y + caterpillar.h / 2;
 
       ctx.save();
-      for (let i = 0; i < 34; i += 1) {
+      ctx.globalAlpha = 0.42 + progress * 0.24;
+      ctx.strokeStyle = '#ff48bd';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, cloudRadius, cloudRadius * 0.68, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.16 + progress * 0.14;
+      ctx.fillStyle = '#d536a8';
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, cloudRadius * 0.88, cloudRadius * 0.58, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = 0; i < 58; i += 1) {
         const seed =
-          i * 2.399963 + caterpillar.actionTime * (1.4 + (i % 3) * 0.18);
-        const ring = ((i * 17) % 31) / 31;
-        const radius = cloudRadius * (0.22 + ring * 0.78);
+          i * 2.399963 + caterpillar.actionTime * (1.5 + (i % 4) * 0.16);
+        const ring = ((i * 19) % 43) / 43;
+        const radius = cloudRadius * (0.16 + ring * 0.84);
         const px = centerX + Math.cos(seed) * radius;
-        const py =
-          caterpillar.y +
-          caterpillar.h / 2 +
-          Math.sin(seed * 1.23) * radius * 0.58;
-        const size = 2 + (i % 3);
-        ctx.globalAlpha = 0.24 + (i % 5) * 0.07;
+        const py = centerY + Math.sin(seed * 1.19) * radius * 0.67;
+        const size = 2 + (i % 4);
+        ctx.globalAlpha = 0.34 + (i % 5) * 0.09;
         ctx.fillStyle =
-          i % 3 === 0 ? '#b7df36' : i % 3 === 1 ? '#e33e9f' : '#71308c';
+          i % 3 === 0 ? '#d9ff38' : i % 3 === 1 ? '#ff42bc' : '#9d43e8';
         ctx.fillRect(Math.round(px), Math.round(py), size, size);
       }
       ctx.restore();

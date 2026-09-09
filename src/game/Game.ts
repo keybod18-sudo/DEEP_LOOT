@@ -8,6 +8,7 @@ import { Slime } from '../enemies/Slime';
 import { Ahriman } from '../enemies/Ahriman';
 import { Snake } from '../enemies/Snake';
 import { Bat } from '../enemies/Bat';
+import { Bee } from '../enemies/Bee';
 import { Roper } from '../enemies/Roper';
 import { Slug } from '../enemies/Slug';
 import { Rat } from '../enemies/Rat';
@@ -128,6 +129,7 @@ export class Game {
       this.enemyRenderer.load(),
       CrystalEye.loadAssets(),
       Kagenoko.loadAssets(),
+      Bee.loadAssets(),
       Kyokoki.loadAssets(),
       ThreeWiseMonkey.loadAssets(),
       TreasureChest.loadAssets(),
@@ -933,6 +935,7 @@ export class Game {
       | 'ahriman'
       | 'snake'
       | 'bat'
+      | 'bee'
       | 'roper'
       | 'slug'
       | 'rat'
@@ -956,6 +959,7 @@ export class Game {
       ahriman: 1,
       snake: 2,
       bat: 2,
+      bee: 2,
       roper: 1,
       slug: 1,
       rat: 1,
@@ -1005,6 +1009,7 @@ export class Game {
     const caps: Partial<Record<EnemyKind, number>> = {
       crystalEye: 2,
       ahriman: 3,
+      bee: 4,
       roper: 3,
       frostMite: 3,
       kagenoko: 3,
@@ -1061,6 +1066,10 @@ export class Game {
         case 'bat': {
           const p = randomAirPoint(34, 25, 135, Math.max(180, this.stage.height - 170));
           return new Bat(p.x, p.y);
+        }
+        case 'bee': {
+          const p = randomAirPoint(28, 24, 120, Math.max(180, this.stage.height - 190));
+          return new Bee(p.x, p.y);
         }
         case 'roper': {
           const p = randomGroundPoint(58, 42);
@@ -1264,7 +1273,8 @@ export class Game {
   }
 
   private drawEnemySprite(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
-    if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
+    if (enemy.type === 'bee') (enemy as Bee).draw(ctx);
+    else if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
     else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(ctx);
     else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(ctx);
     else if (enemy.type === 'elemental') (enemy as Elemental).draw(ctx);
@@ -1533,6 +1543,7 @@ export class Game {
 
       const width =
         enemy.type === 'ahriman' ? 48 :
+        enemy.type === 'bee' ? 40 :
         enemy.type === 'goblin' ? 42 :
         enemy.type === 'skeleton' ? 44 :
         enemy.type === 'skeletonArcher' ? 44 :
@@ -1544,7 +1555,8 @@ export class Game {
         enemy.type === 'crystalEye' ? 58 :
         enemy.type === 'elemental' ? 42 :
         enemy.type === 'kagenoko' ? 38 :
-        enemy.type === 'kyokoki' ? 52 :
+        enemy.type === 'kyokoki' ? 48 :
+        enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru' ? 40 :
         36;
 
       const y =
@@ -1554,6 +1566,7 @@ export class Game {
         enemy.type === 'roper' ? enemy.y - 32 :
         enemy.type === 'ahriman' ? enemy.y - 18 :
         enemy.type === 'bat' ? enemy.y - 16 :
+        enemy.type === 'bee' ? enemy.y - 28 :
         enemy.type === 'snake' ? enemy.y - 22 :
         enemy.type === 'slug' ? enemy.y - 15 :
         enemy.type === 'rat' ? enemy.y - 17 :
@@ -1565,7 +1578,8 @@ export class Game {
         enemy.type === 'kagenoko' ? enemy.y - 22 :
         // Kyokoki draws a 72px sprite over a 30px hitbox. Put the bar above
         // the rendered head rather than above the much smaller physics box.
-        enemy.type === 'kyokoki' ? enemy.y - 52 :
+        enemy.type === 'kyokoki' ? enemy.y - 48 :
+        enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru' ? enemy.y - 34 :
         enemy.y - 16;
 
       this.drawHpBar(

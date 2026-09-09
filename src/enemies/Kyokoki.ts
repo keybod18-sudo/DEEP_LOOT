@@ -22,7 +22,7 @@ const BUFF_DURATION = 30;
 const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
-const DRAW_SIZE = 64;
+const DRAW_SIZE = 60;
 
 const idleUrls = [1, 2].map((index) =>
   new URL(

@@ -21,30 +21,30 @@ const MONKEY_RETREAT_SPEED = 5.60;
 const MONKEY_RETREAT_LIFT = 8.60;
 const MONKEY_RETREAT_MAX_TIME = 0.72;
 
-const DRAW_W = 36;
-const DRAW_H = 42;
+const DRAW_W = 46;
+const DRAW_H = 50;
 
 const KINDS: ThreeWiseMonkeyKind[] = ['mizaru', 'iwazaru', 'kikazaru'];
 const POSES: MonkeyPose[] = ['runA', 'runB', 'jump', 'attack'];
 
 const frameUrls: Record<ThreeWiseMonkeyKind, Record<MonkeyPose, string>> = {
   mizaru: {
-    runA: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runA.svg', import.meta.url).href,
-    runB: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runB.svg', import.meta.url).href,
-    jump: new URL('../../assets/monsters/three_wise_monkeys/mizaru/jump.svg', import.meta.url).href,
-    attack: new URL('../../assets/monsters/three_wise_monkeys/mizaru/attack.svg', import.meta.url).href,
+    runA: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runA.png', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/mizaru/runB.png', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/mizaru/jump.png', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/mizaru/attack.png', import.meta.url).href,
   },
   iwazaru: {
-    runA: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runA.svg', import.meta.url).href,
-    runB: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runB.svg', import.meta.url).href,
-    jump: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/jump.svg', import.meta.url).href,
-    attack: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/attack.svg', import.meta.url).href,
+    runA: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runA.png', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/runB.png', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/jump.png', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/iwazaru/attack.png', import.meta.url).href,
   },
   kikazaru: {
-    runA: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runA.svg', import.meta.url).href,
-    runB: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runB.svg', import.meta.url).href,
-    jump: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/jump.svg', import.meta.url).href,
-    attack: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/attack.svg', import.meta.url).href,
+    runA: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runA.png', import.meta.url).href,
+    runB: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/runB.png', import.meta.url).href,
+    jump: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/jump.png', import.meta.url).href,
+    attack: new URL('../../assets/monsters/three_wise_monkeys/kikazaru/attack.png', import.meta.url).href,
   },
 };
 
@@ -134,6 +134,7 @@ export class ThreeWiseMonkey extends Enemy {
     if (this.state === 'jump') {
       const previousY = this.y;
       this.vy += GRAVITY;
+      if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
       this.x += this.vx;
       this.y += this.vy;
       resolveFloor(this, previousY, context.stage.platforms, context.stage.width);
@@ -153,6 +154,7 @@ export class ThreeWiseMonkey extends Enemy {
       const awayDirection: -1 | 1 = playerDirection === 1 ? -1 : 1;
       if (this.grounded && this.hasGroundAhead(context, awayDirection)) {
         this.vx = awayDirection * MONKEY_RUN_SPEED * 0.82;
+        this.facing = awayDirection;
         this.x += this.vx;
       } else {
         this.vx = 0;
@@ -166,6 +168,7 @@ export class ThreeWiseMonkey extends Enemy {
     }
 
     if (distance <= MONKEY_ATTACK_RANGE && this.cooldown <= 0) {
+      this.facing = playerDirection;
       this.state = 'attack';
       this.actionTime = 0;
       this.vx = 0;
@@ -199,7 +202,7 @@ export class ThreeWiseMonkey extends Enemy {
     const playerDirection: -1 | 1 = playerCenter >= centerX ? 1 : -1;
 
     this.retreatDirection = playerDirection === 1 ? -1 : 1;
-    this.facing = playerDirection;
+    this.facing = this.retreatDirection;
     this.state = 'retreat';
     this.actionTime = 0;
     this.hitDone = false;
@@ -211,9 +214,7 @@ export class ThreeWiseMonkey extends Enemy {
   }
 
   private updateRetreat(context: EnemyContext): void {
-    const playerCenter = context.player.x + context.player.w / 2;
-    const centerX = this.x + this.w / 2;
-    this.facing = playerCenter >= centerX ? 1 : -1;
+    if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
 
     const previousY = this.y;
     this.vy += GRAVITY;
