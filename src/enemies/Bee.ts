@@ -5,10 +5,10 @@ import { Enemy } from './Enemy';
 export type BeeState = 'fly' | 'windup' | 'sting' | 'recover';
 
 const MAX_HP = 28;
-const HOVER_SPEED = 1.45;
-const STING_SPEED = 8.4;
+const HOVER_SPEED = 2.05;
+const STING_SPEED = 9.2;
 const STING_DAMAGE = 8;
-const STING_RANGE = 175;
+const STING_RANGE = 185;
 const WINDUP_TIME = 0.18;
 const STING_TIME = 0.34;
 const RECOVER_TIME = 0.30;
@@ -41,10 +41,16 @@ export class Bee extends Enemy {
   private stingHit = false;
   private targetX = 0;
   private targetY = 0;
+  private readonly orbitPhase = Math.random() * Math.PI * 2;
+  private readonly hoverPhase = Math.random() * Math.PI * 2;
+  private readonly strafeBias = (Math.random() * 2 - 1) * 0.95;
+  private readonly preferredDistance = 92 + Math.random() * 42;
+  private readonly hoverSpeedScale = 0.92 + Math.random() * 0.22;
+  private readonly verticalBias = -28 - Math.random() * 24;
 
   constructor(x: number, y: number) {
     super(x, y, 24, 20, MAX_HP, MAX_HP);
-    this.cooldown = 0.7 + Math.random() * 0.8;
+    this.cooldown = 0.55 + Math.random() * 0.9;
     this.facing = Math.random() < 0.5 ? -1 : 1;
   }
 
@@ -66,7 +72,7 @@ export class Bee extends Enemy {
   protected onKnockbackEnd(): void {
     this.state = 'fly';
     this.stateTime = 0;
-    this.cooldown = Math.max(this.cooldown, 0.7);
+    this.cooldown = Math.max(this.cooldown, 0.55 + Math.random() * 0.45);
     this.vy = 0;
   }
 
@@ -79,7 +85,7 @@ export class Bee extends Enemy {
     this.stateTime += dt;
 
     const playerCenterX = context.player.x + context.player.w / 2;
-    const playerCenterY = context.player.y + context.player.h / 2;
+    const playerCenterY = context.player.y + context.player.h / 2 + this.verticalBias;
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
     const dx = playerCenterX - centerX;
@@ -87,11 +93,10 @@ export class Bee extends Enemy {
     const distance = Math.max(1, Math.hypot(dx, dy));
 
     if (this.state === 'windup') {
-      // Attack wind-up always faces the target, not the previous travel direction.
       this.facing = dx >= 0 ? 1 : -1;
-      this.vx *= 0.72;
-      this.vy *= 0.72;
-      this.x -= this.facing * 0.35;
+      this.vx *= 0.70;
+      this.vy *= 0.70;
+      this.x -= this.facing * 0.22;
 
       if (this.stateTime >= WINDUP_TIME) {
         const aimX = this.targetX - (this.x + this.w / 2);
@@ -124,8 +129,8 @@ export class Bee extends Enemy {
       if (this.stateTime >= STING_TIME) {
         this.state = 'recover';
         this.stateTime = 0;
-        this.vx *= 0.35;
-        this.vy *= 0.35;
+        this.vx *= 0.33;
+        this.vy *= 0.33;
       }
       return;
     }
@@ -141,22 +146,43 @@ export class Bee extends Enemy {
       if (this.stateTime >= RECOVER_TIME) {
         this.state = 'fly';
         this.stateTime = 0;
-        this.cooldown = 1.0 + Math.random() * 0.8;
+        this.cooldown = 0.55 + Math.random() * 0.8;
       }
       return;
     }
 
-    // Normal flight: approach while hovering around the player's upper body.
-    const desiredDistance = 105;
+    let separationX = 0;
+    let separationY = 0;
+    for (const ally of context.allies) {
+      if (ally === this || ally.type !== 'bee' || !ally.alive) continue;
+      const otherCenterX = ally.x + ally.w / 2;
+      const otherCenterY = ally.y + ally.h / 2;
+      const awayX = centerX - otherCenterX;
+      const awayY = centerY - otherCenterY;
+      const gap = Math.hypot(awayX, awayY);
+      if (gap <= 0.001 || gap > 74) continue;
+      const strength = (74 - gap) / 74;
+      separationX += (awayX / gap) * strength * 1.25;
+      separationY += (awayY / gap) * strength * 1.25;
+    }
+
     const towardX = dx / distance;
     const towardY = dy / distance;
-    const approach = distance > desiredDistance ? 1 : distance < 72 ? -0.45 : 0.20;
-    const orbit = Math.sin(this.actionTime * 3.6) * 0.58;
-    const targetVx = towardX * HOVER_SPEED * approach + orbit * 0.42;
-    const targetVy = towardY * HOVER_SPEED * approach + Math.sin(this.actionTime * 5.4) * 0.36;
+    const approach = distance > this.preferredDistance ? 1 : distance < 74 ? -0.55 : 0.14;
+    const orbit = Math.sin(this.actionTime * 4.2 + this.orbitPhase) * 0.62 + this.strafeBias * 0.36;
+    const hoverWave = Math.sin(this.actionTime * 6.1 + this.hoverPhase) * 0.48;
 
-    this.vx += (targetVx - this.vx) * Math.min(1, dt * 7.5);
-    this.vy += (targetVy - this.vy) * Math.min(1, dt * 7.5);
+    const targetVx =
+      towardX * HOVER_SPEED * this.hoverSpeedScale * approach +
+      orbit * 0.72 +
+      separationX * 1.08;
+    const targetVy =
+      towardY * HOVER_SPEED * this.hoverSpeedScale * approach +
+      hoverWave * 0.58 +
+      separationY * 1.08;
+
+    this.vx += (targetVx - this.vx) * Math.min(1, dt * 7.8);
+    this.vy += (targetVy - this.vy) * Math.min(1, dt * 7.2);
     this.x += this.vx;
     this.y += this.vy;
     if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
@@ -166,8 +192,8 @@ export class Bee extends Enemy {
       this.state = 'windup';
       this.stateTime = 0;
       this.stingHit = false;
-      this.targetX = playerCenterX;
-      this.targetY = playerCenterY;
+      this.targetX = context.player.x + context.player.w / 2;
+      this.targetY = context.player.y + context.player.h * (0.3 + Math.random() * 0.4);
       this.facing = dx >= 0 ? 1 : -1;
     }
   }
@@ -178,15 +204,15 @@ export class Bee extends Enemy {
 
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const bob = this.state === 'fly' ? Math.sin(this.actionTime * 9.5) * 1.4 : 0;
+    const bob = this.state === 'fly' ? Math.sin(this.actionTime * 9.5 + this.hoverPhase) * 1.4 : 0;
 
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(centerX), Math.round(centerY + bob));
-    // Bee art is authored facing right. Mirror only for left-facing movement/attack.
-    if (this.facing < 0) ctx.scale(-1, 1);
+    // Bee art is authored facing left. Mirror only for right-facing movement/attack.
+    if (this.facing > 0) ctx.scale(-1, 1);
 
     if (this.state === 'windup') {
       ctx.rotate(this.facing * -0.08);
