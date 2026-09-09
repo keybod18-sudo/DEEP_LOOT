@@ -47,11 +47,14 @@ export class Bee extends Enemy {
   private readonly preferredDistance = 92 + Math.random() * 42;
   private readonly hoverSpeedScale = 0.92 + Math.random() * 0.22;
   private readonly verticalBias = -28 - Math.random() * 24;
+  private facingCandidate: -1 | 1 = 1;
+  private facingCandidateTime = 0;
 
   constructor(x: number, y: number) {
     super(x, y, 24, 20, MAX_HP, MAX_HP);
     this.cooldown = 0.55 + Math.random() * 0.9;
     this.facing = Math.random() < 0.5 ? -1 : 1;
+    this.facingCandidate = this.facing;
   }
 
   static async loadAssets(): Promise<void> {
@@ -78,7 +81,7 @@ export class Bee extends Enemy {
 
   protected updateUnaware(dt: number, context: EnemyContext): void {
     super.updateUnaware(dt, context);
-    if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
+    this.updateTravelFacing(dt, this.vx, 0.62);
   }
 
   protected updateAi(dt: number, context: EnemyContext): void {
@@ -105,6 +108,8 @@ export class Bee extends Enemy {
         this.vx = (aimX / aimDistance) * STING_SPEED;
         this.vy = (aimY / aimDistance) * STING_SPEED;
         this.facing = this.vx >= 0 ? 1 : -1;
+        this.facingCandidate = this.facing;
+        this.facingCandidateTime = 0;
         this.state = 'sting';
         this.stateTime = 0;
       }
@@ -115,7 +120,7 @@ export class Bee extends Enemy {
     if (this.state === 'sting') {
       this.x += this.vx;
       this.y += this.vy;
-      if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
+      // Keep the attack-facing chosen at launch. Do not flicker from tiny velocity changes.
 
       if (!this.stingHit && intersects(this, context.player)) {
         const hit = context.hurtPlayer(STING_DAMAGE, this.x + this.w / 2);
@@ -140,7 +145,7 @@ export class Bee extends Enemy {
       this.y += this.vy;
       this.vx *= 0.88;
       this.vy *= 0.88;
-      if (Math.abs(this.vx) > 0.05) this.facing = this.vx >= 0 ? 1 : -1;
+      // Recovery keeps the sting direction until normal flight resumes.
       this.keepInStage(context);
 
       if (this.stateTime >= RECOVER_TIME) {
@@ -172,10 +177,15 @@ export class Bee extends Enemy {
     const orbit = Math.sin(this.actionTime * 4.2 + this.orbitPhase) * 0.62 + this.strafeBias * 0.36;
     const hoverWave = Math.sin(this.actionTime * 6.1 + this.hoverPhase) * 0.48;
 
-    const targetVx =
+    // Facing follows the broad travel intent, not the small orbit wiggle.
+    // This prevents bees from rapidly looking left/right while still moving in one general direction.
+    const travelIntentX =
       towardX * HOVER_SPEED * this.hoverSpeedScale * approach +
+      separationX * 0.48;
+    const targetVx =
+      travelIntentX +
       orbit * 0.72 +
-      separationX * 1.08;
+      separationX * 0.60;
     const targetVy =
       towardY * HOVER_SPEED * this.hoverSpeedScale * approach +
       hoverWave * 0.58 +
@@ -185,7 +195,7 @@ export class Bee extends Enemy {
     this.vy += (targetVy - this.vy) * Math.min(1, dt * 7.2);
     this.x += this.vx;
     this.y += this.vy;
-    if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
+    this.updateTravelFacing(dt, travelIntentX, 0.42);
     this.keepInStage(context);
 
     if (distance <= STING_RANGE && this.cooldown <= 0) {
@@ -195,7 +205,36 @@ export class Bee extends Enemy {
       this.targetX = context.player.x + context.player.w / 2;
       this.targetY = context.player.y + context.player.h * (0.3 + Math.random() * 0.4);
       this.facing = dx >= 0 ? 1 : -1;
+      this.facingCandidate = this.facing;
+      this.facingCandidateTime = 0;
     }
+  }
+
+  private updateTravelFacing(dt: number, horizontalIntent: number, threshold: number): void {
+    if (Math.abs(horizontalIntent) < threshold) {
+      this.facingCandidate = this.facing;
+      this.facingCandidateTime = 0;
+      return;
+    }
+
+    const desiredFacing: -1 | 1 = horizontalIntent >= 0 ? 1 : -1;
+    if (desiredFacing === this.facing) {
+      this.facingCandidate = this.facing;
+      this.facingCandidateTime = 0;
+      return;
+    }
+
+    if (this.facingCandidate !== desiredFacing) {
+      this.facingCandidate = desiredFacing;
+      this.facingCandidateTime = 0;
+      return;
+    }
+
+    this.facingCandidateTime += dt;
+    if (this.facingCandidateTime < 0.22) return;
+
+    this.facing = desiredFacing;
+    this.facingCandidateTime = 0;
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
