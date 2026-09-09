@@ -1413,7 +1413,7 @@ export class Game {
     else if (enemy.type === 'decaySlug') (enemy as DecaySlug).draw(ctx);
     else if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
     else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(ctx);
-    else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(ctx);
+    else if (enemy.type === 'kyokoki' || enemy.type === 'kyokokiPurple') (enemy as Kyokoki).draw(ctx);
     else if (enemy.type === 'elemental') (enemy as Elemental).draw(ctx);
     else if (enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru') {
       (enemy as ThreeWiseMonkey).draw(ctx);
