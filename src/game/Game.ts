@@ -20,6 +20,7 @@ import { Bomb } from '../enemies/Bomb';
 import { Caterpillar } from '../enemies/Caterpillar';
 import { FrostMite } from '../enemies/FrostMite';
 import { CrystalEye } from '../enemies/CrystalEye';
+import { TotemEye } from '../enemies/TotemEye';
 import { Kagenoko } from '../enemies/Kagenoko';
 import { Kyokoki } from '../enemies/Kyokoki';
 import { Elemental, type ElementalKind } from '../enemies/Elemental';
@@ -130,6 +131,7 @@ export class Game {
       this.playerRenderer.load(),
       this.enemyRenderer.load(),
       CrystalEye.loadAssets(),
+      TotemEye.loadAssets(),
       Kagenoko.loadAssets(),
       Bee.loadAssets(),
       RedBee.loadAssets(),
@@ -980,7 +982,9 @@ export class Game {
       | 'mizaru'
       | 'iwazaru'
       | 'kikazaru'
-      | 'elemental';
+      | 'elemental'
+      | 'totemEye'
+      | 'totemEyeDecay';
 
     const baseWeights: Record<EnemyKind, number> = {
       slime: 3,
@@ -1003,6 +1007,8 @@ export class Game {
       kagenoko: 1,
       kyokoki: 1,
       crystalEye: 1,
+      totemEye: 1,
+      totemEyeDecay: 1,
       elemental: 2,
       mizaru: 1,
       iwazaru: 1,
@@ -1041,6 +1047,8 @@ export class Game {
 
     const caps: Partial<Record<EnemyKind, number>> = {
       crystalEye: 2,
+      totemEye: 3,
+      totemEyeDecay: 2,
       ahriman: 3,
       bee: 4,
       redBee: 3,
@@ -1176,7 +1184,39 @@ export class Game {
           const p = randomAirPoint(76, 108, 125, Math.max(180, this.stage.height - 260));
           return new CrystalEye(p.x, p.y);
         }
+        case 'totemEye': {
+          if (Math.random() < 0.45) {
+            const p = randomClingPoint();
+            return new TotemEye(p.x - 4, p.y + 4, 'ceiling', 'normal');
+          }
+          const p = randomGroundPoint(92, 42);
+          return new TotemEye(p.x, p.y, 'ground', 'normal');
+        }
+        case 'totemEyeDecay': {
+          if (Math.random() < 0.5) {
+            const p = randomClingPoint();
+            return new TotemEye(p.x - 4, p.y + 4, 'ceiling', 'decay');
+          }
+          const p = randomGroundPoint(92, 42);
+          return new TotemEye(p.x, p.y, 'ground', 'decay');
+        }
       }
+    };
+
+    const spawnEnemyGroup = (kind: EnemyKind): Enemy[] => {
+      if (kind !== 'rat') return [spawnEnemy(kind)];
+
+      const base = randomGroundPoint(14, 28);
+      const count = 3 + Math.floor(Math.random() * 3);
+      const swarm: Enemy[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * (10 + Math.random() * 6);
+        swarm.push(new Rat(
+          Math.max(0, Math.min(this.stage.width - 28, base.x + offset)),
+          base.y - Math.random() * 2,
+        ));
+      }
+      return swarm;
     };
 
     // The old implementation always spawned exactly 22 enemies.
@@ -1184,14 +1224,15 @@ export class Game {
     const floorBonus = Math.min(4, Math.floor((this.floor - 1) / 3));
     const minEnemies = 12 + floorBonus;
     const maxEnemies = 22 + floorBonus;
-    const enemyCount = Math.ceil((minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1))) * 1.5);
+    const enemyCount = Math.ceil((minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1))) * 2.25);
 
     const generatedEnemies: Enemy[] = [];
     // Keep at least one Red Bee visible on every floor so the new enemy cannot disappear by weight rolls.
     generatedEnemies.push(spawnEnemy('redBee'));
     generatedEnemies.push(spawnEnemy('decaySlug'));
     for (let index = 0; index < enemyCount; index += 1) {
-      generatedEnemies.push(spawnEnemy(pickKind()));
+      const kind = pickKind();
+      generatedEnemies.push(...spawnEnemyGroup(kind));
     }
     this.enemies = shuffle(generatedEnemies);
 
@@ -1538,6 +1579,14 @@ export class Game {
       this.drawStatusMark(iconX, topY + 3, '#1d6f2b', '#baff84', '毒');
       iconX += 16;
     }
+    if (this.player.severelyPoisoned) {
+      this.drawStatusMark(iconX, topY + 3, '#6f2aa8', '#efc6ff', '猛');
+      iconX += 16;
+    }
+    if (this.player.decaying) {
+      this.drawStatusMark(iconX, topY + 3, '#8a3b28', '#ffc0a8', '腐');
+      iconX += 16;
+    }
     if (this.player.slowed) {
       this.drawStatusMark(iconX, topY + 3, '#285f70', '#a5efff', '遅');
       iconX += 16;
@@ -1603,6 +1652,8 @@ export class Game {
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
         enemy.type === 'crystalEye' ? 58 :
+        enemy.type === 'totemEye' ? 46 :
+        enemy.type === 'totemEyeDecay' ? 46 :
         enemy.type === 'elemental' ? 42 :
         enemy.type === 'kagenoko' ? 38 :
         enemy.type === 'kyokoki' ? 48 :
@@ -1625,6 +1676,8 @@ export class Game {
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
         enemy.type === 'crystalEye' ? enemy.y - 46 :
+        enemy.type === 'totemEye' ? enemy.y - 18 :
+        enemy.type === 'totemEyeDecay' ? enemy.y - 18 :
         enemy.type === 'elemental' ? enemy.y - 24 :
         enemy.type === 'kagenoko' ? enemy.y - 22 :
         // Kyokoki draws a 72px sprite over a 30px hitbox. Put the bar above

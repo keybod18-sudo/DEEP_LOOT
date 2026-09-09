@@ -48,7 +48,9 @@ export type EnemyKind =
   | 'elemental'
   | 'mizaru'
   | 'iwazaru'
-  | 'kikazaru';
+  | 'kikazaru'
+  | 'totemEye'
+  | 'totemEyeDecay';
 
 type IdleStyle = 'still' | 'creep' | 'patrol' | 'lurk' | 'skitter' | 'hover' | 'hoverWide';
 
@@ -132,6 +134,14 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
   crystalEye: {
     detectX: 420, detectY: 290, loseX: 575, loseY: 395, memory: 3.4,
     idleStyle: 'hover', idleSpeed: 0.10, idleRadius: 36, moveChance: 1,
+  },
+  totemEye: {
+    detectX: 335, detectY: 225, loseX: 475, loseY: 305, memory: 2.8,
+    idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
+  },
+  totemEyeDecay: {
+    detectX: 350, detectY: 235, loseX: 490, loseY: 315, memory: 3.0,
+    idleStyle: 'still', idleSpeed: 0, idleRadius: 0, moveChance: 0,
   },
   kagenoko: {
     detectX: 305, detectY: 140, loseX: 445, loseY: 220, memory: 2.2,

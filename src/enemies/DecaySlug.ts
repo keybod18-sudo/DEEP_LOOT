@@ -114,6 +114,21 @@ export class DecaySlug extends Enemy {
     }
   }
 
+  protected updateUnaware(dt: number, context: EnemyContext): void {
+    const startX = this.x;
+    super.updateUnaware(dt, context);
+    const deltaX = this.x - startX;
+    const moving = Math.abs(deltaX) > 0.01;
+
+    // Corruption trail during unaware patrol.
+    if (moving) this.facing = deltaX >= 0 ? 1 : -1;
+    this.trailTimer -= dt;
+    if (moving && this.grounded && this.trailTimer <= 0) {
+      this.trailTimer += TRAIL_INTERVAL;
+      DecaySlug.addTrail(this.x - 4, this.y + this.h - 4, this.w + 8, 10);
+    }
+  }
+
   interruptForKnockback(): void {}
 
   protected onKnockbackEnd(): void {}
@@ -171,6 +186,7 @@ export class DecaySlug extends Enemy {
 
     if (intersects(context.player, this)) {
       const hit = context.hurtPlayer(CONTACT_DAMAGE, this.x + this.w / 2);
+      if (hit) context.slowPlayer(3.2);
       if (hit && Math.random() < 0.48) {
         context.decayPlayer(999, DECAY_TICK_INTERVAL, DECAY_DAMAGE);
       }

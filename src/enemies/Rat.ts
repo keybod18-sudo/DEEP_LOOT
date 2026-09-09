@@ -11,6 +11,7 @@ export class Rat extends Enemy {
   readonly type = 'rat' as const;
   state: RatState = 'run';
   hitDone = false;
+  private hopTimer = 0.9 + Math.random() * 1.8;
 
   constructor(x: number, y: number) {
     super(x, y, 28, 14, BALANCE.rat.maxHp, BALANCE.rat.maxHp);
@@ -54,6 +55,12 @@ export class Rat extends Enemy {
     }
 
     this.x += this.facing * BALANCE.rat.runSpeed;
+    this.hopTimer = Math.max(0, this.hopTimer - _dt);
+    if (this.grounded && this.hopTimer <= 0 && Math.random() < 0.22) {
+      // small rare hop
+      this.vy = -3.2;
+      this.hopTimer = 1.0 + Math.random() * 2.2;
+    }
     const previousY = this.y;
     this.vy += GRAVITY;
     this.y += this.vy;

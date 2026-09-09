@@ -10,6 +10,7 @@ import type { Rat } from './Rat';
 import type { Skeleton } from './Skeleton';
 import type { SkeletonArcher } from './SkeletonArcher';
 import type { Bomb } from './Bomb';
+import type { TotemEye } from './TotemEye';
 import type { Caterpillar } from './Caterpillar';
 import type { Facing } from '../game/types';
 import { BALANCE } from '../config/balance';
@@ -483,6 +484,7 @@ export class EnemyRenderer {
     else if (enemy.type === 'slug') this.drawSlug(ctx, enemy as Slug);
     else if (enemy.type === 'rat') this.drawRat(ctx, enemy as Rat);
     else if (enemy.type === 'bomb') this.drawBomb(ctx, enemy as Bomb);
+    else if (enemy.type === 'totemEye' || enemy.type === 'totemEyeDecay') this.drawTotemEye(ctx, enemy as TotemEye);
     else if (enemy.type === 'caterpillar') this.drawCaterpillar(ctx, enemy as Caterpillar);
     else if (enemy.type === 'skeletonArcher') {
       this.drawSkeletonArcher(ctx, enemy as SkeletonArcher);
@@ -678,19 +680,24 @@ export class EnemyRenderer {
   }
 
   private drawSnake(ctx: CanvasRenderingContext2D, snake: Snake): void {
+    const calm = snake.state !== 'strike' && !snake.hasDetectedPlayer;
     const frame = snake.state === 'strike'
       ? 2
-      : Math.floor(snake.actionTime * 8) % Math.max(1, this.snakeImages.length);
+      : calm
+        ? Math.floor(snake.actionTime * 3.5) % Math.max(1, this.snakeImages.length)
+        : Math.floor(snake.actionTime * 8) % Math.max(1, this.snakeImages.length);
     const image = this.snakeImages[frame] ?? this.snakeImages[0];
     const reference = this.snakeImages[0] ?? image;
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 34);
+    const sway = calm ? Math.sin(snake.actionTime * 2.3) * 1.1 : 0;
+    const lift = calm ? Math.sin(snake.actionTime * 1.8) * 0.45 : 0;
     drawGroundedSprite(
       ctx,
       image,
-      snake.x + snake.w / 2,
-      snake.y + snake.h + 2,
+      snake.x + snake.w / 2 + sway,
+      snake.y + snake.h + 2 + lift,
       scale,
       snake.facing,
       SOURCE_FACING.snake,
@@ -857,15 +864,120 @@ export class EnemyRenderer {
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 27);
+    const airborneLift = rat.grounded ? 0 : 3.2;
     drawGroundedSprite(
       ctx,
       image,
       rat.x + rat.w / 2,
-      rat.y + rat.h + 1,
+      rat.y + rat.h + 1 - airborneLift,
       scale,
       rat.facing,
       SOURCE_FACING.rat,
     );
+  }
+
+  private drawTotemEye(ctx: CanvasRenderingContext2D, eye: TotemEye): void {
+    const centerX = eye.x + eye.w / 2;
+    const stemTopY = eye.attachment === 'ground' ? eye.y + 12 : eye.y + eye.h - 12;
+    const stemBottomY = eye.attachment === 'ground' ? eye.y + eye.h - 7 : eye.y + 7;
+    const headY = eye.eyeCenterY;
+    const bob = Math.sin(eye.actionTime * 1.8) * 0.8;
+    const decay = eye.variant === 'decay';
+
+    ctx.save();
+    ctx.lineCap = 'round';
+
+    ctx.strokeStyle = decay ? '#2b1010' : '#161223';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(centerX, stemBottomY);
+    ctx.lineTo(centerX, stemTopY + bob);
+    ctx.stroke();
+
+    ctx.strokeStyle = decay ? '#713128' : '#554181';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(centerX + 1, stemBottomY);
+    ctx.lineTo(centerX + 1, stemTopY + bob);
+    ctx.stroke();
+
+    const rootDirection = eye.attachment === 'ground' ? 1 : -1;
+    ctx.strokeStyle = decay ? '#6b2b22' : '#30254c';
+    ctx.lineWidth = 2;
+    for (const offset of [-13, -5, 6, 14]) {
+      ctx.beginPath();
+      ctx.moveTo(centerX + offset * 0.18, stemBottomY);
+      ctx.quadraticCurveTo(
+        centerX + offset,
+        stemBottomY + 5 * rootDirection,
+        centerX + offset * 1.15,
+        stemBottomY + 11 * rootDirection,
+      );
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = decay ? '#351817' : '#141826';
+    ctx.beginPath();
+    ctx.arc(centerX, headY + bob, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = decay ? '#874237' : '#665091';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = decay ? '#9a4d3e' : '#38245b';
+    ctx.beginPath();
+    ctx.ellipse(centerX - 6, headY + bob - 6, 4, 7, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(centerX + 7, headY + bob - 6, 4, 7, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = decay ? '#ff674f' : '#f7db57';
+    ctx.beginPath();
+    ctx.arc(centerX + eye.lookX, headY + bob + eye.lookY, 5.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(centerX + eye.lookX - 1.7, headY + bob + eye.lookY - 1.6, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (eye.state === 'charge') {
+      ctx.globalCompositeOperation = 'screen';
+      const glow = ctx.createRadialGradient(centerX, headY + bob, 1, centerX, headY + bob, 25);
+      glow.addColorStop(0, decay ? 'rgba(255,215,205,0.98)' : 'rgba(255,255,255,0.98)');
+      glow.addColorStop(0.4, decay ? 'rgba(180,50,35,0.78)' : 'rgba(255,226,95,0.78)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(centerX, headY + bob, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    for (const orb of eye.orbs) {
+      const x = orb.x + 7;
+      const y = orb.y + 7;
+      const radius = 6 + Math.sin(orb.phase) * 1.1;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const glow = ctx.createRadialGradient(x, y, 1, x, y, radius * 2.5);
+      if (decay) {
+        glow.addColorStop(0, '#fff2ed');
+        glow.addColorStop(0.28, '#d86450');
+        glow.addColorStop(0.62, 'rgba(91, 18, 12, 0.92)');
+        glow.addColorStop(1, 'rgba(24, 0, 0, 0)');
+      } else {
+        glow.addColorStop(0, '#ffffff');
+        glow.addColorStop(0.28, '#fff2a2');
+        glow.addColorStop(0.62, 'rgba(255, 208, 48, 0.84)');
+        glow.addColorStop(1, 'rgba(150, 100, 0, 0)');
+      }
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.restore();
   }
 
   private drawCaterpillar(
