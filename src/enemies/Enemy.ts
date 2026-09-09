@@ -11,6 +11,8 @@ export interface EnemyContext {
   allies: Enemy[];
   hurtPlayer: (damage: number, sourceX: number) => boolean;
   poisonPlayer: (duration: number, tickInterval: number, damage: number) => void;
+  severePoisonPlayer: (duration: number, tickInterval: number, damage: number) => void;
+  decayPlayer: (duration: number, tickInterval: number, damage: number) => void;
   paralyzePlayer: (duration: number) => void;
   slowPlayer: (duration: number) => void;
   sealPlayer: (duration: number) => void;
@@ -30,6 +32,7 @@ export type EnemyKind =
   | 'snake'
   | 'bat'
   | 'bee'
+  | 'redBee'
   | 'roper'
   | 'slug'
   | 'rat'
@@ -84,6 +87,10 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
   bee: {
     detectX: 360, detectY: 235, loseX: 510, loseY: 340, memory: 2.6,
     idleStyle: 'hoverWide', idleSpeed: 0.34, idleRadius: 120, moveChance: 1,
+  },
+  redBee: {
+    detectX: 390, detectY: 255, loseX: 540, loseY: 365, memory: 2.9,
+    idleStyle: 'hoverWide', idleSpeed: 0.42, idleRadius: 138, moveChance: 1,
   },
   roper: {
     detectX: 210, detectY: 140, loseX: 295, loseY: 205, memory: 2.2,

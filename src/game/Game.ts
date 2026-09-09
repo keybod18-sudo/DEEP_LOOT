@@ -9,6 +9,7 @@ import { Ahriman } from '../enemies/Ahriman';
 import { Snake } from '../enemies/Snake';
 import { Bat } from '../enemies/Bat';
 import { Bee } from '../enemies/Bee';
+import { RedBee } from '../enemies/RedBee';
 import { Roper } from '../enemies/Roper';
 import { Slug } from '../enemies/Slug';
 import { Rat } from '../enemies/Rat';
@@ -130,6 +131,7 @@ export class Game {
       CrystalEye.loadAssets(),
       Kagenoko.loadAssets(),
       Bee.loadAssets(),
+      RedBee.loadAssets(),
       Kyokoki.loadAssets(),
       ThreeWiseMonkey.loadAssets(),
       TreasureChest.loadAssets(),
@@ -252,6 +254,20 @@ export class Game {
           const wasPoisoned = this.player.poisoned;
           this.player.applyPoison(duration, tickInterval, damage);
           if (!wasPoisoned) this.showNotice('毒状態になった');
+          this.refreshUi();
+        },
+        severePoisonPlayer: (duration, tickInterval, damage) => {
+          if (this.resistsStatusEffect()) return;
+          const wasActive = this.player.severelyPoisoned;
+          this.player.applySeverePoison(duration, tickInterval, damage);
+          if (!wasActive) this.showNotice('猛毒状態になった');
+          this.refreshUi();
+        },
+        decayPlayer: (duration, tickInterval, damage) => {
+          if (this.resistsStatusEffect()) return;
+          const wasActive = this.player.decaying;
+          this.player.applyDecay(duration, tickInterval, damage);
+          if (!wasActive) this.showNotice('腐敗状態になった');
           this.refreshUi();
         },
         paralyzePlayer: (duration) => {
@@ -936,6 +952,7 @@ export class Game {
       | 'snake'
       | 'bat'
       | 'bee'
+      | 'redBee'
       | 'roper'
       | 'slug'
       | 'rat'
@@ -960,6 +977,7 @@ export class Game {
       snake: 2,
       bat: 2,
       bee: 2,
+      redBee: 2,
       roper: 1,
       slug: 1,
       rat: 1,
@@ -1010,6 +1028,7 @@ export class Game {
       crystalEye: 2,
       ahriman: 3,
       bee: 4,
+      redBee: 3,
       roper: 3,
       frostMite: 3,
       kagenoko: 3,
@@ -1070,6 +1089,10 @@ export class Game {
         case 'bee': {
           const p = randomAirPoint(28, 24, 120, Math.max(180, this.stage.height - 190));
           return new Bee(p.x, p.y);
+        }
+        case 'redBee': {
+          const p = randomAirPoint(28, 24, 120, Math.max(180, this.stage.height - 190));
+          return new RedBee(p.x, p.y);
         }
         case 'roper': {
           const p = randomGroundPoint(58, 42);
@@ -1144,6 +1167,8 @@ export class Game {
     const enemyCount = Math.ceil((minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1))) * 1.5);
 
     const generatedEnemies: Enemy[] = [];
+    // Keep at least one Red Bee visible on every floor so the new enemy cannot disappear by weight rolls.
+    generatedEnemies.push(spawnEnemy('redBee'));
     for (let index = 0; index < enemyCount; index += 1) {
       generatedEnemies.push(spawnEnemy(pickKind()));
     }
@@ -1240,7 +1265,7 @@ export class Game {
     if (!item) return;
 
     if (item.effect === 'antidote') {
-      if (!this.player.poisoned) {
+      if (!this.player.toxinAffected) {
         this.showNotice(String.fromCodePoint(0x6bd2, 0x72b6, 0x614b, 0x3067, 0x306f, 0x306a, 0x3044));
         return;
       }
@@ -1274,6 +1299,7 @@ export class Game {
 
   private drawEnemySprite(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
     if (enemy.type === 'bee') (enemy as Bee).draw(ctx);
+    else if (enemy.type === 'redBee') (enemy as RedBee).draw(ctx);
     else if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
     else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(ctx);
     else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(ctx);
@@ -1544,6 +1570,7 @@ export class Game {
       const width =
         enemy.type === 'ahriman' ? 48 :
         enemy.type === 'bee' ? 40 :
+        enemy.type === 'redBee' ? 40 :
         enemy.type === 'goblin' ? 42 :
         enemy.type === 'skeleton' ? 44 :
         enemy.type === 'skeletonArcher' ? 44 :
@@ -1567,6 +1594,7 @@ export class Game {
         enemy.type === 'ahriman' ? enemy.y - 18 :
         enemy.type === 'bat' ? enemy.y - 16 :
         enemy.type === 'bee' ? enemy.y - 28 :
+        enemy.type === 'redBee' ? enemy.y - 28 :
         enemy.type === 'snake' ? enemy.y - 22 :
         enemy.type === 'slug' ? enemy.y - 15 :
         enemy.type === 'rat' ? enemy.y - 17 :

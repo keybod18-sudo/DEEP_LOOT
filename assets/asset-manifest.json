@@ -1,5 +1,5 @@
 {
-  "version": "monkey-kyokoki-bee-powder-v1",
+  "version": "bee-motion-redbee-spawn-sting-v1",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -190,11 +190,17 @@
     "assets/monsters/three_wise_monkeys/kikazaru/runB.png": "7361af504dd1f785e3d18fd3214326acf30517f4ecf3dc5dfb9acd8b14af806b",
     "assets/monsters/three_wise_monkeys/kikazaru/attack.png": "8bb76dbef94598ecb3e7c576b01ffd7fdad59c9aac29151e2fd53b9946cdc84f",
     "assets/monsters/three_wise_monkeys/kikazaru/jump.png": "5bf2acf4537dda78ca030bbb53151b38cb257dd791b2bd1b1ff2485791b4183f",
-    "assets/monsters/bee/fly_01.png": "e2560e0d061d2d4125d670c10db04a81e3a5cfd19361116bc9785ee87fa70d6c",
-    "assets/monsters/bee/fly_02.png": "d201199c4dd5d09aeb1d33c93cfccab060cdb2986ae6f971a56b760408a47a08",
-    "assets/monsters/bee/fly_03.png": "0562180692c395990266fb0d9127e951bc23cd9ff4a8fb35eccb73f2c0385121",
-    "assets/monsters/bee/fly_04.png": "cecea3e824d9d5a21ddb09e704ce75abb3f85692dceb9c7bd41a007bed8dacd1",
+    "assets/monsters/bee/fly_01.png": "0562180692c395990266fb0d9127e951bc23cd9ff4a8fb35eccb73f2c0385121",
+    "assets/monsters/bee/fly_02.png": "d9d3246270c3d49e7e79899bd482cefbb799347aa75aff230d7bdb4b96bbdb06",
+    "assets/monsters/bee/fly_03.png": "c00f2e78b6ffa58e399a3f73b19211e3b27ef1cca9dc54f42453ed2201184a03",
+    "assets/monsters/bee/fly_04.png": "79525d70f81dbc3a9227799e9675399ba4917e4f140fb0f62e6b02cee886e51b",
     "assets/monsters/bee/sting_01.png": "f11311542207697aa467a91e68a344e8629d358a69dff1402faf3ea496ea3717",
-    "assets/monsters/bee/sting_02.png": "14ee10fbcaa5cc3bb95e2830745a7338ec30668255e15b71c5075a7d0ced13ad"
+    "assets/monsters/bee/sting_02.png": "14ee10fbcaa5cc3bb95e2830745a7338ec30668255e15b71c5075a7d0ced13ad",
+    "assets/monsters/red_bee/fly_01.png": "a7b1880e6dc9a65468d19a2b772605b568074b642821c443d3d10bb1061162d9",
+    "assets/monsters/red_bee/fly_02.png": "e181ada7db57fce4ab9bff41de811c5445f273c11e98ac3823841377e0d03738",
+    "assets/monsters/red_bee/fly_03.png": "e09329269baa015983ca94caf8303e96121f383cacde8d79dcdda647df0c6604",
+    "assets/monsters/red_bee/fly_04.png": "0a369f193f21b9e7e9d80f214826255b62c7591970baaf7f724e76510bda2af9",
+    "assets/monsters/red_bee/sting_01.png": "ddce1c7b08be1609dd8a491c6f08a58eda6dcfd3d79a2a38b11f9c3064e9a76a",
+    "assets/monsters/red_bee/sting_02.png": "f8ea39a6122ccf7ce9b0dbd6f1b1b9827496519f22312c1b6f19ca672ef54138"
   }
 }

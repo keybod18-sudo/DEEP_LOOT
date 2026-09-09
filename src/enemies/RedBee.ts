@@ -2,31 +2,35 @@ import { intersects } from '../game/Collision';
 import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
-export type BeeState = 'fly' | 'windup' | 'sting' | 'recover';
+export type RedBeeState = 'fly' | 'windup' | 'sting' | 'recover';
 
-const MAX_HP = 28;
-const HOVER_SPEED = 2.05;
-const STING_SPEED = 9.8;
-const STING_DAMAGE = 8;
-const STING_RANGE = 195;
-const WINDUP_TIME = 0.18;
-const STING_TIME = 0.62;
-const RECOVER_TIME = 0.30;
-const POISON_CHANCE = 0.55;
-const POISON_DURATION = 4.8;
-const POISON_INTERVAL = 1.0;
+const MAX_HP = 38;
+const HOVER_SPEED = 2.22;
+const STING_SPEED = 10.2;
+const STING_DAMAGE = 10;
+const STING_RANGE = 205;
+const WINDUP_TIME = 0.16;
+const STING_TIME = 0.64;
+const RECOVER_TIME = 0.28;
+const POISON_CHANCE = 0.75;
+const SEVERE_POISON_CHANCE = 0.50;
+const DECAY_CHANCE = 0.30;
+const TOXIN_DURATION = 999;
+const TOXIN_INTERVAL = 1.0;
 const POISON_DAMAGE = 2;
+const SEVERE_POISON_DAMAGE = 4;
+const DECAY_DAMAGE = 7;
 const DRAW_SIZE = 54;
 
 const flyUrls = [1, 2, 3, 4].map((index) =>
   new URL(
-    `../../assets/monsters/bee/fly_${String(index).padStart(2, '0')}.png`,
+    `../../assets/monsters/red_bee/fly_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 const stingUrls = [1, 2].map((index) =>
   new URL(
-    `../../assets/monsters/bee/sting_${String(index).padStart(2, '0')}.png`,
+    `../../assets/monsters/red_bee/sting_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
@@ -34,9 +38,9 @@ const stingUrls = [1, 2].map((index) =>
 const flyImages: HTMLImageElement[] = [];
 const stingImages: HTMLImageElement[] = [];
 
-export class Bee extends Enemy {
-  readonly type = 'bee' as const;
-  state: BeeState = 'fly';
+export class RedBee extends Enemy {
+  readonly type = 'redBee' as const;
+  state: RedBeeState = 'fly';
   private stateTime = 0;
   private stingHit = false;
   private targetX = 0;
@@ -44,15 +48,15 @@ export class Bee extends Enemy {
   private readonly orbitPhase = Math.random() * Math.PI * 2;
   private readonly hoverPhase = Math.random() * Math.PI * 2;
   private readonly strafeBias = (Math.random() * 2 - 1) * 0.95;
-  private readonly preferredDistance = 92 + Math.random() * 42;
-  private readonly hoverSpeedScale = 0.92 + Math.random() * 0.22;
-  private readonly verticalBias = -28 - Math.random() * 24;
+  private readonly preferredDistance = 88 + Math.random() * 44;
+  private readonly hoverSpeedScale = 0.94 + Math.random() * 0.20;
+  private readonly verticalBias = -30 - Math.random() * 26;
   private facingCandidate: -1 | 1 = 1;
   private facingCandidateTime = 0;
 
   constructor(x: number, y: number) {
     super(x, y, 24, 20, MAX_HP, MAX_HP);
-    this.cooldown = 0.55 + Math.random() * 0.9;
+    this.cooldown = 0.48 + Math.random() * 0.82;
     this.facing = Math.random() < 0.5 ? -1 : 1;
     this.facingCandidate = this.facing;
   }
@@ -75,7 +79,7 @@ export class Bee extends Enemy {
   protected onKnockbackEnd(): void {
     this.state = 'fly';
     this.stateTime = 0;
-    this.cooldown = Math.max(this.cooldown, 0.55 + Math.random() * 0.45);
+    this.cooldown = Math.max(this.cooldown, 0.5 + Math.random() * 0.4);
     this.vy = 0;
   }
 
@@ -120,12 +124,19 @@ export class Bee extends Enemy {
     if (this.state === 'sting') {
       this.x += this.vx;
       this.y += this.vy;
-      // Keep the attack-facing chosen at launch. Do not flicker from tiny velocity changes.
 
       if (!this.stingHit && intersects(this, context.player)) {
         const hit = context.hurtPlayer(STING_DAMAGE, this.x + this.w / 2);
-        if (hit && Math.random() < POISON_CHANCE) {
-          context.poisonPlayer(POISON_DURATION, POISON_INTERVAL, POISON_DAMAGE);
+        if (hit) {
+          if (Math.random() < POISON_CHANCE) {
+            context.poisonPlayer(TOXIN_DURATION, TOXIN_INTERVAL, POISON_DAMAGE);
+          }
+          if (Math.random() < SEVERE_POISON_CHANCE) {
+            context.severePoisonPlayer(TOXIN_DURATION, TOXIN_INTERVAL, SEVERE_POISON_DAMAGE);
+          }
+          if (Math.random() < DECAY_CHANCE) {
+            context.decayPlayer(TOXIN_DURATION, TOXIN_INTERVAL, DECAY_DAMAGE);
+          }
         }
         this.stingHit = true;
       }
@@ -145,13 +156,12 @@ export class Bee extends Enemy {
       this.y += this.vy;
       this.vx *= 0.88;
       this.vy *= 0.88;
-      // Recovery keeps the sting direction until normal flight resumes.
       this.keepInStage(context);
 
       if (this.stateTime >= RECOVER_TIME) {
         this.state = 'fly';
         this.stateTime = 0;
-        this.cooldown = 0.55 + Math.random() * 0.8;
+        this.cooldown = 0.48 + Math.random() * 0.76;
       }
       return;
     }
@@ -165,34 +175,32 @@ export class Bee extends Enemy {
       const awayX = centerX - otherCenterX;
       const awayY = centerY - otherCenterY;
       const gap = Math.hypot(awayX, awayY);
-      if (gap <= 0.001 || gap > 74) continue;
-      const strength = (74 - gap) / 74;
-      separationX += (awayX / gap) * strength * 1.25;
-      separationY += (awayY / gap) * strength * 1.25;
+      if (gap <= 0.001 || gap > 78) continue;
+      const strength = (78 - gap) / 78;
+      separationX += (awayX / gap) * strength * 1.28;
+      separationY += (awayY / gap) * strength * 1.28;
     }
 
     const towardX = dx / distance;
     const towardY = dy / distance;
-    const approach = distance > this.preferredDistance ? 1 : distance < 74 ? -0.55 : 0.14;
-    const orbit = Math.sin(this.actionTime * 3.1 + this.orbitPhase) * 0.52 + this.strafeBias * 0.34;
-    const hoverWave = Math.sin(this.actionTime * 4.2 + this.hoverPhase) * 0.42;
+    const approach = distance > this.preferredDistance ? 1 : distance < 72 ? -0.55 : 0.14;
+    const orbit = Math.sin(this.actionTime * 3.2 + this.orbitPhase) * 0.54 + this.strafeBias * 0.36;
+    const hoverWave = Math.sin(this.actionTime * 4.3 + this.hoverPhase) * 0.44;
 
-    // Facing follows the broad travel intent, not the small orbit wiggle.
-    // This prevents bees from rapidly looking left/right while still moving in one general direction.
     const travelIntentX =
       towardX * HOVER_SPEED * this.hoverSpeedScale * approach +
-      separationX * 0.48;
+      separationX * 0.50;
     const targetVx =
       travelIntentX +
-      orbit * 0.34 +
-      separationX * 0.60;
+      orbit * 0.36 +
+      separationX * 0.62;
     const targetVy =
       towardY * HOVER_SPEED * this.hoverSpeedScale * approach +
-      hoverWave * 0.36 +
-      separationY * 1.08;
+      hoverWave * 0.38 +
+      separationY * 1.10;
 
-    this.vx += (targetVx - this.vx) * Math.min(1, dt * 5.2);
-    this.vy += (targetVy - this.vy) * Math.min(1, dt * 4.8);
+    this.vx += (targetVx - this.vx) * Math.min(1, dt * 5.3);
+    this.vy += (targetVy - this.vy) * Math.min(1, dt * 4.9);
     this.x += this.vx;
     this.y += this.vy;
     this.updateTravelFacing(dt, travelIntentX, 0.42);
@@ -243,14 +251,14 @@ export class Bee extends Enemy {
 
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const bob = this.state === 'fly' ? Math.sin(this.actionTime * 7.2 + this.hoverPhase) * 0.7 : 0;
+    const bob = this.state === 'fly' ? Math.sin(this.actionTime * 7.4 + this.hoverPhase) * 0.7 : 0;
 
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(centerX), Math.round(centerY + bob));
-    // Bee art is authored facing left. Mirror only for right-facing movement/attack.
+    // Red bee uses the exact yellow-bee silhouette and left-facing source orientation.
     if (this.facing > 0) ctx.scale(-1, 1);
 
     if (this.state === 'windup') {
@@ -286,7 +294,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Bee image load failed: ${src}`));
+    image.onerror = () => reject(new Error(`RedBee image load failed: ${src}`));
     image.src = src;
   });
 }
