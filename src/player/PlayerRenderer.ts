@@ -129,11 +129,6 @@ export class PlayerRenderer {
       ctx.restore();
     }
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
-    if (image) {
-      const bodyAspect = image.naturalWidth / Math.max(1, image.naturalHeight);
-      const bodyW = Math.round(drawH * bodyAspect);
-      ctx.drawImage(image, -bodyW / 2, -drawH, bodyW, drawH);
-    }
     ctx.restore();
 
     if (frozen) this.drawFrozenShell(ctx, centerX, footY, now);
@@ -170,11 +165,6 @@ export class PlayerRenderer {
     }
 
     ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
-    if (image) {
-      const bodyAspect = image.naturalWidth / Math.max(1, image.naturalHeight);
-      const bodyW = Math.round(drawH * bodyAspect);
-      ctx.drawImage(image, -bodyW / 2, -drawH, bodyW, drawH);
-    }
     ctx.restore();
   }
   private drawStatusEffects(
