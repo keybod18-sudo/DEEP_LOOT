@@ -4,7 +4,6 @@ import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
 type KyokokiState = 'roam' | 'drum';
-type KyokokiPose = 'idleA' | 'idleB' | 'drum';
 type SupportKind = 'haste' | 'berserk' | 'regeneration';
 
 type SupportChoice = {
@@ -23,15 +22,23 @@ const BUFF_DURATION = 30;
 const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
-const DRAW_W = 44;
-const DRAW_H = 46;
+const DRAW_SIZE = 72;
 
-const frameUrls: Record<KyokokiPose, string> = {
-  idleA: new URL('../../assets/monsters/kyokoki/idleA.svg', import.meta.url).href,
-  idleB: new URL('../../assets/monsters/kyokoki/idleB.svg', import.meta.url).href,
-  drum: new URL('../../assets/monsters/kyokoki/drum.svg', import.meta.url).href,
-};
-const frameImages: Partial<Record<KyokokiPose, HTMLImageElement>> = {};
+const idleUrls = [1, 2].map((index) =>
+  new URL(
+    `../../assets/monsters/kyokoki/idle_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
+);
+const drumUrls = [1, 2, 3, 4].map((index) =>
+  new URL(
+    `../../assets/monsters/kyokoki/drum_${String(index).padStart(2, '0')}.png`,
+    import.meta.url,
+  ).href,
+);
+
+const idleImages: HTMLImageElement[] = [];
+const drumImages: HTMLImageElement[] = [];
 
 export class Kyokoki extends Enemy {
   readonly type = 'kyokoki' as const;
@@ -46,11 +53,12 @@ export class Kyokoki extends Enemy {
   }
 
   static async loadAssets(): Promise<void> {
-    const poses: KyokokiPose[] = ['idleA', 'idleB', 'drum'];
-    await Promise.all(poses.map(async (pose) => {
-      if (frameImages[pose]) return;
-      frameImages[pose] = await loadImage(frameUrls[pose]);
-    }));
+    if (idleImages.length === 0) {
+      idleImages.push(...await Promise.all(idleUrls.map(loadImage)));
+    }
+    if (drumImages.length === 0) {
+      drumImages.push(...await Promise.all(drumUrls.map(loadImage)));
+    }
   }
 
   interruptForKnockback(): void {
@@ -199,32 +207,25 @@ export class Kyokoki extends Enemy {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    const pose: KyokokiPose =
-      this.state === 'drum'
-        ? 'drum'
-        : Math.floor(this.actionTime * 4) % 2 === 0
-          ? 'idleA'
-          : 'idleB';
-    const image = frameImages[pose] ?? frameImages.idleA;
+    const image = this.state === 'drum'
+      ? this.currentDrumImage()
+      : this.currentIdleImage();
     if (!image) return;
 
     const centerX = this.x + this.w / 2;
     const footY = this.y + this.h + 2;
-    const bob =
-      this.state === 'drum'
-        ? Math.sin(this.actionTime * 18) * 1.2
-        : Math.sin(this.actionTime * 4) * 0.55;
+    const bob = this.state === 'drum'
+      ? Math.sin(this.actionTime * 18) * 1.1
+      : Math.sin(this.actionTime * 4) * 0.45;
 
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.filter = 'none';
     ctx.imageSmoothingEnabled = false;
-    ctx.translate(
-      Math.round(centerX),
-      Math.round(footY + bob),
-    );
+    ctx.translate(Math.round(centerX), Math.round(footY + bob));
 
+    // New PNG sprites are authored facing right. Mirror only when moving/facing left.
     if (this.facing < 0) ctx.scale(-1, 1);
 
     if (this.state === 'drum') {
@@ -239,12 +240,30 @@ export class Kyokoki extends Enemy {
 
     ctx.drawImage(
       image,
-      -DRAW_W / 2,
-      -DRAW_H,
-      DRAW_W,
-      DRAW_H,
+      -DRAW_SIZE / 2,
+      -DRAW_SIZE,
+      DRAW_SIZE,
+      DRAW_SIZE,
     );
     ctx.restore();
+  }
+
+  private currentIdleImage(): HTMLImageElement | undefined {
+    if (idleImages.length === 0) return undefined;
+    const moving = Math.abs(this.vx) > 0.05;
+    const speed = moving ? 7 : 3.4;
+    const index = Math.floor(this.actionTime * speed) % idleImages.length;
+    return idleImages[index] ?? idleImages[0];
+  }
+
+  private currentDrumImage(): HTMLImageElement | undefined {
+    if (drumImages.length === 0) return undefined;
+    const progress = Math.min(0.999, this.actionTime / SUPPORT_ANIM_TIME);
+    const index = Math.min(
+      drumImages.length - 1,
+      Math.floor(progress * drumImages.length),
+    );
+    return drumImages[index] ?? drumImages[0];
   }
 }
 

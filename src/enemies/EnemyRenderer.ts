@@ -131,7 +131,7 @@ const SOURCE_FACING = {
   rat: 1,
   skeleton: -1,
   skeletonArcher: -1,
-  caterpillar: 1,
+  caterpillar: -1,
 } as const satisfies Record<string, Facing>;
 
 type SpriteBounds = { x: number; y: number; w: number; h: number };
