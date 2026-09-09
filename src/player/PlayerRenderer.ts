@@ -42,6 +42,8 @@ export class PlayerRenderer {
     sleeping: boolean,
     frozen: boolean,
     poisoned: boolean,
+    severelyPoisoned: boolean,
+    decaying: boolean,
     slowed: boolean,
     paralyzed: boolean,
     silenced: boolean,
@@ -88,6 +90,8 @@ export class PlayerRenderer {
         footY,
         now,
         poisoned,
+        severelyPoisoned,
+        decaying,
         slowed,
         paralyzed,
         silenced,
@@ -99,7 +103,7 @@ export class PlayerRenderer {
 
     if (sleeping) {
       this.drawSleeping(ctx, image, centerX, footY, facing, invulnerability, now);
-      this.drawStatusEffects(ctx, centerX, footY, now, poisoned, slowed, paralyzed, silenced, blinded, paralysisStunned);
+      this.drawStatusEffects(ctx, centerX, footY, now, poisoned, severelyPoisoned, decaying, slowed, paralyzed, silenced, blinded, paralysisStunned);
       return;
     }
 
@@ -132,7 +136,7 @@ export class PlayerRenderer {
     ctx.restore();
 
     if (frozen) this.drawFrozenShell(ctx, centerX, footY, now);
-    this.drawStatusEffects(ctx, centerX, footY, now, poisoned, slowed, paralyzed, silenced, blinded, paralysisStunned);
+    this.drawStatusEffects(ctx, centerX, footY, now, poisoned, severelyPoisoned, decaying, slowed, paralyzed, silenced, blinded, paralysisStunned);
   }
 
   private drawClimbingPose(
@@ -173,6 +177,8 @@ export class PlayerRenderer {
     footY: number,
     time: number,
     poisoned: boolean,
+    severelyPoisoned: boolean,
+    decaying: boolean,
     slowed: boolean,
     paralyzed: boolean,
     silenced: boolean,
@@ -180,7 +186,9 @@ export class PlayerRenderer {
     paralysisStunned: boolean,
   ): void {
     if (slowed) this.drawSlowFrame(ctx, centerX, footY, time);
-    if (poisoned) this.drawPoisonBubbles(ctx, centerX, footY, time);
+    if (poisoned) this.drawToxinBubbles(ctx, centerX, footY, time, '#9dff48', '#46d84f', '#174f25', '#ddff9b', '#79f05b', 0.00);
+    if (severelyPoisoned) this.drawToxinBubbles(ctx, centerX, footY, time, '#bd73ff', '#7d35c8', '#42186f', '#ead0ff', '#a859ef', 0.31);
+    if (decaying) this.drawToxinBubbles(ctx, centerX, footY, time, '#df604b', '#a83d30', '#61231e', '#ffc0ae', '#c84f3e', 0.62);
     if (paralyzed) this.drawParalysisMark(ctx, centerX, footY, time);
     if (paralysisStunned) this.drawParalysisShock(ctx, centerX, footY, time);
     if (silenced) this.drawSilenceBubble(ctx, centerX, footY, time);
@@ -294,26 +302,32 @@ export class PlayerRenderer {
     ctx.stroke();
     ctx.restore();
   }
-  private drawPoisonBubbles(
+  private drawToxinBubbles(
     ctx: CanvasRenderingContext2D,
     centerX: number,
     footY: number,
     time: number,
+    fillA: string,
+    fillB: string,
+    stroke: string,
+    highlight: string,
+    popStroke: string,
+    phaseOffset: number,
   ): void {
     ctx.save();
 
     for (let i = 0; i < 7; i += 1) {
-      const cycle = (time * (0.62 + i * 0.035) + i * 0.143) % 1;
+      const cycle = (time * (0.62 + i * 0.035) + i * 0.143 + phaseOffset) % 1;
       const side = i % 2 === 0 ? -1 : 1;
-      const drift = Math.sin(time * 2.8 + i * 1.7) * (3 + (i % 3));
+      const drift = Math.sin(time * 2.8 + i * 1.7 + phaseOffset * 4) * (3 + (i % 3));
       const x = centerX + side * (9 + (i * 5) % 15) + drift;
       const y = footY - 8 - cycle * 72;
       const radius = 2 + (i % 4);
       const fade = Math.min(1, cycle * 4) * Math.min(1, (1 - cycle) * 5);
 
       ctx.globalAlpha = 0.32 + fade * 0.48;
-      ctx.fillStyle = i % 3 === 0 ? '#9dff48' : '#46d84f';
-      ctx.strokeStyle = '#174f25';
+      ctx.fillStyle = i % 3 === 0 ? fillA : fillB;
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -321,13 +335,13 @@ export class PlayerRenderer {
       ctx.stroke();
 
       ctx.globalAlpha = 0.5 * fade;
-      ctx.fillStyle = '#ddff9b';
+      ctx.fillStyle = highlight;
       ctx.fillRect(Math.round(x - radius * 0.35), Math.round(y - radius * 0.45), 1.5, 1.5);
 
       if (cycle > 0.9) {
         const pop = (cycle - 0.9) / 0.1;
         ctx.globalAlpha = (1 - pop) * 0.42;
-        ctx.strokeStyle = '#79f05b';
+        ctx.strokeStyle = popStroke;
         ctx.beginPath();
         ctx.arc(x, y, radius + pop * 5, 0, Math.PI * 2);
         ctx.stroke();

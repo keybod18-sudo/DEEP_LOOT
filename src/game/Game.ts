@@ -1486,7 +1486,7 @@ export class Game {
 
     let iconX = centerX + width / 2 + 9;
     if (this.player.poisoned) {
-      this.drawStatusMark(iconX, topY + 3, '#7d1bb1', '#f0b6ff', '毒');
+      this.drawStatusMark(iconX, topY + 3, '#1d6f2b', '#baff84', '毒');
       iconX += 16;
     }
     if (this.player.slowed) {

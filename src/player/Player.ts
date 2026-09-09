@@ -29,6 +29,14 @@ export class Player implements PhysicsBody {
   poisonTickTimer = 0;
   poisonTickInterval = 1;
   poisonDamage = 0;
+  severePoisonTime = 0;
+  severePoisonTickTimer = 0;
+  severePoisonTickInterval = 1;
+  severePoisonDamage = 0;
+  decayTime = 0;
+  decayTickTimer = 0;
+  decayTickInterval = 1;
+  decayDamage = 0;
 
   paralysisTime = 0;
   paralysisStunTime = 0;
@@ -56,6 +64,14 @@ export class Player implements PhysicsBody {
     this.poisonTickTimer = 0;
     this.poisonTickInterval = 1;
     this.poisonDamage = 0;
+    this.severePoisonTime = 0;
+    this.severePoisonTickTimer = 0;
+    this.severePoisonTickInterval = 1;
+    this.severePoisonDamage = 0;
+    this.decayTime = 0;
+    this.decayTickTimer = 0;
+    this.decayTickInterval = 1;
+    this.decayDamage = 0;
     this.paralysisTime = 0;
     this.paralysisStunTime = 0;
     this.paralysisPulseTime = 0;
@@ -83,6 +99,8 @@ export class Player implements PhysicsBody {
   update(dt: number, input: Input, stage: Stage): void {
     this.invulnerability = Math.max(0, this.invulnerability - dt);
     this.updatePoison(dt);
+    this.updateSeverePoison(dt);
+    this.updateDecay(dt);
     this.updateTimedStatuses(dt);
 
     const disabled = this.paralysisStunned || this.sleeping || this.frozen;
@@ -264,6 +282,20 @@ export class Player implements PhysicsBody {
     if (this.poisonTickTimer <= 0) this.poisonTickTimer = this.poisonTickInterval;
   }
 
+  applySeverePoison(_duration: number, tickInterval: number, damage: number): void {
+    this.severePoisonTime = Number.POSITIVE_INFINITY;
+    this.severePoisonTickInterval = Math.max(0.1, tickInterval);
+    this.severePoisonDamage = Math.max(this.severePoisonDamage, damage);
+    if (this.severePoisonTickTimer <= 0) this.severePoisonTickTimer = this.severePoisonTickInterval;
+  }
+
+  applyDecay(_duration: number, tickInterval: number, damage: number): void {
+    this.decayTime = Number.POSITIVE_INFINITY;
+    this.decayTickInterval = Math.max(0.1, tickInterval);
+    this.decayDamage = Math.max(this.decayDamage, damage);
+    if (this.decayTickTimer <= 0) this.decayTickTimer = this.decayTickInterval;
+  }
+
   applyParalysis(_duration: number): void {
     const wasParalyzed = this.paralyzed;
     this.paralysisTime = Number.POSITIVE_INFINITY;
@@ -309,11 +341,23 @@ export class Player implements PhysicsBody {
     this.poisonTime = 0;
     this.poisonTickTimer = 0;
     this.poisonDamage = 0;
+    this.severePoisonTime = 0;
+    this.severePoisonTickTimer = 0;
+    this.severePoisonDamage = 0;
+    this.decayTime = 0;
+    this.decayTickTimer = 0;
+    this.decayDamage = 0;
   }
   clearStatusEffects(): void {
     this.poisonTime = 0;
     this.poisonTickTimer = 0;
     this.poisonDamage = 0;
+    this.severePoisonTime = 0;
+    this.severePoisonTickTimer = 0;
+    this.severePoisonDamage = 0;
+    this.decayTime = 0;
+    this.decayTickTimer = 0;
+    this.decayDamage = 0;
     this.paralysisTime = 0;
     this.paralysisStunTime = 0;
     this.paralysisPulseTime = 0;
@@ -326,7 +370,7 @@ export class Player implements PhysicsBody {
   }
 
   get hasStatusEffects(): boolean {
-    return this.poisoned || this.paralyzed || this.slowed || this.sealed ||
+    return this.toxinAffected || this.paralyzed || this.slowed || this.sealed ||
       this.silenced || this.blinded || this.sleeping || this.frozen;
   }
 
@@ -337,6 +381,9 @@ export class Player implements PhysicsBody {
   }
 
   get poisoned(): boolean { return this.poisonTime > 0; }
+  get severelyPoisoned(): boolean { return this.severePoisonTime > 0; }
+  get decaying(): boolean { return this.decayTime > 0; }
+  get toxinAffected(): boolean { return this.poisoned || this.severelyPoisoned || this.decaying; }
   get paralyzed(): boolean { return this.paralysisTime > 0; }
   get paralysisStunned(): boolean { return this.paralysisStunTime > 0; }
   get slowed(): boolean { return this.slowTime > 0; }
@@ -361,6 +408,24 @@ export class Player implements PhysicsBody {
       this.poisonTime = 0;
       this.poisonTickTimer = 0;
       this.poisonDamage = 0;
+    }
+  }
+
+  private updateSeverePoison(dt: number): void {
+    if (this.severePoisonTime <= 0 || this.hp <= 0) return;
+    this.severePoisonTickTimer -= dt;
+    while (this.severePoisonTickTimer <= 0 && this.severePoisonTime > 0 && this.hp > 0) {
+      this.hp = Math.max(0, this.hp - this.severePoisonDamage);
+      this.severePoisonTickTimer += this.severePoisonTickInterval;
+    }
+  }
+
+  private updateDecay(dt: number): void {
+    if (this.decayTime <= 0 || this.hp <= 0) return;
+    this.decayTickTimer -= dt;
+    while (this.decayTickTimer <= 0 && this.decayTime > 0 && this.hp > 0) {
+      this.hp = Math.max(0, this.hp - this.decayDamage);
+      this.decayTickTimer += this.decayTickInterval;
     }
   }
 
@@ -438,6 +503,8 @@ export class Player implements PhysicsBody {
       this.sleeping,
       this.frozen,
       this.poisoned,
+      this.severelyPoisoned,
+      this.decaying,
       this.slowed,
       this.paralyzed,
       this.silenced,
