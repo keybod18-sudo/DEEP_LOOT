@@ -21,8 +21,8 @@ const MONKEY_RETREAT_SPEED = 5.60;
 const MONKEY_RETREAT_LIFT = 8.60;
 const MONKEY_RETREAT_MAX_TIME = 0.72;
 
-const DRAW_W = 32;
-const DRAW_H = 34;
+const DRAW_W = 36;
+const DRAW_H = 42;
 
 const KINDS: ThreeWiseMonkeyKind[] = ['mizaru', 'iwazaru', 'kikazaru'];
 const POSES: MonkeyPose[] = ['runA', 'runB', 'jump', 'attack'];

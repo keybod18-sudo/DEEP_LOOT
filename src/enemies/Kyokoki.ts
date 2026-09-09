@@ -24,7 +24,7 @@ const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
 const DRAW_W = 44;
-const DRAW_H = 40;
+const DRAW_H = 46;
 
 const frameUrls: Record<KyokokiPose, string> = {
   idleA: new URL('../../assets/monsters/kyokoki/idleA.svg', import.meta.url).href,
