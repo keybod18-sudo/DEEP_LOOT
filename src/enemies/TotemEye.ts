@@ -29,8 +29,12 @@ const ATTACK_COOLDOWN = 1.6;
 const DECAY_DURATION = 999;
 const DECAY_TICK = 1.0;
 const DECAY_DAMAGE = 7;
-const BODY_W = 42;
-const BODY_H = 92;
+
+// IMPORTANT: x/y/w/h are the EYE BODY hitbox only.
+// The organic stem is visual-only and intentionally has no collision.
+const BODY_W = 38;
+const BODY_H = 36;
+export const TOTEM_EYE_STEM_LENGTH = 44;
 
 export class TotemEye extends Enemy {
   readonly type: 'totemEye' | 'totemEyeDecay';
@@ -72,6 +76,7 @@ export class TotemEye extends Enemy {
   }
 
   protected updateKnockback(_dt: number, _stage: Stage): void {
+    // A rooted Totem Eye does not move when hit.
     this.knockbackTime = 0;
     this.resetAnchor();
   }
@@ -108,7 +113,7 @@ export class TotemEye extends Enemy {
       return;
     }
 
-    const dx = (context.player.x + context.player.w / 2) - (this.x + this.w / 2);
+    const dx = (context.player.x + context.player.w / 2) - this.eyeCenterX;
     const dy = (context.player.y + context.player.h / 2) - this.eyeCenterY;
     if (canAttack && Math.hypot(dx, dy) <= ATTACK_RANGE && this.cooldown <= 0) {
       this.state = 'charge';
@@ -117,11 +122,11 @@ export class TotemEye extends Enemy {
   }
 
   private updateEyeTracking(context: EnemyContext, dt: number): void {
-    const dx = (context.player.x + context.player.w / 2) - (this.x + this.w / 2);
+    const dx = (context.player.x + context.player.w / 2) - this.eyeCenterX;
     const dy = (context.player.y + context.player.h / 2) - this.eyeCenterY;
     const distance = Math.max(1, Math.hypot(dx, dy));
-    const desiredX = Math.max(-5.4, Math.min(5.4, (dx / distance) * 5.4));
-    const desiredY = Math.max(-4.2, Math.min(4.2, (dy / distance) * 4.2));
+    const desiredX = Math.max(-5.2, Math.min(5.2, (dx / distance) * 5.2));
+    const desiredY = Math.max(-4.0, Math.min(4.0, (dy / distance) * 4.0));
     const blend = Math.min(1, dt * 8.5);
     this.lookX += (desiredX - this.lookX) * blend;
     this.lookY += (desiredY - this.lookY) * blend;
@@ -129,7 +134,8 @@ export class TotemEye extends Enemy {
   }
 
   private spawnOrb(context: EnemyContext): void {
-    const sx = this.x + this.w / 2 + this.lookX;
+    // Projectile always starts from the actual eye body, never from the stem.
+    const sx = this.eyeCenterX + this.lookX;
     const sy = this.eyeCenterY + this.lookY;
     const tx = context.player.x + context.player.w / 2;
     const ty = context.player.y + context.player.h / 2;
@@ -175,8 +181,22 @@ export class TotemEye extends Enemy {
     }
   }
 
+  get eyeCenterX(): number {
+    return this.x + this.w / 2;
+  }
+
   get eyeCenterY(): number {
-    return this.attachment === 'ground' ? this.y + 25 : this.y + this.h - 25;
+    return this.y + this.h / 2;
+  }
+
+  get stemAnchorY(): number {
+    return this.attachment === 'ground'
+      ? this.y + this.h + TOTEM_EYE_STEM_LENGTH
+      : this.y - TOTEM_EYE_STEM_LENGTH;
+  }
+
+  get stemHeadY(): number {
+    return this.attachment === 'ground' ? this.y + this.h - 5 : this.y + 5;
   }
 
   private resetAnchor(): void {

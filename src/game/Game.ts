@@ -1187,18 +1187,20 @@ export class Game {
         case 'totemEye': {
           if (Math.random() < 0.45) {
             const p = randomClingPoint();
-            return new TotemEye(p.x - 4, p.y + 4, 'ceiling', 'normal');
+            // 44px visual stem hangs below the ceiling. Collision starts at the eye body only.
+            return new TotemEye(p.x - 2, p.y + 44, 'ceiling', 'normal');
           }
-          const p = randomGroundPoint(92, 42);
-          return new TotemEye(p.x, p.y, 'ground', 'normal');
+          // 36px eye body + 44px visual stem = 80px from platform to eye top.
+          const p = randomGroundPoint(80, 40);
+          return new TotemEye(p.x + 1, p.y, 'ground', 'normal');
         }
         case 'totemEyeDecay': {
           if (Math.random() < 0.5) {
             const p = randomClingPoint();
-            return new TotemEye(p.x - 4, p.y + 4, 'ceiling', 'decay');
+            return new TotemEye(p.x - 2, p.y + 44, 'ceiling', 'decay');
           }
-          const p = randomGroundPoint(92, 42);
-          return new TotemEye(p.x, p.y, 'ground', 'decay');
+          const p = randomGroundPoint(80, 40);
+          return new TotemEye(p.x + 1, p.y, 'ground', 'decay');
         }
       }
     };
@@ -1652,8 +1654,8 @@ export class Game {
         enemy.type === 'caterpillar' ? 42 :
         enemy.type === 'frostMite' ? 42 :
         enemy.type === 'crystalEye' ? 58 :
-        enemy.type === 'totemEye' ? 46 :
-        enemy.type === 'totemEyeDecay' ? 46 :
+        enemy.type === 'totemEye' ? 42 :
+        enemy.type === 'totemEyeDecay' ? 42 :
         enemy.type === 'elemental' ? 42 :
         enemy.type === 'kagenoko' ? 38 :
         enemy.type === 'kyokoki' ? 48 :
@@ -1676,8 +1678,8 @@ export class Game {
         enemy.type === 'caterpillar' ? enemy.y - 26 :
         enemy.type === 'frostMite' ? enemy.y - 28 :
         enemy.type === 'crystalEye' ? enemy.y - 46 :
-        enemy.type === 'totemEye' ? enemy.y - 18 :
-        enemy.type === 'totemEyeDecay' ? enemy.y - 18 :
+        enemy.type === 'totemEye' ? enemy.y - 15 :
+        enemy.type === 'totemEyeDecay' ? enemy.y - 15 :
         enemy.type === 'elemental' ? enemy.y - 24 :
         enemy.type === 'kagenoko' ? enemy.y - 22 :
         // Kyokoki draws a 72px sprite over a 30px hitbox. Put the bar above

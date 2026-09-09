@@ -877,79 +877,119 @@ export class EnemyRenderer {
   }
 
   private drawTotemEye(ctx: CanvasRenderingContext2D, eye: TotemEye): void {
-    const centerX = eye.x + eye.w / 2;
-    const stemTopY = eye.attachment === 'ground' ? eye.y + 12 : eye.y + eye.h - 12;
-    const stemBottomY = eye.attachment === 'ground' ? eye.y + eye.h - 7 : eye.y + 7;
-    const headY = eye.eyeCenterY;
-    const bob = Math.sin(eye.actionTime * 1.8) * 0.8;
+    const centerX = eye.eyeCenterX;
+    const centerY = eye.eyeCenterY;
+    const bob = Math.sin(eye.actionTime * 2.15) * 1.0;
+    const bodyY = centerY + bob;
     const decay = eye.variant === 'decay';
+    const attachY = eye.stemHeadY + bob;
+    const rootY = eye.stemAnchorY;
+    const rootDirection = eye.attachment === 'ground' ? 1 : -1;
 
     ctx.save();
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    ctx.strokeStyle = decay ? '#2b1010' : '#161223';
-    ctx.lineWidth = 8;
+    // Organic stem: visual-only. It deliberately lives outside eye.x/y/w/h.
+    // Player attacks/projectiles therefore cannot hit this stalk.
+    const midY = (rootY + attachY) / 2;
+    const sway = Math.sin(eye.actionTime * 1.7 + centerX * 0.03) * 2.2;
+    ctx.strokeStyle = decay ? '#251016' : '#111321';
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(centerX, stemBottomY);
-    ctx.lineTo(centerX, stemTopY + bob);
+    ctx.moveTo(centerX, rootY);
+    ctx.bezierCurveTo(centerX - sway, midY + 7 * rootDirection, centerX + sway, midY - 5 * rootDirection, centerX, attachY);
     ctx.stroke();
 
-    ctx.strokeStyle = decay ? '#713128' : '#554181';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = decay ? '#6b2530' : '#413064';
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.moveTo(centerX + 1, stemBottomY);
-    ctx.lineTo(centerX + 1, stemTopY + bob);
+    ctx.moveTo(centerX + 0.8, rootY);
+    ctx.bezierCurveTo(centerX - sway * 0.65, midY + 6 * rootDirection, centerX + sway * 0.65, midY - 4 * rootDirection, centerX + 0.8, attachY);
     ctx.stroke();
 
-    const rootDirection = eye.attachment === 'ground' ? 1 : -1;
-    ctx.strokeStyle = decay ? '#6b2b22' : '#30254c';
+    // Small curled roots/tendrils: Kagenoko-like silhouette, still visual-only.
+    ctx.strokeStyle = decay ? '#55202a' : '#2a2145';
     ctx.lineWidth = 2;
-    for (const offset of [-13, -5, 6, 14]) {
+    for (const offset of [-10, 9]) {
       ctx.beginPath();
-      ctx.moveTo(centerX + offset * 0.18, stemBottomY);
-      ctx.quadraticCurveTo(
-        centerX + offset,
-        stemBottomY + 5 * rootDirection,
-        centerX + offset * 1.15,
-        stemBottomY + 11 * rootDirection,
-      );
+      ctx.moveTo(centerX, rootY);
+      ctx.quadraticCurveTo(centerX + offset * 0.55, rootY + 5 * rootDirection, centerX + offset, rootY + 7 * rootDirection);
+      ctx.quadraticCurveTo(centerX + offset * 1.25, rootY + 9 * rootDirection, centerX + offset * 0.75, rootY + 11 * rootDirection);
       ctx.stroke();
     }
 
-    ctx.fillStyle = decay ? '#351817' : '#141826';
-    ctx.beginPath();
-    ctx.arc(centerX, headY + bob, 18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = decay ? '#874237' : '#665091';
+    // Chibi shadow-body based on Kagenoko: big head, tiny horn/ears, one oversized eye.
+    ctx.fillStyle = decay ? '#261318' : '#0f1422';
+    ctx.strokeStyle = decay ? '#73303a' : '#49346e';
     ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX - 17, bodyY - 2);
+    ctx.quadraticCurveTo(centerX - 16, bodyY - 15, centerX - 6, bodyY - 17);
+    ctx.lineTo(centerX - 2, bodyY - 25);
+    ctx.lineTo(centerX + 3, bodyY - 18);
+    ctx.quadraticCurveTo(centerX + 15, bodyY - 15, centerX + 17, bodyY - 2);
+    ctx.quadraticCurveTo(centerX + 18, bodyY + 12, centerX + 7, bodyY + 16);
+    ctx.quadraticCurveTo(centerX, bodyY + 19, centerX - 8, bodyY + 15);
+    ctx.quadraticCurveTo(centerX - 18, bodyY + 10, centerX - 17, bodyY - 2);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = decay ? '#9a4d3e' : '#38245b';
+    // Side curls / small shadow fins.
+    ctx.strokeStyle = decay ? '#6d2835' : '#3d2c61';
+    ctx.lineWidth = 2.4;
     ctx.beginPath();
-    ctx.ellipse(centerX - 6, headY + bob - 6, 4, 7, -0.4, 0, Math.PI * 2);
-    ctx.ellipse(centerX + 7, headY + bob - 6, 4, 7, 0.4, 0, Math.PI * 2);
+    ctx.moveTo(centerX - 14, bodyY + 8);
+    ctx.quadraticCurveTo(centerX - 23, bodyY + 9, centerX - 20, bodyY + 1);
+    ctx.quadraticCurveTo(centerX - 18, bodyY - 4, centerX - 14, bodyY - 1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX + 13, bodyY + 9);
+    ctx.quadraticCurveTo(centerX + 22, bodyY + 11, centerX + 20, bodyY + 4);
+    ctx.stroke();
+
+    // Subtle body highlight keeps it readable against dark stages.
+    ctx.fillStyle = decay ? 'rgba(133,55,58,0.55)' : 'rgba(79,58,121,0.62)';
+    ctx.beginPath();
+    ctx.ellipse(centerX - 7, bodyY - 8, 4, 6, -0.55, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = decay ? '#ff674f' : '#f7db57';
+    // Oversized single eye.
+    const eyeX = centerX + eye.lookX;
+    const eyeY = bodyY + eye.lookY;
+    ctx.fillStyle = decay ? '#5a1817' : '#3a235b';
     ctx.beginPath();
-    ctx.arc(centerX + eye.lookX, headY + bob + eye.lookY, 5.7, 0, Math.PI * 2);
+    ctx.ellipse(eyeX, eyeY, 11.2, 9.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#ffffff';
+
+    ctx.fillStyle = decay ? '#ff624a' : '#ffd94f';
     ctx.beginPath();
-    ctx.arc(centerX + eye.lookX - 1.7, headY + bob + eye.lookY - 1.6, 1.6, 0, Math.PI * 2);
+    ctx.ellipse(eyeX, eyeY, 7.2, 7.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#17151d';
+    ctx.beginPath();
+    ctx.ellipse(eyeX + eye.lookX * 0.10, eyeY + eye.lookY * 0.08, 3.1, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff7d2';
+    ctx.beginPath();
+    ctx.arc(eyeX - 2.0, eyeY - 2.2, 1.8, 0, Math.PI * 2);
     ctx.fill();
 
     if (eye.state === 'charge') {
+      ctx.save();
       ctx.globalCompositeOperation = 'screen';
-      const glow = ctx.createRadialGradient(centerX, headY + bob, 1, centerX, headY + bob, 25);
-      glow.addColorStop(0, decay ? 'rgba(255,215,205,0.98)' : 'rgba(255,255,255,0.98)');
-      glow.addColorStop(0.4, decay ? 'rgba(180,50,35,0.78)' : 'rgba(255,226,95,0.78)');
+      const pulse = 22 + Math.sin(eye.stateTime * 20) * 2.5;
+      const glow = ctx.createRadialGradient(eyeX, eyeY, 1, eyeX, eyeY, pulse);
+      glow.addColorStop(0, decay ? 'rgba(255,220,205,0.98)' : 'rgba(255,255,230,0.98)');
+      glow.addColorStop(0.36, decay ? 'rgba(190,55,38,0.78)' : 'rgba(255,221,82,0.80)');
       glow.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(centerX, headY + bob, 25, 0, Math.PI * 2);
+      ctx.arc(eyeX, eyeY, pulse, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
     }
 
     for (const orb of eye.orbs) {
@@ -960,15 +1000,15 @@ export class EnemyRenderer {
       ctx.globalCompositeOperation = 'screen';
       const glow = ctx.createRadialGradient(x, y, 1, x, y, radius * 2.5);
       if (decay) {
-        glow.addColorStop(0, '#fff2ed');
-        glow.addColorStop(0.28, '#d86450');
-        glow.addColorStop(0.62, 'rgba(91, 18, 12, 0.92)');
-        glow.addColorStop(1, 'rgba(24, 0, 0, 0)');
+        glow.addColorStop(0, '#fff0e8');
+        glow.addColorStop(0.25, '#e05b43');
+        glow.addColorStop(0.58, 'rgba(101, 18, 14, 0.95)');
+        glow.addColorStop(1, 'rgba(22, 0, 0, 0)');
       } else {
         glow.addColorStop(0, '#ffffff');
-        glow.addColorStop(0.28, '#fff2a2');
-        glow.addColorStop(0.62, 'rgba(255, 208, 48, 0.84)');
-        glow.addColorStop(1, 'rgba(150, 100, 0, 0)');
+        glow.addColorStop(0.25, '#fff1a0');
+        glow.addColorStop(0.58, 'rgba(255, 211, 50, 0.86)');
+        glow.addColorStop(1, 'rgba(145, 96, 0, 0)');
       }
       ctx.fillStyle = glow;
       ctx.beginPath();
