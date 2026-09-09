@@ -1030,9 +1030,7 @@ export class Game {
       floorWeights[kind] += 2 + Math.floor(Math.random() * 4);
     }
 
-    // Corrupted slugs start appearing from floor 3.
-    if (this.floor < 3) floorWeights.decaySlug = 0;
-
+    // All monster species are eligible from floor 1. No unlock-by-floor gating.
     const weightedKinds: EnemyKind[] = [];
     for (const kind of allKinds) {
       for (let count = 0; count < floorWeights[kind]; count += 1) {
@@ -1191,7 +1189,7 @@ export class Game {
     const generatedEnemies: Enemy[] = [];
     // Keep at least one Red Bee visible on every floor so the new enemy cannot disappear by weight rolls.
     generatedEnemies.push(spawnEnemy('redBee'));
-    if (this.floor >= 3) generatedEnemies.push(spawnEnemy('decaySlug'));
+    generatedEnemies.push(spawnEnemy('decaySlug'));
     for (let index = 0; index < enemyCount; index += 1) {
       generatedEnemies.push(spawnEnemy(pickKind()));
     }

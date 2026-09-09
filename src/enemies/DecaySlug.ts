@@ -19,8 +19,8 @@ interface DecayTrail {
 const MAX_HP = Math.max(BALANCE.slug.maxHp + 18, 38);
 const CRAWL_SPEED = BALANCE.slug.crawlSpeed * 0.72;
 const CONTACT_DAMAGE = Math.max(BALANCE.slug.contactDamage + 2, 5);
-const TRAIL_LIFE = 6.5;
-const TRAIL_INTERVAL = 0.34;
+const TRAIL_LIFE = 30.0;
+const TRAIL_INTERVAL = 0.14;
 const DECAY_TICK_INTERVAL = 1.0;
 const DECAY_DAMAGE = 7;
 const DRAW_W = 50;
@@ -40,7 +40,7 @@ export class DecaySlug extends Enemy {
   readonly type = 'decaySlug' as const;
   private wanderDirection: -1 | 1 = Math.random() < 0.5 ? -1 : 1;
   private pauseTimer = 0;
-  private moveTimer = 1.8 + Math.random() * 2.8;
+  private moveTimer = 4.2 + Math.random() * 3.6;
   private trailTimer = Math.random() * TRAIL_INTERVAL;
   private static trails: DecayTrail[] = [];
 
@@ -89,17 +89,17 @@ export class DecaySlug extends Enemy {
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = (0.46 + pulse * 0.12) * fade;
-      ctx.fillStyle = '#7d2b24';
+      ctx.fillStyle = '#63201b';
       ctx.beginPath();
       ctx.ellipse(cx, cy, trail.w / 2, trail.h / 2, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.globalAlpha = (0.72 + pulse * 0.12) * fade;
-      ctx.strokeStyle = '#d15b46';
+      ctx.strokeStyle = '#bd4b38';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = '#b74738';
+      ctx.fillStyle = '#d05a45';
       for (let index = 0; index < 3; index += 1) {
         const bx = trail.x + 4 + ((index * 9 + trail.phase * 3) % Math.max(6, trail.w - 8));
         const rise = (now * (7 + index) + trail.phase * 2 + index * 3.1) % 7;
@@ -130,7 +130,7 @@ export class DecaySlug extends Enemy {
           this.wanderDirection = this.wanderDirection === 1 ? -1 : 1;
         }
         this.facing = this.wanderDirection;
-        this.moveTimer = 1.8 + Math.random() * 2.8;
+        this.moveTimer = 4.2 + Math.random() * 3.6;
       }
     } else {
       const atLeftEdge = this.x <= 1;
@@ -152,7 +152,7 @@ export class DecaySlug extends Enemy {
 
       this.moveTimer = Math.max(0, this.moveTimer - dt);
       if (this.moveTimer <= 0) {
-        this.pauseTimer = 0.6 + Math.random() * 1.5;
+        this.pauseTimer = 0.18 + Math.random() * 0.42;
         this.vx = 0;
         moving = false;
       }
@@ -166,7 +166,7 @@ export class DecaySlug extends Enemy {
     this.trailTimer -= dt;
     if (moving && this.grounded && this.trailTimer <= 0) {
       this.trailTimer += TRAIL_INTERVAL;
-      DecaySlug.addTrail(this.x + 2, this.y + this.h - 3, this.w - 4, 7);
+      DecaySlug.addTrail(this.x - 4, this.y + this.h - 4, this.w + 8, 10);
     }
 
     if (intersects(context.player, this)) {
@@ -203,30 +203,31 @@ export class DecaySlug extends Enemy {
     const cx = x + w / 2;
     const cy = y + h / 2;
     const nearby = this.trails.find((trail) =>
-      Math.abs((trail.x + trail.w / 2) - cx) < 11 &&
-      Math.abs((trail.y + trail.h / 2) - cy) < 6
+      Math.abs((trail.x + trail.w / 2) - cx) < 15 &&
+      Math.abs((trail.y + trail.h / 2) - cy) < 8
     );
 
     if (nearby) {
       nearby.life = TRAIL_LIFE;
       nearby.maxLife = TRAIL_LIFE;
-      nearby.w = Math.min(34, Math.max(nearby.w, w + 5));
+      nearby.w = Math.min(56, Math.max(nearby.w, w + 12));
+      nearby.h = Math.min(14, Math.max(nearby.h, h));
       return;
     }
 
     this.trails.push({
       x,
       y,
-      w: Math.max(20, w),
-      h: Math.max(6, h),
+      w: Math.max(32, w),
+      h: Math.max(9, h),
       life: TRAIL_LIFE,
       maxLife: TRAIL_LIFE,
       contactCooldown: 0,
       phase: Math.random() * Math.PI * 2,
     });
 
-    if (this.trails.length > 96) {
-      this.trails.splice(0, this.trails.length - 96);
+    if (this.trails.length > 480) {
+      this.trails.splice(0, this.trails.length - 480);
     }
   }
 
