@@ -105,19 +105,19 @@ const caterpillarPupaUrls = [1, 2, 3, 4].map((index) =>
 );
 const caterpillarFlyUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 const caterpillarRamUrls = [1, 2, 3, 4].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
