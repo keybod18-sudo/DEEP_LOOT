@@ -45,6 +45,7 @@ export type EnemyKind =
   | 'crystalEye'
   | 'kagenoko'
   | 'kyokoki'
+  | 'kyokokiPurple'
   | 'elemental'
   | 'mizaru'
   | 'iwazaru'
@@ -149,6 +150,10 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
   },
   kyokoki: {
     detectX: 360, detectY: 180, loseX: 500, loseY: 260, memory: 3.0,
+    idleStyle: 'patrol', idleSpeed: 0.18, idleRadius: 100, moveChance: 0.70,
+  },
+  kyokokiPurple: {
+    detectX: 390, detectY: 200, loseX: 545, loseY: 285, memory: 3.2,
     idleStyle: 'patrol', idleSpeed: 0.18, idleRadius: 100, moveChance: 0.70,
   },
   elemental: {

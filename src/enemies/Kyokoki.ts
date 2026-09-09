@@ -4,7 +4,8 @@ import type { EnemyContext } from './Enemy';
 import { Enemy } from './Enemy';
 
 type KyokokiState = 'roam' | 'drum';
-type SupportKind = 'haste' | 'berserk' | 'regeneration';
+export type KyokokiVariant = 'normal' | 'purple';
+type SupportKind = 'haste' | 'berserk' | 'regeneration' | 'all';
 
 type SupportChoice = {
   target: Enemy;
@@ -41,15 +42,20 @@ const idleImages: HTMLImageElement[] = [];
 const drumImages: HTMLImageElement[] = [];
 
 export class Kyokoki extends Enemy {
-  readonly type = 'kyokoki' as const;
+  readonly type: 'kyokoki' | 'kyokokiPurple';
   state: KyokokiState = 'roam';
   private supportTriggered = false;
   private supportTarget: Enemy | null = null;
   private supportKind: SupportKind = 'haste';
+  private readonly purple: boolean;
 
-  constructor(x: number, y: number) {
+  constructor(x: number, y: number, variant: KyokokiVariant = 'normal') {
     super(x, y, 26, 30, MAX_HP, MAX_HP);
-    this.cooldown = 1.0 + Math.random() * 1.2;
+    this.purple = variant === 'purple';
+    this.type = this.purple ? 'kyokokiPurple' : 'kyokoki';
+    this.cooldown = this.purple
+      ? 1.25 + Math.random() * 1.1
+      : 1.0 + Math.random() * 1.2;
   }
 
   static async loadAssets(): Promise<void> {
@@ -151,7 +157,11 @@ export class Kyokoki extends Enemy {
       const target = this.supportTarget;
 
       if (target?.alive) {
-        if (this.supportKind === 'haste') {
+        if (this.supportKind === 'all') {
+          if (!target.hasteActive) target.applyHaste(BUFF_DURATION);
+          if (!target.berserkActive) target.applyBerserk(BUFF_DURATION);
+          if (!target.regenerationActive) target.applyRegeneration(BUFF_DURATION);
+        } else if (this.supportKind === 'haste') {
           if (!target.hasteActive) target.applyHaste(BUFF_DURATION);
         } else if (this.supportKind === 'berserk') {
           if (!target.berserkActive) target.applyBerserk(BUFF_DURATION);
@@ -179,11 +189,22 @@ export class Kyokoki extends Enemy {
     const centerY = this.y + this.h / 2;
 
     const candidates = context.allies.filter((enemy) => {
-      if (!enemy.alive || enemy === this || enemy.type === 'kyokoki') return false;
+      if (!enemy.alive || enemy === this || enemy.type === 'kyokoki' || enemy.type === 'kyokokiPurple') return false;
       const dx = Math.abs((enemy.x + enemy.w / 2) - centerX);
       const dy = Math.abs((enemy.y + enemy.h / 2) - centerY);
       return dx <= SUPPORT_RADIUS_X && dy <= SUPPORT_RADIUS_Y;
     });
+
+    if (this.purple) {
+      const targets = candidates.filter((enemy) =>
+        !enemy.hasteActive || !enemy.berserkActive || !enemy.regenerationActive
+      );
+      if (!targets.length) return null;
+      return {
+        target: targets[Math.floor(Math.random() * targets.length)]!,
+        kind: 'all',
+      };
+    }
 
     const choices: SupportChoice[] = [];
 
@@ -226,7 +247,9 @@ export class Kyokoki extends Enemy {
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
-    ctx.filter = 'none';
+    ctx.filter = this.purple
+      ? 'hue-rotate(245deg) saturate(1.6) brightness(1.05)'
+      : 'none';
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(centerX), Math.round(footY + bob));
 
@@ -235,11 +258,13 @@ export class Kyokoki extends Enemy {
 
     if (this.state === 'drum') {
       ctx.shadowColor =
-        this.supportKind === 'haste'
-          ? '#ff9a20'
-          : this.supportKind === 'berserk'
-            ? '#ff303c'
-            : '#5cff86';
+        this.supportKind === 'all'
+          ? '#b858ff'
+          : this.supportKind === 'haste'
+            ? '#ff9a20'
+            : this.supportKind === 'berserk'
+              ? '#ff303c'
+              : '#5cff86';
       ctx.shadowBlur = 12;
     }
 

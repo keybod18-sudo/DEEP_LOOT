@@ -978,6 +978,7 @@ export class Game {
       | 'frostMite'
       | 'kagenoko'
       | 'kyokoki'
+      | 'kyokokiPurple'
       | 'crystalEye'
       | 'mizaru'
       | 'iwazaru'
@@ -1006,6 +1007,7 @@ export class Game {
       frostMite: 1,
       kagenoko: 1,
       kyokoki: 1,
+      kyokokiPurple: 1,
       crystalEye: 1,
       totemEye: 1,
       totemEyeDecay: 1,
@@ -1057,6 +1059,7 @@ export class Game {
       frostMite: 3,
       kagenoko: 3,
       kyokoki: 2,
+      kyokokiPurple: 1,
       skeletonArcher: 3,
       elemental: 4,
       mizaru: 3,
@@ -1161,6 +1164,10 @@ export class Game {
         case 'kyokoki': {
           const p = randomGroundPoint(30, 34);
           return new Kyokoki(p.x, p.y);
+        }
+        case 'kyokokiPurple': {
+          const p = randomGroundPoint(30, 34);
+          return new Kyokoki(p.x, p.y, 'purple');
         }
         case 'elemental': {
           const p = randomAirPoint(30, 38, 120, Math.max(180, this.stage.height - 210));
@@ -1684,7 +1691,7 @@ export class Game {
         enemy.type === 'kagenoko' ? enemy.y - 22 :
         // Kyokoki draws a 72px sprite over a 30px hitbox. Put the bar above
         // the rendered head rather than above the much smaller physics box.
-        enemy.type === 'kyokoki' ? enemy.y - 48 :
+        enemy.type === 'kyokoki' || enemy.type === 'kyokokiPurple' ? enemy.y - 48 :
         enemy.type === 'mizaru' || enemy.type === 'iwazaru' || enemy.type === 'kikazaru' ? enemy.y - 34 :
         enemy.y - 16;
 
