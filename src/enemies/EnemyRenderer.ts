@@ -131,7 +131,12 @@ const SOURCE_FACING = {
   rat: 1,
   skeleton: -1,
   skeletonArcher: -1,
-  caterpillar: -1,
+  // Keep lifecycle sprite directions independent. Larva art is authored facing right,
+  // while the redesigned butterfly set uses the opposite source orientation.
+  // Do not collapse these back into one caterpillar facing value.
+  caterpillarLarva: 1,
+  caterpillarPupa: 1,
+  caterpillarButterfly: -1,
 } as const satisfies Record<string, Facing>;
 
 type SpriteBounds = { x: number; y: number; w: number; h: number };
@@ -945,7 +950,7 @@ export class EnemyRenderer {
       applySpriteFacing(
         ctx,
         caterpillar.facing,
-        SOURCE_FACING.caterpillar,
+        SOURCE_FACING.caterpillarButterfly,
       );
       if (caterpillar.butterflyState === 'ramWindup') {
         ctx.rotate(caterpillar.facing * -0.09);
@@ -968,7 +973,9 @@ export class EnemyRenderer {
       applySpriteFacing(
         ctx,
         caterpillar.facing,
-        SOURCE_FACING.caterpillar,
+        caterpillar.phase === 'larva'
+          ? SOURCE_FACING.caterpillarLarva
+          : SOURCE_FACING.caterpillarPupa,
       );
       const groundOffset = caterpillar.phase === 'larva' ? 6 : 0;
       ctx.drawImage(

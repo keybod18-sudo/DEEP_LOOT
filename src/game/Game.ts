@@ -1544,6 +1544,7 @@ export class Game {
         enemy.type === 'crystalEye' ? 58 :
         enemy.type === 'elemental' ? 42 :
         enemy.type === 'kagenoko' ? 38 :
+        enemy.type === 'kyokoki' ? 52 :
         36;
 
       const y =
@@ -1562,6 +1563,9 @@ export class Game {
         enemy.type === 'crystalEye' ? enemy.y - 46 :
         enemy.type === 'elemental' ? enemy.y - 24 :
         enemy.type === 'kagenoko' ? enemy.y - 22 :
+        // Kyokoki draws a 72px sprite over a 30px hitbox. Put the bar above
+        // the rendered head rather than above the much smaller physics box.
+        enemy.type === 'kyokoki' ? enemy.y - 52 :
         enemy.y - 16;
 
       this.drawHpBar(
