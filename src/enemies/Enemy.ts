@@ -35,6 +35,7 @@ export type EnemyKind =
   | 'redBee'
   | 'roper'
   | 'slug'
+  | 'decaySlug'
   | 'rat'
   | 'skeleton'
   | 'skeletonArcher'
@@ -99,6 +100,10 @@ const AWARENESS: Record<EnemyKind, AwarenessProfile> = {
   slug: {
     detectX: 105, detectY: 60, loseX: 165, loseY: 95, memory: 1.0,
     idleStyle: 'creep', idleSpeed: 0.10, idleRadius: 58, moveChance: 0.52,
+  },
+  decaySlug: {
+    detectX: 135, detectY: 72, loseX: 210, loseY: 120, memory: 1.4,
+    idleStyle: 'creep', idleSpeed: 0.08, idleRadius: 52, moveChance: 0.64,
   },
   rat: {
     detectX: 250, detectY: 100, loseX: 370, loseY: 160, memory: 1.5,

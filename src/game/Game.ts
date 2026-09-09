@@ -12,6 +12,7 @@ import { Bee } from '../enemies/Bee';
 import { RedBee } from '../enemies/RedBee';
 import { Roper } from '../enemies/Roper';
 import { Slug } from '../enemies/Slug';
+import { DecaySlug } from '../enemies/DecaySlug';
 import { Rat } from '../enemies/Rat';
 import { Skeleton } from '../enemies/Skeleton';
 import { SkeletonArcher } from '../enemies/SkeletonArcher';
@@ -132,6 +133,7 @@ export class Game {
       Kagenoko.loadAssets(),
       Bee.loadAssets(),
       RedBee.loadAssets(),
+      DecaySlug.loadAssets(),
       Kyokoki.loadAssets(),
       ThreeWiseMonkey.loadAssets(),
       TreasureChest.loadAssets(),
@@ -161,6 +163,7 @@ export class Game {
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
+    DecaySlug.clearTrails();
     this.damageNumbers.length = 0;
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
@@ -360,6 +363,14 @@ export class Game {
         },
       });
     }
+
+    DecaySlug.updateTrails(dt, this.player, () => {
+      if (this.player.decaying) return;
+      if (this.resistsStatusEffect()) return;
+      this.player.applyDecay(999, 1.0, 7);
+      this.showNotice('腐敗床を踏んだ');
+      this.refreshUi();
+    });
 
     this.spreadNearbyEnemies();
     this.updateAhrimanFireballs(dt);
@@ -806,6 +817,7 @@ export class Game {
     this.ahrimanFireballs = [];
     this.freezeLancers = [];
     this.skeletonArrows = [];
+    DecaySlug.clearTrails();
     this.damageNumbers.length = 0;
     this.fireballCooldown = 0;
     this.thunderCooldown = 0;
@@ -955,6 +967,7 @@ export class Game {
       | 'redBee'
       | 'roper'
       | 'slug'
+      | 'decaySlug'
       | 'rat'
       | 'skeleton'
       | 'skeletonArcher'
@@ -980,6 +993,7 @@ export class Game {
       redBee: 2,
       roper: 1,
       slug: 1,
+      decaySlug: 1,
       rat: 1,
       skeleton: 2,
       skeletonArcher: 1,
@@ -1016,6 +1030,9 @@ export class Game {
       floorWeights[kind] += 2 + Math.floor(Math.random() * 4);
     }
 
+    // Corrupted slugs start appearing from floor 3.
+    if (this.floor < 3) floorWeights.decaySlug = 0;
+
     const weightedKinds: EnemyKind[] = [];
     for (const kind of allKinds) {
       for (let count = 0; count < floorWeights[kind]; count += 1) {
@@ -1029,6 +1046,7 @@ export class Game {
       ahriman: 3,
       bee: 4,
       redBee: 3,
+      decaySlug: 3,
       roper: 3,
       frostMite: 3,
       kagenoko: 3,
@@ -1102,6 +1120,10 @@ export class Game {
           const p = randomGroundPoint(11, 40);
           return new Slug(p.x, p.y);
         }
+        case 'decaySlug': {
+          const p = randomGroundPoint(13, 44);
+          return new DecaySlug(p.x, p.y);
+        }
         case 'rat': {
           const p = randomGroundPoint(14, 28);
           return new Rat(p.x, p.y);
@@ -1169,6 +1191,7 @@ export class Game {
     const generatedEnemies: Enemy[] = [];
     // Keep at least one Red Bee visible on every floor so the new enemy cannot disappear by weight rolls.
     generatedEnemies.push(spawnEnemy('redBee'));
+    if (this.floor >= 3) generatedEnemies.push(spawnEnemy('decaySlug'));
     for (let index = 0; index < enemyCount; index += 1) {
       generatedEnemies.push(spawnEnemy(pickKind()));
     }
@@ -1300,6 +1323,7 @@ export class Game {
   private drawEnemySprite(ctx: CanvasRenderingContext2D, enemy: Enemy): void {
     if (enemy.type === 'bee') (enemy as Bee).draw(ctx);
     else if (enemy.type === 'redBee') (enemy as RedBee).draw(ctx);
+    else if (enemy.type === 'decaySlug') (enemy as DecaySlug).draw(ctx);
     else if (enemy.type === 'crystalEye') (enemy as CrystalEye).draw(ctx);
     else if (enemy.type === 'kagenoko') (enemy as Kagenoko).draw(ctx);
     else if (enemy.type === 'kyokoki') (enemy as Kyokoki).draw(ctx);
@@ -1443,6 +1467,7 @@ export class Game {
       -Math.round(this.cameraY) + Math.round(shakeY),
     );
     this.stage.draw(this.ctx);
+    DecaySlug.drawTrails(this.ctx);
 
     for (const chest of this.chests) chest.draw(this.ctx);
     for (const drop of this.loot) drop.draw(this.ctx);

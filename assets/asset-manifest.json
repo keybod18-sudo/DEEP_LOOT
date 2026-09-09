@@ -1,5 +1,5 @@
 {
-  "version": "bee-motion-redbee-spawn-sting-v1",
+  "version": "decay-slug-v1",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -201,6 +201,16 @@
     "assets/monsters/red_bee/fly_03.png": "e09329269baa015983ca94caf8303e96121f383cacde8d79dcdda647df0c6604",
     "assets/monsters/red_bee/fly_04.png": "0a369f193f21b9e7e9d80f214826255b62c7591970baaf7f724e76510bda2af9",
     "assets/monsters/red_bee/sting_01.png": "ddce1c7b08be1609dd8a491c6f08a58eda6dcfd3d79a2a38b11f9c3064e9a76a",
-    "assets/monsters/red_bee/sting_02.png": "f8ea39a6122ccf7ce9b0dbd6f1b1b9827496519f22312c1b6f19ca672ef54138"
+    "assets/monsters/red_bee/sting_02.png": "f8ea39a6122ccf7ce9b0dbd6f1b1b9827496519f22312c1b6f19ca672ef54138",
+    "assets/monsters/decay_slug/move_01.png": "ee9db250dba470bd1763413d67f7030950283ffe13c61577aece7839f7849080",
+    "assets/monsters/decay_slug/move_02.png": "81dd67b7a6bf248a0f3db22c6aba125c88aad3a07f00d7a708b2a0c3a25e3cca",
+    "assets/monsters/decay_slug/move_03.png": "dd475d5468323158467e52b7096784686603f204b79e522c68df83ace0f9eabd",
+    "assets/monsters/decay_slug/move_04.png": "06b1977eeaed1be718e68a596ca2874c4ccc3187de32bf183639f2ff87793504",
+    "assets/monsters/decay_slug/move_05.png": "3d7a3f04010745643139db72f055acd4738e12c3d6c6897333eaf69657bdc3b9",
+    "assets/monsters/decay_slug/move_06.png": "9b0c93bc35e4ad170bff97039d2b36b9f0761af199a5dbb36bbfc4f10108ce2a",
+    "assets/monsters/decay_slug/squash_01.png": "6a66c38cb34b8820f3abdaa993b61b75a5a44a9d72a2cc978d63def7ec9c03a0",
+    "assets/monsters/decay_slug/squash_02.png": "94810a18bd86174bd6097adced6a9dbccc95ef16fce6a956e4685be36da59521",
+    "assets/monsters/decay_slug/squash_03.png": "f20b2731647c9cfd1288905022f3aff9c4fe93ff91f52b724a4335ba95077f12",
+    "assets/monsters/decay_slug/squash_04.png": "3ee0c41c36f686556719839f0f6f794d31543b4102684bd74ea07ad4a5df3e65"
   }
 }
