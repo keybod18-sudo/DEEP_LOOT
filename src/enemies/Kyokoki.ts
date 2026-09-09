@@ -248,7 +248,7 @@ export class Kyokoki extends Enemy {
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.filter = this.purple
-      ? 'hue-rotate(245deg) saturate(1.6) brightness(1.05)'
+      ? 'hue-rotate(286deg) saturate(2.35) brightness(0.9) contrast(1.12)'
       : 'none';
     ctx.imageSmoothingEnabled = false;
     ctx.translate(Math.round(centerX), Math.round(footY + bob));

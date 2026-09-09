@@ -1794,22 +1794,20 @@ export class Game {
 
   private drawNotice(): void {
     if (this.noticeTime <= 0 || !this.notice) return;
-
-    const right = this.ctx.canvas.width - 10;
-    const top = 10;
-    const height = 22;
-
     this.ctx.save();
     this.ctx.font = '11px system-ui';
-    const width = Math.min(210, Math.ceil(this.ctx.measureText(this.notice).width) + 16);
-    const left = right - width;
-
-    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.78)';
-    this.ctx.fillRect(left, top, width, height);
+    const width = Math.min(164, Math.max(72, this.ctx.measureText(this.notice).width + 14));
+    const height = 20;
+    const x = 640 - width - 10;
+    const y = 8;
+    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.82)';
+    this.ctx.fillRect(x, y, width, height);
+    this.ctx.strokeStyle = 'rgba(196, 207, 229, 0.28)';
+    this.ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.textAlign = 'right';
+    this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(this.notice, right - 7, top + height / 2 + 0.5);
+    this.ctx.fillText(this.notice, x + width / 2, y + height / 2 + 0.5);
     this.ctx.restore();
   }
 
