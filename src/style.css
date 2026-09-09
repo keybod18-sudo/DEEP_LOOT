@@ -545,3 +545,28 @@ canvas {
   width: 100%;
   margin-top: 6px;
 }
+
+
+/* Live floor contents shown directly below the game screen. */
+.floor-info {
+  display: grid;
+  gap: 7px;
+  margin-top: 7px;
+  padding: 9px 10px;
+  border: 1px solid #cfd5dc;
+  border-radius: 9px;
+  background: #f7f9fb;
+  font-size: 12px;
+}
+.floor-info-row { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: start; }
+.floor-info-row > strong { padding-top: 3px; color: #344054; font-size: 11px; }
+.floor-info-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.floor-info-chip { display: inline-flex; gap: 4px; align-items: center; min-height: 23px; padding: 3px 7px; border: 1px solid #cbd3dc; border-radius: 999px; background: #ffffff; white-space: nowrap; }
+.floor-info-chip b { font-size: 10px; }
+.enemy-chip { color: #273444; }
+.chest-chip.common { border-color: #a56b3f; color: #754321; background: #fff8f1; }
+.chest-chip.uncommon { border-color: #9da9b8; color: #536170; background: #f6f8fb; }
+.chest-chip.rare { border-color: #c69412; color: #805d00; background: #fff9df; }
+.chest-chip.mythic { border-color: #d83232; color: #a51818; background: #fff0f0; font-weight: 700; }
+.floor-info-empty { color: #98a2b3; padding: 3px 0; }
+@media (max-width: 760px) { .floor-info-row { grid-template-columns: 1fr; gap: 3px; } }

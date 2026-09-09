@@ -5,6 +5,17 @@ const openUrl = new URL('../../assets/objects/chest/open.png', import.meta.url).
 
 export type ChestRarity = '銅' | '銀' | '金' | '赤神話';
 
+export const CHEST_RARITY_LABELS: Record<ChestRarity, string> = {
+  銅: 'コモン（銅）',
+  銀: 'アンコモン（銀）',
+  金: 'レア（金）',
+  赤神話: '神話レア（赤）',
+};
+
+export function getChestRarityLabel(rarity: ChestRarity): string {
+  return CHEST_RARITY_LABELS[rarity];
+}
+
 interface ChestPalette {
   glow: string;
   border: string;

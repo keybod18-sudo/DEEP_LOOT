@@ -40,7 +40,7 @@ import { createDungeonStage } from '../stage/DungeonGenerator';
 import { GameLoop } from './GameLoop';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
-import { TreasureChest, type ChestRarity } from '../items/TreasureChest';
+import { TreasureChest, getChestRarityLabel, type ChestRarity } from '../items/TreasureChest';
 
 export interface HudElements {
   floor: HTMLElement;
@@ -57,6 +57,37 @@ interface DamageNumber {
   age: number;
   life: number;
 }
+
+const ENEMY_DISPLAY_NAMES: Record<string, string> = {
+  slime: 'スライム',
+  goblin: 'ゴブリン',
+  ahriman: 'アーリマン',
+  snake: 'ヘビ',
+  bat: 'コウモリ',
+  bee: 'ハチ',
+  redBee: '赤ハチ',
+  roper: 'ローパー',
+  slug: 'ナメクジ',
+  decaySlug: '腐敗ナメクジ',
+  rat: 'ネズミ',
+  skeleton: 'スケルトン',
+  skeletonArcher: 'スケルトンアーチャー',
+  bomb: 'ボム',
+  caterpillar: 'イモムシ',
+  frostMite: 'フロストマイト',
+  crystalEye: 'クリスタルアイ',
+  kagenoko: 'カゲノコ',
+  kyokoki: '太鼓鬼',
+  kyokokiPurple: '太鼓鬼・紫',
+  elemental: 'エレメンタル',
+  mizaru: '見ざる',
+  iwazaru: '言わざる',
+  kikazaru: '聞かざる',
+  totemEye: 'トーテムアイ',
+  totemEyeDecay: 'トーテムアイ（腐）',
+};
+
+const CHEST_RARITY_ORDER: ChestRarity[] = ['銅', '銀', '金', '赤神話'];
 
 export class Game {
   private readonly ctx: CanvasRenderingContext2D;
@@ -94,6 +125,8 @@ export class Game {
   private floor = 1;
   private notice = '';
   private noticeTime = 0;
+  private readonly floorInfoEl: HTMLElement;
+  private floorInfoSignature = '';
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -104,6 +137,13 @@ export class Game {
     if (!context) throw new Error('2D Canvasを初期化できません。');
     this.ctx = context;
     this.ctx.imageSmoothingEnabled = false;
+
+    this.floorInfoEl = document.createElement('section');
+    this.floorInfoEl.className = 'floor-info';
+    this.floorInfoEl.setAttribute('aria-live', 'polite');
+    const shell = canvas.closest('.game-shell');
+    if (shell) shell.insertAdjacentElement('afterend', this.floorInfoEl);
+    else canvas.insertAdjacentElement('afterend', this.floorInfoEl);
 
     window.addEventListener('deep-loot-memory-change', (event) => {
       const slots = (event as CustomEvent<{ slots?: string[] }>).detail?.slots;
@@ -1059,7 +1099,6 @@ export class Game {
       frostMite: 3,
       kagenoko: 3,
       kyokoki: 2,
-      kyokokiPurple: 1,
       skeletonArcher: 3,
       elemental: 4,
       mizaru: 3,
@@ -1279,10 +1318,10 @@ export class Game {
     this.gold += goldReward;
     const item = createTreasureItem(this.floor + 1, chest.rarity);
     if (this.inventory.add(item)) {
-      this.showNotice(`${chest.rarity}宝箱: ${item.name} / ${goldReward}G`);
+      this.showNotice(`${getChestRarityLabel(chest.rarity)}宝箱: ${item.name} / ${goldReward}G`);
     } else {
       this.loot.push(new LootDrop(chest.x + 8, chest.y - 5, item));
-      this.showNotice(`${chest.rarity}宝箱: ${goldReward}G（アイテムは床へ）`);
+      this.showNotice(`${getChestRarityLabel(chest.rarity)}宝箱: ${goldReward}G（アイテムは床へ）`);
     }
     this.refreshUi();
   }
@@ -1538,6 +1577,7 @@ export class Game {
 
     this.drawInteractionPrompt();
     this.drawNotice();
+    this.refreshFloorInfo();
   }
 
   private updateDamageNumbers(dt: number): void {
@@ -1781,6 +1821,50 @@ export class Game {
   private showNotice(text: string): void {
     this.notice = text;
     this.noticeTime = 1.8;
+  }
+
+  private refreshFloorInfo(): void {
+    const enemyCounts = new Map<string, number>();
+    for (const enemy of this.enemies) {
+      if (!enemy.alive) continue;
+      enemyCounts.set(enemy.type, (enemyCounts.get(enemy.type) ?? 0) + 1);
+    }
+
+    const enemyParts: string[] = [];
+    for (const [type, label] of Object.entries(ENEMY_DISPLAY_NAMES)) {
+      const count = enemyCounts.get(type) ?? 0;
+      if (count > 0) enemyParts.push(`<span class="floor-info-chip enemy-chip">${label}<b>×${count}</b></span>`);
+      enemyCounts.delete(type);
+    }
+    for (const [type, count] of enemyCounts) {
+      enemyParts.push(`<span class="floor-info-chip enemy-chip">${type}<b>×${count}</b></span>`);
+    }
+
+    const chestCounts = new Map<ChestRarity, number>();
+    for (const chest of this.chests) {
+      if (chest.opened) continue;
+      chestCounts.set(chest.rarity, (chestCounts.get(chest.rarity) ?? 0) + 1);
+    }
+
+    const chestParts = CHEST_RARITY_ORDER
+      .filter((rarity) => (chestCounts.get(rarity) ?? 0) > 0)
+      .map((rarity) => {
+        const count = chestCounts.get(rarity) ?? 0;
+        const className =
+          rarity === '銅' ? 'common' :
+          rarity === '銀' ? 'uncommon' :
+          rarity === '金' ? 'rare' :
+          'mythic';
+        return `<span class="floor-info-chip chest-chip ${className}">${getChestRarityLabel(rarity)}<b>×${count}</b></span>`;
+      });
+
+    const signature = `${this.floor}|${enemyParts.join('')}|${chestParts.join('')}`;
+    if (signature === this.floorInfoSignature) return;
+    this.floorInfoSignature = signature;
+
+    this.floorInfoEl.innerHTML =
+      `<div class="floor-info-row"><strong>現在の敵</strong><div class="floor-info-list">${enemyParts.join('') || '<span class="floor-info-empty">なし</span>'}</div></div>` +
+      `<div class="floor-info-row"><strong>宝箱</strong><div class="floor-info-list">${chestParts.join('') || '<span class="floor-info-empty">なし</span>'}</div></div>`;
   }
 
   private refreshUi(): void {
