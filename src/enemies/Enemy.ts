@@ -183,6 +183,7 @@ export abstract class Enemy implements PhysicsBody {
   private berserkTime = 0;
   private regenerationTime = 0;
   private regenerationTickTime = 0;
+  private regenerationBaseMaxHp: number | null = null;
 
   private aware = false;
   private loseSightTime = 0;
@@ -200,7 +201,7 @@ export abstract class Enemy implements PhysicsBody {
     public w: number,
     public h: number,
     public hp: number,
-    public readonly maxHp: number,
+    public maxHp: number,
   ) {
     this.homeX = x;
     this.homeY = y;
@@ -223,9 +224,15 @@ export abstract class Enemy implements PhysicsBody {
   applyHaste(duration: number): void { this.hasteTime = Math.max(this.hasteTime, duration); }
 
   applyBerserk(duration: number): void { this.berserkTime = Math.max(this.berserkTime, duration); }
-  get regenerationActive(): boolean { return this.regenerationTime > 0; }
+  get regenerationActive(): boolean { return this.regenerationTime > 0; }  applyRegeneration(duration: number): void {
+    if (!this.regenerationActive) {
+      const oldMaxHp = Math.max(1, this.maxHp);
+      const hpRatio = Math.max(0, Math.min(1, this.hp / oldMaxHp));
+      this.regenerationBaseMaxHp = oldMaxHp;
+      this.maxHp = oldMaxHp * 2;
+      this.hp = Math.max(1, Math.min(this.maxHp, Math.ceil(this.maxHp * hpRatio)));
+    }
 
-  applyRegeneration(duration: number): void {
     this.regenerationTime = Math.max(this.regenerationTime, duration);
     if (this.regenerationTickTime <= 0) this.regenerationTickTime = 0.25;
   }
@@ -243,7 +250,7 @@ export abstract class Enemy implements PhysicsBody {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.damageAlertTime = Math.max(0, this.damageAlertTime - dt);
     this.hasteTime = Math.max(0, this.hasteTime - dt);
-    this.berserkTime = Math.max(0, this.berserkTime - dt);
+    this.berserkTime = Math.max(0, this.berserkTime - dt);    const wasRegenerating = this.regenerationTime > 0;
     this.regenerationTime = Math.max(0, this.regenerationTime - dt);
     if (this.regenerationTime > 0) {
       this.regenerationTickTime -= dt;
@@ -254,6 +261,14 @@ export abstract class Enemy implements PhysicsBody {
       }
     } else {
       this.regenerationTickTime = 0;
+
+      if (wasRegenerating && this.regenerationBaseMaxHp !== null) {
+        const boostedMaxHp = Math.max(1, this.maxHp);
+        const hpRatio = Math.max(0, Math.min(1, this.hp / boostedMaxHp));
+        this.maxHp = this.regenerationBaseMaxHp;
+        this.hp = Math.max(1, Math.min(this.maxHp, Math.ceil(this.maxHp * hpRatio)));
+        this.regenerationBaseMaxHp = null;
+      }
     }
 
     if (this.knockbackTime > 0) {
@@ -317,6 +332,12 @@ export abstract class Enemy implements PhysicsBody {
     const dx = Math.abs(playerCenterX - enemyCenterX);
     const dy = Math.abs(playerCenterY - enemyCenterY);
 
+    const awarenessMultiplier = this.berserkActive ? 2 : 1;
+    const detectX = profile.detectX * awarenessMultiplier;
+    const detectY = profile.detectY * awarenessMultiplier;
+    const loseX = profile.loseX * awarenessMultiplier;
+    const loseY = profile.loseY * awarenessMultiplier;
+
     if (this.damageAlertTime > 0) {
       this.aware = true;
       this.loseSightTime = 0;
@@ -324,14 +345,14 @@ export abstract class Enemy implements PhysicsBody {
     }
 
     if (!this.aware) {
-      if (dx <= profile.detectX && dy <= profile.detectY) {
+      if (dx <= detectX && dy <= detectY) {
         this.aware = true;
         this.loseSightTime = 0;
       }
       return this.aware;
     }
 
-    if (dx <= profile.loseX && dy <= profile.loseY) {
+    if (dx <= loseX && dy <= loseY) {
       this.loseSightTime = 0;
       return true;
     }
