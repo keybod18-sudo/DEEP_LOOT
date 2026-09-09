@@ -22,7 +22,7 @@ const BUFF_DURATION = 30;
 const WALK_SPEED = 0.34;
 const KEEP_DISTANCE = 190;
 const RETREAT_SPEED = 0.72;
-const DRAW_SIZE = 72;
+const DRAW_SIZE = 64;
 
 const idleUrls = [1, 2].map((index) =>
   new URL(
@@ -117,6 +117,9 @@ export class Kyokoki extends Enemy {
       this.x += this.vx;
     }
 
+    // Movement direction is the rendered direction. Never walk backwards.
+    if (Math.abs(this.vx) > 0.01) this.facing = this.vx >= 0 ? 1 : -1;
+
     this.applyGravity(context);
   }
 
@@ -131,6 +134,8 @@ export class Kyokoki extends Enemy {
 
     this.supportTarget = choice.target;
     this.supportKind = choice.kind;
+    this.facing =
+      choice.target.x + choice.target.w / 2 >= this.x + this.w / 2 ? 1 : -1;
     this.state = 'drum';
     this.actionTime = 0;
     this.supportTriggered = false;

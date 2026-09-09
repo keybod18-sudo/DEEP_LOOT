@@ -1627,12 +1627,22 @@ export class Game {
 
   private drawNotice(): void {
     if (this.noticeTime <= 0 || !this.notice) return;
+
+    const right = this.ctx.canvas.width - 10;
+    const top = 10;
+    const height = 22;
+
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.82)';
-    this.ctx.fillRect(16, 16, 250, 30);
+    this.ctx.font = '11px system-ui';
+    const width = Math.min(210, Math.ceil(this.ctx.measureText(this.notice).width) + 16);
+    const left = right - width;
+
+    this.ctx.fillStyle = 'rgba(8, 12, 18, 0.78)';
+    this.ctx.fillRect(left, top, width, height);
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '14px system-ui';
-    this.ctx.fillText(this.notice, 26, 36);
+    this.ctx.textAlign = 'right';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(this.notice, right - 7, top + height / 2 + 0.5);
     this.ctx.restore();
   }
 

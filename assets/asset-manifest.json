@@ -1,5 +1,5 @@
 {
-  "version": "butterfly-facing-kyokoki-redesign-v1",
+  "version": "kyokoki-chibi-notice-ui-v1",
   "hashes": {
     "assets/player/idle/idle_01.png": "72fefd29eca92ce9e3e601fb83d19aa849ea63ae42e40bd32507b840e841a847",
     "assets/player/attack/attack_01.png": "5e6e43ab10a9e54476d7bd4f85f4457e8ed5c8f409b8d9e91d4df4e09e17d452",
@@ -172,11 +172,11 @@
     "assets/monsters/crystal_eye/frame_06.png": "cd7e4134938715d94085f152de53a4e51bcd931ec64c8eb0b53d3a73d40c0af1",
     "assets/monsters/crystal_eye/frame_07.png": "d21309c115fd4d634065683d11bea75928187c2984af6be7e5f00f39da6f9b7a",
     "assets/monsters/crystal_eye/frame_08.png": "cb62eea23bacd8318880aa53c51fc35b6b7f92aa43073c394825ce388d18321c",
-    "assets/monsters/kyokoki/idle_01.png": "555edbc5c6ec7a09a4e017ef87d30d32b343e46ac6db20244a543adcc652e2f4",
-    "assets/monsters/kyokoki/idle_02.png": "3533ed3a3466bb649c58e33041f98a33fe21b95cf004cd0fe166b7fe246ae371",
-    "assets/monsters/kyokoki/drum_01.png": "a7d128cb212854a5c0997b3b2404230b63613a9b8d01047aeaade75028587e69",
-    "assets/monsters/kyokoki/drum_02.png": "b1c44f106c54998b6f8a723d5f66924375de10e7d59699bf5b93a60cba26a85d",
-    "assets/monsters/kyokoki/drum_03.png": "8286ed0ad0b7f3fc933ac6ce52771fc53fd06a467fb1a817294226df76f2f9e9",
-    "assets/monsters/kyokoki/drum_04.png": "92213707f8b88af8c831e05d97a517f3f791cc872be2ee858840bc82aadaee4a"
+    "assets/monsters/kyokoki/idle_01.png": "28300baa0b9e59bd8028a48bbc5acdc8b9f98fd71dff87be728fb1ead508b05d",
+    "assets/monsters/kyokoki/idle_02.png": "c92e5f51fbf69f3edd4c32415ba82fb42b7bec5687034dda2607d2c08e43d3c2",
+    "assets/monsters/kyokoki/drum_01.png": "2a3376165702fcc13cdcd4d53c1156b88938748add4fe201bdd0a3748ec57522",
+    "assets/monsters/kyokoki/drum_02.png": "900c962466ac104b112758dde950b7330e33fcdc8d681a7bebaec00cef4fefd4",
+    "assets/monsters/kyokoki/drum_03.png": "b96659f79397369d33bb9b29bf66b0c2f55126b7c2df42a439eef80c6d50651b",
+    "assets/monsters/kyokoki/drum_04.png": "102adaba409163f2f50d90c134da8325b9f8c8e114b73f1268038ba100e18fb9"
   }
 }
