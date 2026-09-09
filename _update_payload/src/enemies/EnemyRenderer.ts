@@ -27,9 +27,6 @@ const batUrls = [1, 2, 3].map((index) =>
 const goblinWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/goblin/walk_0${index}.png`, import.meta.url).href,
 );
-const goblinClimbUrls = [1, 2].map((index) =>
-  new URL(`../../assets/monsters/goblin/climb_0${index}.svg`, import.meta.url).href,
-);
 const goblinSwingUrls = [1, 2, 3, 4, 5].map((index) =>
   new URL(`../../assets/monsters/goblin/swing_0${index}.png`, import.meta.url).href,
 );
@@ -67,9 +64,6 @@ const ratBiteUrls = [1, 2, 3, 4, 5, 6].map((index) =>
 const skeletonWalkUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(`../../assets/monsters/skeleton/walk_0${index}.png`, import.meta.url).href,
 );
-const skeletonClimbUrls = [1, 2].map((index) =>
-  new URL(`../../assets/monsters/skeleton/climb_0${index}.svg`, import.meta.url).href,
-);
 const skeletonAttackUrls = [1, 2, 3, 4].map((index) =>
   new URL(`../../assets/monsters/skeleton/attack_0${index}.png`, import.meta.url).href,
 );
@@ -105,25 +99,25 @@ const caterpillarPupaUrls = [1, 2, 3, 4].map((index) =>
 );
 const caterpillarFlyUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_fly/fly_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 const caterpillarRamUrls = [1, 2, 3, 4].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_ram/ram_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 const caterpillarPowderUrls = [1, 2, 3, 4, 5, 6].map((index) =>
   new URL(
-    `../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.svg`,
+    `../../assets/monsters/caterpillar/butterfly_powder/powder_${String(index).padStart(2, '0')}.png`,
     import.meta.url,
   ).href,
 );
 
 const SOURCE_FACING = {
-  goblin: -1,
+  goblin: 1,
   snake: -1,
   bat: 1,
   roper: -1,
@@ -230,114 +224,6 @@ function drawCenteredSprite(
   ctx.restore();
 }
 
-function drawRearClimbSprite(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  centerX: number,
-  footY: number,
-  targetVisibleHeight: number,
-): void {
-  const bounds = getOpaqueBounds(image);
-  const scale = targetVisibleHeight / Math.max(1, bounds.h);
-  const drawW = image.naturalWidth * scale;
-  const drawH = image.naturalHeight * scale;
-  const drawX = -(bounds.x + bounds.w / 2) * scale;
-  const drawY = -(bounds.y + bounds.h) * scale;
-
-  ctx.save();
-  ctx.translate(centerX, footY);
-  ctx.drawImage(image, drawX, drawY, drawW, drawH);
-  ctx.restore();
-}
-function drawClimbingSprite(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  centerX: number,
-  footY: number,
-  scale: number,
-  logicalFacing: Facing,
-  sourceFacing: Facing,
-  time: number,
-  gripColor: string,
-): void {
-  const bounds = getOpaqueBounds(image);
-  const drawW = image.naturalWidth * scale;
-  const drawH = image.naturalHeight * scale;
-  const drawX = -(bounds.x + bounds.w / 2) * scale;
-  const drawY = -(bounds.y + bounds.h) * scale;
-
-  const sourceW = Math.max(1, image.naturalWidth);
-  const sourceH = Math.max(1, image.naturalHeight);
-  const splitX = Math.floor(sourceW * 0.5);
-  const splitY = Math.floor(sourceH * 0.56);
-  const scaleX = drawW / sourceW;
-  const scaleY = drawH / sourceH;
-  const phase = Math.sin(time * 15);
-  const bob = Math.abs(Math.cos(time * 15)) * 1.5;
-  const upperShift = phase * 2.4;
-  const lowerShift = phase * 3.2;
-
-  ctx.save();
-  ctx.translate(centerX + phase * 0.8, footY - bob);
-  applySpriteFacing(ctx, logicalFacing, sourceFacing);
-
-  ctx.drawImage(
-    image,
-    0,
-    0,
-    splitX,
-    splitY,
-    drawX,
-    drawY + upperShift,
-    splitX * scaleX,
-    splitY * scaleY,
-  );
-  ctx.drawImage(
-    image,
-    splitX,
-    0,
-    sourceW - splitX,
-    splitY,
-    drawX + splitX * scaleX,
-    drawY - upperShift,
-    (sourceW - splitX) * scaleX,
-    splitY * scaleY,
-  );
-  ctx.drawImage(
-    image,
-    0,
-    splitY,
-    splitX,
-    sourceH - splitY,
-    drawX,
-    drawY + splitY * scaleY - lowerShift,
-    splitX * scaleX,
-    (sourceH - splitY) * scaleY,
-  );
-  ctx.drawImage(
-    image,
-    splitX,
-    splitY,
-    sourceW - splitX,
-    sourceH - splitY,
-    drawX + splitX * scaleX,
-    drawY + splitY * scaleY + lowerShift,
-    (sourceW - splitX) * scaleX,
-    (sourceH - splitY) * scaleY,
-  );
-
-  const visibleH = bounds.h * scale;
-  ctx.fillStyle = gripColor;
-  ctx.globalAlpha = 0.92;
-  const handY = -visibleH * 0.60;
-  const footLocalY = -visibleH * 0.16;
-  ctx.fillRect(-8, handY + phase * 4.8 - 2, 4, 4);
-  ctx.fillRect(4, handY - phase * 4.8 - 2, 4, 4);
-  ctx.fillRect(-9, footLocalY - phase * 4.8 - 2, 5, 4);
-  ctx.fillRect(4, footLocalY + phase * 4.8 - 2, 5, 4);
-
-  ctx.restore();
-}
 export class EnemyRenderer {
   private slimeImage!: HTMLImageElement;
   private clingImage!: HTMLImageElement;
@@ -347,7 +233,6 @@ export class EnemyRenderer {
   private readonly batImages: HTMLImageElement[] = [];
 
   private readonly goblinWalkImages: HTMLImageElement[] = [];
-  private readonly goblinClimbImages: HTMLImageElement[] = [];
   private readonly goblinSwingImages: HTMLImageElement[] = [];
   private readonly goblinLeapImages: HTMLImageElement[] = [];
   private readonly goblinSmashImages: HTMLImageElement[] = [];
@@ -363,7 +248,6 @@ export class EnemyRenderer {
   private readonly ratBiteImages: HTMLImageElement[] = [];
 
   private readonly skeletonWalkImages: HTMLImageElement[] = [];
-  private readonly skeletonClimbImages: HTMLImageElement[] = [];
   private readonly skeletonAttackImages: HTMLImageElement[] = [];
   private readonly skeletonHurtImages: HTMLImageElement[] = [];
 
@@ -388,7 +272,6 @@ export class EnemyRenderer {
       snake,
       bat,
       goblinWalk,
-      goblinClimb,
       goblinSwing,
       goblinLeap,
       goblinSmash,
@@ -400,7 +283,6 @@ export class EnemyRenderer {
       ratRun,
       ratBite,
       skeletonWalk,
-      skeletonClimb,
       skeletonAttack,
       skeletonHurt,
       skeletonArcherWalk,
@@ -415,7 +297,6 @@ export class EnemyRenderer {
       Promise.all(snakeUrls.map(loadImage)),
       Promise.all(batUrls.map(loadImage)),
       Promise.all(goblinWalkUrls.map(loadImage)),
-      Promise.all(goblinClimbUrls.map(loadImage)),
       Promise.all(goblinSwingUrls.map(loadImage)),
       Promise.all(goblinLeapUrls.map(loadImage)),
       Promise.all(goblinSmashUrls.map(loadImage)),
@@ -427,7 +308,6 @@ export class EnemyRenderer {
       Promise.all(ratRunUrls.map(loadImage)),
       Promise.all(ratBiteUrls.map(loadImage)),
       Promise.all(skeletonWalkUrls.map(loadImage)),
-      Promise.all(skeletonClimbUrls.map(loadImage)),
       Promise.all(skeletonAttackUrls.map(loadImage)),
       Promise.all(skeletonHurtUrls.map(loadImage)),
       Promise.all(skeletonArcherWalkUrls.map(loadImage)),
@@ -443,7 +323,6 @@ export class EnemyRenderer {
     this.snakeImages.push(...snake);
     this.batImages.push(...bat);
     this.goblinWalkImages.push(...goblinWalk);
-    this.goblinClimbImages.push(...goblinClimb);
     this.goblinSwingImages.push(...goblinSwing);
     this.goblinLeapImages.push(...goblinLeap);
     this.goblinSmashImages.push(...goblinSmash);
@@ -455,7 +334,6 @@ export class EnemyRenderer {
     this.ratRunImages.push(...ratRun);
     this.ratBiteImages.push(...ratBite);
     this.skeletonWalkImages.push(...skeletonWalk);
-    this.skeletonClimbImages.push(...skeletonClimb);
     this.skeletonAttackImages.push(...skeletonAttack);
     this.skeletonHurtImages.push(...skeletonHurt);
     this.skeletonArcherWalkImages.push(...skeletonArcherWalk);
@@ -488,19 +366,19 @@ export class EnemyRenderer {
 
   private drawSlime(ctx: CanvasRenderingContext2D, slime: Slime): void {
     let image = this.slimeImage;
-    let drawW = 34;
-    let drawH = 22;
+    let drawW = 72;
+    let drawH = 48;
     let drawY = slime.y + slime.h - drawH + 1;
     let crawlPhase = 0;
 
     if (slime.state === 'cling' || slime.state === 'drop') {
       image = this.clingImage;
-      drawW = 34;
-      drawH = 22;
+      drawW = 54;
+      drawH = 36;
       drawY = slime.y + 2;
     } else if (slime.state === 'pounce') {
-      drawW = 34;
-      drawH = 22;
+      drawW = 68;
+      drawH = 42;
       drawY = slime.y + slime.h - drawH;
     } else {
       crawlPhase = Math.sin(slime.actionTime * 11);
@@ -519,7 +397,7 @@ export class EnemyRenderer {
 
   private drawGoblin(ctx: CanvasRenderingContext2D, goblin: Goblin): void {
     let images: HTMLImageElement[] = this.goblinWalkImages;
-    let index = Math.floor(goblin.actionTime * (goblin.state === 'climb' ? 14 : 10)) % Math.max(1, images.length);
+    let index = Math.floor(goblin.actionTime * 10) % Math.max(1, images.length);
 
     if (goblin.state === 'swing') {
       images = this.goblinSwingImages;
@@ -543,34 +421,6 @@ export class EnemyRenderer {
     if (!image || !reference) return;
 
     const scale = scaleFromReference(reference, 62);
-    if (goblin.state === 'climb') {
-      const climbIndex =
-        Math.floor(goblin.actionTime * 5) % Math.max(1, this.goblinClimbImages.length);
-      const climbImage = this.goblinClimbImages[climbIndex];
-
-      if (climbImage?.complete && climbImage.naturalWidth > 0) {
-        drawRearClimbSprite(
-          ctx,
-          climbImage,
-          goblin.x + goblin.w / 2,
-          goblin.y + goblin.h + 2,
-          62,
-        );
-      } else {
-        drawClimbingSprite(
-          ctx,
-          image,
-          goblin.x + goblin.w / 2,
-          goblin.y + goblin.h + 2,
-          scale,
-          goblin.facing,
-          SOURCE_FACING.goblin,
-          goblin.actionTime,
-          '#8ca45a',
-        );
-      }
-      return;
-    }
     drawGroundedSprite(
       ctx,
       image,
@@ -821,24 +671,20 @@ export class EnemyRenderer {
 
   private drawSlug(ctx: CanvasRenderingContext2D, slug: Slug): void {
     const squashed = slug.knockbackTime > 0 && this.slugSquashImages.length > 0;
-    const idle = slug.paused ? !squashed : false;
     const images = squashed ? this.slugSquashImages : this.slugMoveImages;
     const speed = squashed ? 12 : 9;
-    const frame = idle ? 0 : Math.floor(slug.actionTime * speed) % Math.max(1, images.length);
+    const frame = Math.floor(slug.actionTime * speed) % Math.max(1, images.length);
     const image = images[frame] ?? images[0];
     const reference = this.slugMoveImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 22);
-    const idlePulse = idle ? Math.sin(slug.actionTime * 1.35) : 0;
-    const drawScale = scale * (1 + idlePulse * 0.007);
-    const idleLift = 0;
+    const scale = scaleFromReference(reference, 18);
     drawGroundedSprite(
       ctx,
       image,
       slug.x + slug.w / 2,
-      slug.y + slug.h + 1 + idleLift,
-      drawScale,
+      slug.y + slug.h + 1,
+      scale,
       slug.facing,
       SOURCE_FACING.slug,
     );
@@ -851,7 +697,7 @@ export class EnemyRenderer {
     const reference = this.ratRunImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 27);
+    const scale = scaleFromReference(reference, 24);
     drawGroundedSprite(
       ctx,
       image,
@@ -869,35 +715,35 @@ export class EnemyRenderer {
   ): void {
     let images: HTMLImageElement[];
     let index = 0;
-    let drawH = 44;
+    let drawH = 36;
 
     if (caterpillar.phase === 'larva') {
       images = this.caterpillarLarvaImages;
       index = Math.floor(caterpillar.actionTime * 9) % Math.max(1, images.length);
-      drawH = 44;
+      drawH = 34;
     } else if (caterpillar.phase === 'pupa') {
       images = this.caterpillarPupaImages;
       const progress = Math.min(
         0.999,
-        caterpillar.phaseTime / caterpillar.pupaEvolutionTime,
+        caterpillar.phaseTime / BALANCE.caterpillar.pupaDuration,
       );
       index = Math.min(images.length - 1, Math.floor(progress * images.length));
-      drawH = 104;
+      drawH = 42;
     } else if (caterpillar.butterflyState === 'powder') {
       images = this.caterpillarPowderImages;
       index = Math.floor(caterpillar.actionTime * 11) % Math.max(1, images.length);
-      drawH = 80;
+      drawH = 68;
     } else if (
       caterpillar.butterflyState === 'ram' ||
       caterpillar.butterflyState === 'ramWindup'
     ) {
       images = this.caterpillarRamImages;
       index = Math.floor(caterpillar.actionTime * 12) % Math.max(1, images.length);
-      drawH = 78;
+      drawH = 66;
     } else {
       images = this.caterpillarFlyImages;
       index = Math.floor(caterpillar.phaseTime * 11) % Math.max(1, images.length);
-      drawH = 84;
+      drawH = 72;
     }
 
     const image = images[index] ?? images[0];
@@ -1005,7 +851,7 @@ export class EnemyRenderer {
     if (!image || !swordReference || !archerReference) return;
 
     const swordBounds = getOpaqueBounds(swordReference);
-    const swordScale = scaleFromReference(swordReference, 72);
+    const swordScale = scaleFromReference(swordReference, 88);
     const targetVisibleH = swordBounds.h * swordScale;
     const archerReferenceBounds = getOpaqueBounds(archerReference);
     const scale = targetVisibleH / Math.max(1, archerReferenceBounds.h);
@@ -1051,43 +897,14 @@ export class EnemyRenderer {
         Math.floor((skeleton.actionTime / 0.42) * images.length),
       );
     } else {
-      frame = Math.floor(skeleton.actionTime * (skeleton.state === 'climb' ? 12 : 8)) % Math.max(1, images.length);
+      frame = Math.floor(skeleton.actionTime * 8) % Math.max(1, images.length);
     }
 
     const image = images[frame] ?? images[0];
     const reference = this.skeletonWalkImages[0] ?? image;
     if (!image || !reference) return;
 
-    const scale = scaleFromReference(reference, 72);
-    const sourceFacing = attacking ? 1 : SOURCE_FACING.skeleton;
-    if (skeleton.state === 'climb') {
-      const climbIndex =
-        Math.floor(skeleton.actionTime * 5) % Math.max(1, this.skeletonClimbImages.length);
-      const climbImage = this.skeletonClimbImages[climbIndex];
-
-      if (climbImage?.complete && climbImage.naturalWidth > 0) {
-        drawRearClimbSprite(
-          ctx,
-          climbImage,
-          skeleton.x + skeleton.w / 2,
-          skeleton.y + skeleton.h + 1,
-          72,
-        );
-      } else {
-        drawClimbingSprite(
-          ctx,
-          image,
-          skeleton.x + skeleton.w / 2,
-          skeleton.y + skeleton.h + 1,
-          scale,
-          skeleton.facing,
-          sourceFacing,
-          skeleton.actionTime,
-          '#e0d6bd',
-        );
-      }
-      return;
-    }
+    const scale = scaleFromReference(reference, 88);
     drawGroundedSprite(
       ctx,
       image,
@@ -1095,7 +912,7 @@ export class EnemyRenderer {
       skeleton.y + skeleton.h + 1,
       scale,
       skeleton.facing,
-      sourceFacing,
+      SOURCE_FACING.skeleton,
     );
   }
 }

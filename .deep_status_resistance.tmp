@@ -1,0 +1,20 @@
+  statusResistanceFor(status: StatusKind): number {
+    const armor = this.equippedArmor;
+    if (!armor) return 0;
+
+    const resistances = this.armorAbilities(armor).map((ability) => {
+      if (ability.kind === 'resist') {
+        return Math.max(0, Math.min(1, ability.value));
+      }
+
+      if (ability.effect?.type !== 'statusResist') return 0;
+      const statuses = ability.effect.statuses;
+      if (statuses && statuses.length > 0 && !statuses.includes(status)) return 0;
+      return Math.max(0, Math.min(1, ability.effect.resistance ?? 0));
+    });
+
+    return Math.min(1, 1 - resistances.reduce(
+      (remaining, resistance) => remaining * (1 - resistance),
+      1,
+    ));
+  }

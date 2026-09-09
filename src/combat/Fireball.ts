@@ -5,6 +5,9 @@ const frameUrls = [1, 2, 3, 4, 5, 6, 7, 8].map((index) =>
   new URL(`../../assets/effects/fireball/fireball_0${index}.png`, import.meta.url).href,
 );
 
+type SpriteBounds = { x: number; y: number; w: number; h: number };
+const boundsCache = new WeakMap<HTMLImageElement, SpriteBounds>();
+
 export class Fireball {
   static readonly images: HTMLImageElement[] = [];
 
@@ -39,56 +42,111 @@ export class Fireball {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.alive) return;
+    if (!this.alive || Fireball.images.length < 8) return;
 
     const centerX = this.x + this.w / 2;
     const centerY = this.y + this.h / 2;
-    const flicker = Math.sin(this.age * 20) * 1.5;
-    const tail = 18 + Math.sin(this.age * 16) * 2;
+    const flightIndex = Math.floor(this.age * 15) % 4;
+    const sparkIndex = 4 + (Math.floor(this.age * 21) % 4);
+    const core = Fireball.images[flightIndex];
+    const spark = Fireball.images[sparkIndex];
+    if (!core || !spark) return;
 
     ctx.save();
     ctx.translate(centerX, centerY);
     if (this.facing < 0) ctx.scale(-1, 1);
+    ctx.imageSmoothingEnabled = false;
 
-    ctx.fillStyle = '#5f1b08';
-    ctx.beginPath();
-    ctx.ellipse(-tail * 0.45, 0, tail, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.save();
+    ctx.globalAlpha = 0.52;
+    ctx.globalCompositeOperation = 'lighter';
+    drawCropped(
+      ctx,
+      spark,
+      -18,
+      0,
+      BALANCE.fireball.drawHeight * 0.62,
+    );
+    ctx.restore();
 
-    ctx.fillStyle = '#c74a12';
-    ctx.beginPath();
-    ctx.ellipse(-tail * 0.28, 0, tail * 0.78, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ff7a1a';
-    ctx.beginPath();
-    ctx.ellipse(2, 0, 18 + flicker, 12 + flicker * 0.25, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffc53d';
-    ctx.beginPath();
-    ctx.ellipse(6, 0, 11 + flicker * 0.45, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#fff2a6';
-    ctx.beginPath();
-    ctx.ellipse(9, 0, 5, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffd168';
-    ctx.fillRect(-18, -2, 8, 2);
-    ctx.fillRect(-24, -1, 6, 1);
-    ctx.fillRect(-14, 3, 5, 1);
-
+    ctx.shadowColor = '#ff7b1f';
+    ctx.shadowBlur = 9;
+    drawCropped(
+      ctx,
+      core,
+      4,
+      0,
+      BALANCE.fireball.drawHeight,
+    );
     ctx.restore();
   }
+}
+
+function drawCropped(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  centerY: number,
+  targetHeight: number,
+): void {
+  const bounds = getOpaqueBounds(image);
+  const scale = targetHeight / Math.max(1, bounds.h);
+  const drawW = Math.max(1, Math.round(bounds.w * scale));
+  const drawH = Math.max(1, Math.round(bounds.h * scale));
+  ctx.drawImage(
+    image,
+    bounds.x,
+    bounds.y,
+    bounds.w,
+    bounds.h,
+    Math.round(centerX - drawW / 2),
+    Math.round(centerY - drawH / 2),
+    drawW,
+    drawH,
+  );
+}
+
+function getOpaqueBounds(image: HTMLImageElement): SpriteBounds {
+  const cached = boundsCache.get(image);
+  if (cached) return cached;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, image.naturalWidth);
+  canvas.height = Math.max(1, image.naturalHeight);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    return { x: 0, y: 0, w: canvas.width, h: canvas.height };
+  }
+
+  ctx.drawImage(image, 0, 0);
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let minX = canvas.width;
+  let minY = canvas.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < canvas.height; y += 1) {
+    for (let x = 0; x < canvas.width; x += 1) {
+      if (data[(y * canvas.width + x) * 4 + 3] < 24) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  const bounds = maxX < minX
+    ? { x: 0, y: 0, w: canvas.width, h: canvas.height }
+    : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  boundsCache.set(image, bounds);
+  return bounds;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`画像を読み込めません: ${src}`));
+    image.onerror = () => reject(new Error(`Fireball image load failed: ${src}`));
     image.src = src;
   });
 }

@@ -57,7 +57,7 @@
   },
   "snake": {
     "maxHp": 28,
-    "crawlSpeed": 0.48,
+    "crawlSpeed": 0.84,
     "biteDamage": 6,
     "strikeDistance": 48,
     "strikeDuration": 0.34,

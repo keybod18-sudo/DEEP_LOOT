@@ -18,9 +18,9 @@ export class Caterpillar extends Enemy {
   private powderReleased = false;
   private ramHit = false;
   private readonly larvaEvolutionTime =
-    this.larvaEvolutionTime * (0.65 + Math.random() * 0.70);
-  private readonly pupaEvolutionTime =
-    this.pupaEvolutionTime * (0.65 + Math.random() * 0.70);
+    BALANCE.caterpillar.larvaDuration * (0.65 + Math.random() * 0.70);
+  readonly pupaEvolutionTime =
+    BALANCE.caterpillar.pupaDuration * (0.65 + Math.random() * 0.70);
   private wanderAngle = Math.random() * Math.PI * 2;
   private wanderTime = 0.8 + Math.random() * 1.8;
 

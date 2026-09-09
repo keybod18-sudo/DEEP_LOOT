@@ -249,34 +249,6 @@ export class Stage {
     this.drawPlatformUnderside(ctx, platform, top + rowCount * TILE + 2);
   }
 
-  private drawLadder(ctx: CanvasRenderingContext2D, ladder: StageLadder): void {
-    const railLeft = ladder.x + 4;
-    const railRight = ladder.x + ladder.w - 4;
-    const rungStep = 14;
-
-    ctx.save();
-    ctx.lineCap = 'square';
-
-    ctx.strokeStyle = this.themeKind === 'mine' ? '#4f3420' : '#3e4020';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(railLeft, ladder.y - 18);
-    ctx.lineTo(railLeft, ladder.y + ladder.h + 3);
-    ctx.moveTo(railRight, ladder.y - 18);
-    ctx.lineTo(railRight, ladder.y + ladder.h + 3);
-    ctx.stroke();
-
-    ctx.strokeStyle = this.themeKind === 'mine' ? '#9a6538' : '#7e7b37';
-    ctx.lineWidth = 3;
-    for (let y = ladder.y - 10; y < ladder.y + ladder.h; y += rungStep) {
-      ctx.beginPath();
-      ctx.moveTo(railLeft, y);
-      ctx.lineTo(railRight, y);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
   private drawPlatformUnderside(ctx: CanvasRenderingContext2D, platform: Platform, y: number): void {
     const n = hash2(platform.x, platform.y, this.seed ^ 0xa81f);
     if (this.themeKind === 'mine' && platform.w >= 100 && (n % 3) !== 1) {
