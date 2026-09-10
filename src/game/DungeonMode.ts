@@ -48,6 +48,98 @@ export const DUNGEON_FLOORS: readonly DungeonFloorConfig[] = [
   floor(15, 6, [['kyokokiPurple', 2], ['kyokoki', 2], ['crystalEye', 2], ['elemental', 4], ['ahriman', 3], ['redBee', 3], ['totemEyeDecay', 2]]),
 ];
 
+// Shiren-like cumulative EXP curve.
+// Lv1=0, Lv2=10, Lv3=30. This makes very early levels quick.
+export const DUNGEON_PLAYER_EXP_THRESHOLDS: readonly number[] = [
+  0,
+  10,
+  30,
+  60,
+  100,
+  150,
+  230,
+  350,
+  500,
+  700,
+  950,
+  1200,
+  1500,
+  1800,
+  2300,
+  2800,
+  3500,
+  4200,
+  5000,
+  6000,
+  7000,
+  8000,
+  10000,
+  13000,
+  16000,
+  20000,
+  25000,
+  30000,
+  36000,
+  42000,
+];
+
+const DUNGEON_ENEMY_BASE_EXP: Record<EnemyKind, number> = {
+  slime: 2,
+  goblin: 4,
+  rat: 3,
+  snake: 5,
+  bat: 6,
+  caterpillar: 7,
+  slug: 7,
+  skeleton: 10,
+  skeletonArcher: 12,
+  bee: 8,
+  roper: 12,
+  frostMite: 10,
+  ahriman: 15,
+  redBee: 10,
+  bomb: 14,
+  kagenoko: 14,
+  crystalEye: 20,
+  elemental: 18,
+  decaySlug: 16,
+  totemEye: 18,
+  mizaru: 18,
+  iwazaru: 18,
+  kikazaru: 18,
+  kyokoki: 25,
+  totemEyeDecay: 22,
+  kyokokiPurple: 35,
+};
+
 export function getDungeonFloorConfig(floorNumber: number): DungeonFloorConfig | null {
   return DUNGEON_FLOORS.find((config) => config.floor === floorNumber) ?? null;
+}
+
+export function getDungeonPlayerLevelForExp(experience: number): number {
+  const exp = Math.max(0, Math.floor(experience));
+  let level = 1;
+
+  for (let index = 1; index < DUNGEON_PLAYER_EXP_THRESHOLDS.length; index += 1) {
+    if (exp < DUNGEON_PLAYER_EXP_THRESHOLDS[index]!) break;
+    level = index + 1;
+  }
+
+  return level;
+}
+
+export function getDungeonNextLevelExperience(level: number): number | null {
+  const normalizedLevel = Math.max(1, Math.floor(level));
+  return DUNGEON_PLAYER_EXP_THRESHOLDS[normalizedLevel] ?? null;
+}
+
+export function getDungeonEnemyExperience(
+  kind: EnemyKind,
+  floorNumber: number,
+): number {
+  const base = DUNGEON_ENEMY_BASE_EXP[kind] ?? 3;
+  // Small floor multiplier keeps expected player level rising roughly with depth
+  // without hard-forcing a level on staircase use.
+  const floorMultiplier = 1 + Math.max(0, floorNumber - 1) * 0.05;
+  return Math.max(1, Math.round(base * floorMultiplier));
 }

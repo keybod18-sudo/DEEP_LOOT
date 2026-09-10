@@ -4,6 +4,7 @@ import { Game } from './game/Game';
 const canvas = document.querySelector<HTMLCanvasElement>('#game');
 const floorEl = document.querySelector<HTMLElement>('#floor');
 const levelEl = document.querySelector<HTMLElement>('#player-level');
+const experienceEl = document.querySelector<HTMLElement>('#experience');
 const hpEl = document.querySelector<HTMLElement>('#hp');
 const attackEl = document.querySelector<HTMLElement>('#attack');
 const defenseEl = document.querySelector<HTMLElement>('#defense');
@@ -12,13 +13,14 @@ const resetButton = document.querySelector<HTMLButtonElement>('#reset');
 const menuButton = document.querySelector<HTMLButtonElement>('#menu-button');
 const menuRoot = document.querySelector<HTMLElement>('#game-menu');
 
-if (!canvas || !floorEl || !levelEl || !hpEl || !attackEl || !defenseEl || !goldEl || !resetButton || !menuButton || !menuRoot) {
+if (!canvas || !floorEl || !levelEl || !experienceEl || !hpEl || !attackEl || !defenseEl || !goldEl || !resetButton || !menuButton || !menuRoot) {
   throw new Error('DEEP LOOTのDOM要素が不足しています。');
 }
 
 const game = new Game(canvas, {
   floor: floorEl,
   level: levelEl,
+  experience: experienceEl,
   hp: hpEl,
   attack: attackEl,
   defense: defenseEl,

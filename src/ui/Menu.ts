@@ -12,6 +12,8 @@ import type {
 export interface MenuStatus {
   floor: number;
   level: number | null;
+  experience: number | null;
+  nextExperience: number | null;
   hp: number;
   maxHp: number;
   attack: number;
@@ -57,6 +59,7 @@ export class MenuUI {
     statusEl.innerHTML = `
       <div><span>階層</span><b>${status.floor}</b></div>
       <div><span>LV</span><b>${status.level ?? '-'}</b></div>
+      <div><span>EXP</span><b>${status.experience === null ? '-' : (status.nextExperience === null ? status.experience : `${status.experience} / ${status.nextExperience}`)}</b></div>
       <div><span>HP</span><b>${status.hp} / ${status.maxHp}</b></div>
       <div><span>攻撃</span><b>${status.attack}</b></div>
       <div><span>防御</span><b>${status.defense}</b></div>

@@ -38,7 +38,7 @@ import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
 import { createDungeonStage } from '../stage/DungeonGenerator';
 import { GameLoop } from './GameLoop';
-import { DUNGEON_FLOORS, GAME_MODE_LABELS, getDungeonFloorConfig, type GameMode } from './DungeonMode';
+import { DUNGEON_FLOORS, GAME_MODE_LABELS, getDungeonEnemyExperience, getDungeonFloorConfig, getDungeonNextLevelExperience, getDungeonPlayerLevelForExp, type GameMode } from './DungeonMode';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
 import { TreasureChest, getChestRarityLabel, type ChestRarity } from '../items/TreasureChest';
@@ -46,6 +46,7 @@ import { TreasureChest, getChestRarityLabel, type ChestRarity } from '../items/T
 export interface HudElements {
   floor: HTMLElement;
   level: HTMLElement;
+  experience: HTMLElement;
   hp: HTMLElement;
   attack: HTMLElement;
   defense: HTMLElement;
@@ -127,6 +128,7 @@ export class Game {
   private floor = 1;
   private gameMode: GameMode = 'default';
   private playerLevel = 1;
+  private playerExperience = 0;
   private readonly menuRoot: HTMLElement;
   private notice = '';
   private noticeTime = 0;
@@ -206,6 +208,7 @@ export class Game {
   reset(): void {
     this.floor = 1;
     this.playerLevel = 1;
+    this.playerExperience = 0;
     this.player.reset();
     this.inventory.clear();
     if (this.gameMode !== 'dungeon') {
@@ -283,26 +286,32 @@ export class Game {
   }
 
 
-  private syncDungeonPlayerLevel(): void {
-    if (this.gameMode !== 'dungeon') {
-      this.playerLevel = 1;
-      return;
-    }
 
-    const config = getDungeonFloorConfig(this.floor);
-    const nextLevel = config?.enemyLevel ?? 1;
-    if (nextLevel === this.playerLevel) return;
+  private addDungeonExperience(enemy: Enemy): void {
+    if (this.gameMode !== 'dungeon') return;
+
+    const gained = getDungeonEnemyExperience(enemy.type, this.floor);
+    this.playerExperience += gained;
+
+    const nextLevel = getDungeonPlayerLevelForExp(this.playerExperience);
+    if (nextLevel <= this.playerLevel) return;
 
     const oldMaxHp = this.maxHp;
     this.playerLevel = nextLevel;
     const newMaxHp = this.maxHp;
 
+    // Level-up adds only the newly gained max HP instead of fully healing.
     if (newMaxHp > oldMaxHp) {
-      // Level-up increases current HP by the amount max HP increased.
-      this.player.hp = Math.min(newMaxHp, this.player.hp + (newMaxHp - oldMaxHp));
+      this.player.heal(newMaxHp - oldMaxHp, newMaxHp);
     } else {
       this.player.clampHp(newMaxHp);
     }
+
+    this.showNotice(`LEVEL UP! Lv${this.playerLevel}`);
+  }
+
+  private get dungeonNextLevelExp(): number | null {
+    return getDungeonNextLevelExperience(this.playerLevel);
   }
 
   toggleMenu(): void {
@@ -906,14 +915,14 @@ export class Game {
   }
 
   private handleEnemyKilled(enemy: Enemy): void {
-    this.gold += 5 + (this.gameMode === 'dungeon' ? 0 : this.inventory.goldFindBonus);
+    this.addDungeonExperience(enemy);
 
-    if (this.gameMode === 'dungeon') {
-      // Dungeon mode has no weapons or armor. Enemy kills only award gold.
-      return;
+    this.gold += 5 + this.inventory.goldFindBonus;
+    if (this.inventory.killHeal > 0) {
+      this.player.heal(this.inventory.killHeal, this.maxHp);
     }
 
-    if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
+    // Dungeon mode also drops weapons, armor and consumables.
     this.loot.push(new LootDrop(
       enemy.x + enemy.w / 2 - 7,
       enemy.y + enemy.h / 2 - 7,
@@ -947,7 +956,6 @@ export class Game {
       return;
     }
     this.floor += 1;
-    this.syncDungeonPlayerLevel();
     this.loot = [];
     this.fireballs = [];
     this.thunderStrikes = [];
@@ -1440,12 +1448,6 @@ export class Game {
     const goldReward = 12 + Math.floor(Math.random() * 19) + this.floor * 2;
     this.gold += goldReward;
 
-    if (this.gameMode === 'dungeon') {
-      // Dungeon mode chest: gold only. No weapon/armor can enter the run.
-      this.showNotice(`${getChestRarityLabel(chest.rarity)}宝箱: ${goldReward}G`);
-      this.refreshUi();
-      return;
-    }
 
     const item = createTreasureItem(this.floor + 1, chest.rarity);
     if (this.inventory.add(item)) {
@@ -1489,20 +1491,12 @@ export class Game {
   }
 
   private equipWeapon(index: number): void {
-    if (this.gameMode === 'dungeon') {
-      this.showNotice('ダンジョンでは武器を装備しない');
-      return;
-    }
     this.inventory.equipWeapon(index);
     this.showNotice(`武器: ${this.inventory.equippedWeapon?.name ?? 'なし'}`);
     this.refreshUi();
   }
 
   private equipArmor(index: number): void {
-    if (this.gameMode === 'dungeon') {
-      this.showNotice('ダンジョンでは防具を装備しない');
-      return;
-    }
     this.inventory.equipArmor(index);
     this.player.clampHp(this.maxHp);
     this.showNotice(`防具: ${this.inventory.equippedArmor?.name ?? 'なし'}`);
@@ -2019,11 +2013,11 @@ export class Game {
       ? getDungeonFloorConfig(this.floor)
       : null;
     const modeDetail = dungeonConfig
-      ? ` / 主人公Lv${this.playerLevel} / 敵Lv${dungeonConfig.enemyLevel}`
+      ? ` / 主人公Lv${this.playerLevel} / EXP ${this.playerExperience}${this.dungeonNextLevelExp === null ? '' : `/${this.dungeonNextLevelExp}`} / 敵Lv${dungeonConfig.enemyLevel}`
       : '';
 
     const signature =
-      `${this.gameMode}|${this.floor}|${enemyParts.join('')}|${chestParts.join('')}`;
+      `${this.gameMode}|${this.floor}|${this.playerLevel}|${this.playerExperience}|${enemyParts.join('')}|${chestParts.join('')}`;
     if (signature === this.floorInfoSignature) return;
     this.floorInfoSignature = signature;
 
@@ -2036,6 +2030,10 @@ export class Game {
   private refreshUi(): void {
     this.hud.floor.textContent = String(this.floor);
     this.hud.level.textContent = this.gameMode === 'dungeon' ? String(this.playerLevel) : '-';
+    const nextExp = this.dungeonNextLevelExp;
+    this.hud.experience.textContent = this.gameMode === 'dungeon'
+      ? (nextExp === null ? String(this.playerExperience) : `${this.playerExperience}/${nextExp}`)
+      : '-';
     this.hud.hp.textContent = `${this.player.hp}/${this.maxHp}`;
     this.hud.attack.textContent = String(this.totalAttack);
     this.hud.defense.textContent = String(this.totalDefense);
@@ -2043,6 +2041,8 @@ export class Game {
     this.menu.render({
       floor: this.floor,
       level: this.gameMode === 'dungeon' ? this.playerLevel : null,
+      experience: this.gameMode === 'dungeon' ? this.playerExperience : null,
+      nextExperience: this.gameMode === 'dungeon' ? this.dungeonNextLevelExp : null,
       hp: this.player.hp,
       maxHp: this.maxHp,
       attack: this.totalAttack,
@@ -2053,23 +2053,21 @@ export class Game {
   }
 
   private get totalAttack(): number {
-    if (this.gameMode === 'dungeon') {
-      return BALANCE.player.attackDamage + Math.max(0, this.playerLevel - 1);
-    }
-    return BALANCE.player.attackDamage + this.inventory.attackBonus;
+    const levelBonus = this.gameMode === 'dungeon'
+      ? Math.max(0, this.playerLevel - 1)
+      : 0;
+    return BALANCE.player.attackDamage + levelBonus + this.inventory.attackBonus;
   }
 
   private get totalDefense(): number {
-    if (this.gameMode === 'dungeon') return 0;
     return this.inventory.defenseBonus;
   }
 
   private get maxHp(): number {
-    if (this.gameMode === 'dungeon') {
-      // Final Dungeon HP. Equipment never modifies this value.
-      return 20 + (this.playerLevel - 1) * 5;
-    }
-    return BALANCE.player.maxHp + this.inventory.maxHpBonus;
+    const baseHp = this.gameMode === 'dungeon'
+      ? 20 + (this.playerLevel - 1) * 5
+      : BALANCE.player.maxHp;
+    return baseHp + this.inventory.maxHpBonus;
   }
 }
 
