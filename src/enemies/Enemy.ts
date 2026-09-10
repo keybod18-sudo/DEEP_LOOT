@@ -184,6 +184,8 @@ export abstract class Enemy implements PhysicsBody {
   actionTime = 0;
   cooldown = 0;
   knockbackTime = 0;
+  level = 1;
+  private levelAttackMultiplier = 1;
   private hasteTime = 0;
   private berserkTime = 0;
   private regenerationTime = 0;
@@ -194,6 +196,7 @@ export abstract class Enemy implements PhysicsBody {
   private loseSightTime = 0;
   private damageAlertTime = 0;
   private readonly homeX: number;
+  private readonly levelOneMaxHp: number;
   private readonly homeY: number;
   private idleDirection: Facing = Math.random() < 0.5 ? -1 : 1;
   private idleDecisionTime = 0.5 + Math.random() * 1.1;
@@ -210,6 +213,7 @@ export abstract class Enemy implements PhysicsBody {
   ) {
     this.homeX = x;
     this.homeY = y;
+    this.levelOneMaxHp = maxHp;
   }
 
   get alive(): boolean {
@@ -224,7 +228,28 @@ export abstract class Enemy implements PhysicsBody {
 
   get berserkActive(): boolean { return this.berserkTime > 0; }
 
-  get attackPowerMultiplier(): number { return this.berserkActive ? 1.55 : 1; }
+  get attackPowerMultiplier(): number {
+    const berserkMultiplier = this.berserkActive ? 1.55 : 1;
+    return this.levelAttackMultiplier * berserkMultiplier;
+  }
+
+  setLevel(level: number): void {
+    const normalizedLevel = Math.max(1, Math.floor(level));
+    const hpRatio = this.maxHp > 0
+      ? Math.max(0, Math.min(1, this.hp / this.maxHp))
+      : 1;
+
+    this.level = normalizedLevel;
+    this.levelAttackMultiplier = 1 + (normalizedLevel - 1) * 0.10;
+
+    // LV1 is exactly the current/default strength.
+    // Each extra level adds 20% max HP.
+    this.maxHp = Math.max(
+      1,
+      Math.ceil(this.levelOneMaxHp * (1 + (normalizedLevel - 1) * 0.20)),
+    );
+    this.hp = Math.max(1, Math.min(this.maxHp, Math.ceil(this.maxHp * hpRatio)));
+  }
 
   applyHaste(duration: number): void { this.hasteTime = Math.max(this.hasteTime, duration); }
 

@@ -35,6 +35,7 @@
               <button type="button" data-menu-page="weapons">&#x6B66;&#x5668;</button>
               <button type="button" data-menu-page="armor">&#x9632;&#x5177;</button>
               <button type="button" data-menu-page="magic">&#x9B54;&#x6CD5;</button>
+              <button type="button" data-menu-page="modes">&#x30E2;&#x30FC;&#x30C9;</button>
             </nav>
 
             <div class="menu-layout">
@@ -78,6 +79,27 @@
                     </section>
                   </div>
                 </div>
+                <div class="inventory-group menu-page mode-page" data-menu-panel="modes">
+                  <h2>ゲームモード</h2>
+                  <p class="mode-help">モードを切り替えると1Fから再スタートします。</p>
+                  <div class="mode-selector">
+                    <button type="button" class="mode-card is-active" data-game-mode="default">
+                      <strong>デフォルト</strong>
+                      <span>現在のランダム生成ルール。そのまま遊ぶ通常モード。</span>
+                    </button>
+                    <button type="button" class="mode-card" data-game-mode="dungeon">
+                      <strong>ダンジョン</strong>
+                      <span>フロアごとに敵構成と敵LVを固定。現在15Fまで。</span>
+                    </button>
+                    <button type="button" class="mode-card" data-game-mode="debug">
+                      <strong>デバッグ</strong>
+                      <span>現在は主人公のみ。敵・宝箱を出さない確認用モード。</span>
+                    </button>
+                  </div>
+                  <h3 class="dungeon-list-title">ダンジョン構成 1F - 15F</h3>
+                  <div id="dungeon-floor-preview" class="dungeon-floor-preview"></div>
+                </div>
+
               </section>
             </div>
           </div>

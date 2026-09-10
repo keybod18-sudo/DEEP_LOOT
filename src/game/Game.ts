@@ -38,6 +38,7 @@ import { Player } from '../player/Player';
 import { PlayerRenderer } from '../player/PlayerRenderer';
 import { createDungeonStage } from '../stage/DungeonGenerator';
 import { GameLoop } from './GameLoop';
+import { DUNGEON_FLOORS, GAME_MODE_LABELS, getDungeonFloorConfig, type GameMode } from './DungeonMode';
 import { Input } from './Input';
 import { MenuUI } from '../ui/Menu';
 import { TreasureChest, getChestRarityLabel, type ChestRarity } from '../items/TreasureChest';
@@ -123,6 +124,8 @@ export class Game {
   private cameraY = 0;
   private gold = 0;
   private floor = 1;
+  private gameMode: GameMode = 'default';
+  private readonly menuRoot: HTMLElement;
   private notice = '';
   private noticeTime = 0;
   private readonly floorInfoEl: HTMLElement;
@@ -137,6 +140,7 @@ export class Game {
     if (!context) throw new Error('2D Canvasを初期化できません。');
     this.ctx = context;
     this.ctx.imageSmoothingEnabled = false;
+    this.menuRoot = menuRoot;
 
     this.floorInfoEl = document.createElement('section');
     this.floorInfoEl.className = 'floor-info';
@@ -164,6 +168,18 @@ export class Game {
       onDiscard: (category, index) => this.discardItem(category, index),
       onClose: () => this.setMenuOpen(false),
     });
+
+    menuRoot.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest('[data-game-mode]');
+      if (!(button instanceof HTMLElement)) return;
+      const mode = button.dataset.gameMode;
+      if (mode === 'default' || mode === 'dungeon' || mode === 'debug') {
+        this.setGameMode(mode);
+      }
+    });
+    this.renderModeMenu();
   }
 
   async start(): Promise<void> {
@@ -218,6 +234,45 @@ export class Game {
     this.setMenuOpen(false);
     this.showNotice('探索開始');
     this.refreshUi();
+  }
+
+
+  private setGameMode(mode: GameMode): void {
+    if (this.gameMode === mode) {
+      this.syncModeButtons();
+      this.setMenuOpen(false);
+      return;
+    }
+
+    this.gameMode = mode;
+    this.syncModeButtons();
+    this.reset();
+    this.showNotice(`${GAME_MODE_LABELS[mode]}モード`);
+  }
+
+  private syncModeButtons(): void {
+    for (const button of this.menuRoot.querySelectorAll<HTMLElement>('[data-game-mode]')) {
+      button.classList.toggle('is-active', button.dataset.gameMode === this.gameMode);
+    }
+  }
+
+  private renderModeMenu(): void {
+    this.syncModeButtons();
+    const preview = this.menuRoot.querySelector<HTMLElement>('#dungeon-floor-preview');
+    if (!preview) return;
+
+    preview.innerHTML = DUNGEON_FLOORS.map((config) => {
+      const enemies = config.enemies.map((entry) => {
+        const label = ENEMY_DISPLAY_NAMES[entry.kind] ?? entry.kind;
+        return `<span class="dungeon-enemy-chip">${label}<b>×${entry.count}</b></span>`;
+      }).join('');
+
+      return `<div class="dungeon-floor-row">
+        <strong>${config.floor}F</strong>
+        <span class="dungeon-floor-level">敵Lv${config.enemyLevel}</span>
+        <div class="dungeon-floor-enemies">${enemies}</div>
+      </div>`;
+    }).join('');
   }
 
   toggleMenu(): void {
@@ -851,6 +906,10 @@ export class Game {
   private checkStaircase(): void {
     if (!intersects(this.player, this.stage.staircase)) return;
     if (!this.input.consumePress('e', 'enter')) return;
+    if (this.gameMode === 'dungeon' && this.floor >= DUNGEON_FLOORS.length) {
+      this.showNotice('ダンジョン15Fクリア');
+      return;
+    }
     this.floor += 1;
     this.loot = [];
     this.fireballs = [];
@@ -884,6 +943,12 @@ export class Game {
       platform.y > 105 &&
       platform.y < this.stage.height - 110
     );
+
+    if (this.gameMode === 'debug') {
+      this.enemies = [];
+      this.chests = [];
+      return;
+    }
 
     const occupied: Array<{ x: number; y: number }> = [];
 
@@ -1275,13 +1340,30 @@ export class Game {
     const enemyCount = Math.ceil((minEnemies + Math.floor(Math.random() * (maxEnemies - minEnemies + 1))) * 2.25);
 
     const generatedEnemies: Enemy[] = [];
-    // Keep at least one Red Bee visible on every floor so the new enemy cannot disappear by weight rolls.
-    generatedEnemies.push(spawnEnemy('redBee'));
-    generatedEnemies.push(spawnEnemy('decaySlug'));
-    for (let index = 0; index < enemyCount; index += 1) {
-      const kind = pickKind();
-      generatedEnemies.push(...spawnEnemyGroup(kind));
+
+    if (this.gameMode === 'dungeon') {
+      const dungeonConfig = getDungeonFloorConfig(this.floor);
+      if (!dungeonConfig) {
+        throw new Error(`Dungeon floor config missing: ${this.floor}F`);
+      }
+
+      for (const entry of dungeonConfig.enemies) {
+        for (let count = 0; count < entry.count; count += 1) {
+          const enemy = spawnEnemy(entry.kind as EnemyKind);
+          enemy.setLevel(entry.level);
+          generatedEnemies.push(enemy);
+        }
+      }
+    } else {
+      // Default mode keeps the existing random-spawn behaviour.
+      generatedEnemies.push(spawnEnemy('redBee'));
+      generatedEnemies.push(spawnEnemy('decaySlug'));
+      for (let index = 0; index < enemyCount; index += 1) {
+        const kind = pickKind();
+        generatedEnemies.push(...spawnEnemyGroup(kind));
+      }
     }
+
     this.enemies = shuffle(generatedEnemies);
 
     const chestCandidates = shuffle(
@@ -1742,6 +1824,18 @@ export class Game {
         enemy.hp,
         enemy.maxHp,
       );
+
+      if (this.gameMode === 'dungeon') {
+        this.ctx.save();
+        this.ctx.font = 'bold 8px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'bottom';
+        this.ctx.fillStyle = '#fff6d8';
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        this.ctx.shadowBlur = 2;
+        this.ctx.fillText(`Lv${enemy.level}`, enemy.x + enemy.w / 2, y - 2);
+        this.ctx.restore();
+      }
     }
   }
 
@@ -1822,21 +1916,29 @@ export class Game {
   }
 
   private refreshFloorInfo(): void {
-    const enemyCounts = new Map<string, number>();
+    const enemyCounts = new Map<string, { type: string; level: number; count: number }>();
     for (const enemy of this.enemies) {
       if (!enemy.alive) continue;
-      enemyCounts.set(enemy.type, (enemyCounts.get(enemy.type) ?? 0) + 1);
+      const level = this.gameMode === 'dungeon' ? enemy.level : 1;
+      const key = `${enemy.type}:${level}`;
+      const current = enemyCounts.get(key);
+      if (current) current.count += 1;
+      else enemyCounts.set(key, { type: enemy.type, level, count: 1 });
     }
 
-    const enemyParts: string[] = [];
-    for (const [type, label] of Object.entries(ENEMY_DISPLAY_NAMES)) {
-      const count = enemyCounts.get(type) ?? 0;
-      if (count > 0) enemyParts.push(`<span class="floor-info-chip enemy-chip">${label}<b>×${count}</b></span>`);
-      enemyCounts.delete(type);
-    }
-    for (const [type, count] of enemyCounts) {
-      enemyParts.push(`<span class="floor-info-chip enemy-chip">${type}<b>×${count}</b></span>`);
-    }
+    const enemyParts = [...enemyCounts.values()]
+      .sort((a, b) => {
+        const labelA = ENEMY_DISPLAY_NAMES[a.type] ?? a.type;
+        const labelB = ENEMY_DISPLAY_NAMES[b.type] ?? b.type;
+        return labelA.localeCompare(labelB, 'ja') || a.level - b.level;
+      })
+      .map(({ type, level, count }) => {
+        const label = ENEMY_DISPLAY_NAMES[type] ?? type;
+        const levelText = this.gameMode === 'dungeon'
+          ? `<small>Lv${level}</small>`
+          : '';
+        return `<span class="floor-info-chip enemy-chip">${label}${levelText}<b>×${count}</b></span>`;
+      });
 
     const chestCounts = new Map<ChestRarity, number>();
     for (const chest of this.chests) {
@@ -1856,11 +1958,20 @@ export class Game {
         return `<span class="floor-info-chip chest-chip ${className}">${getChestRarityLabel(rarity)}<b>×${count}</b></span>`;
       });
 
-    const signature = `${this.floor}|${enemyParts.join('')}|${chestParts.join('')}`;
+    const dungeonConfig = this.gameMode === 'dungeon'
+      ? getDungeonFloorConfig(this.floor)
+      : null;
+    const modeDetail = dungeonConfig
+      ? ` / 敵Lv${dungeonConfig.enemyLevel}`
+      : '';
+
+    const signature =
+      `${this.gameMode}|${this.floor}|${enemyParts.join('')}|${chestParts.join('')}`;
     if (signature === this.floorInfoSignature) return;
     this.floorInfoSignature = signature;
 
     this.floorInfoEl.innerHTML =
+      `<div class="floor-info-mode"><strong>${GAME_MODE_LABELS[this.gameMode]}</strong><span>${this.floor}F${modeDetail}</span></div>` +
       `<div class="floor-info-row"><strong>現在の敵</strong><div class="floor-info-list">${enemyParts.join('') || '<span class="floor-info-empty">なし</span>'}</div></div>` +
       `<div class="floor-info-row"><strong>宝箱</strong><div class="floor-info-list">${chestParts.join('') || '<span class="floor-info-empty">なし</span>'}</div></div>`;
   }
@@ -1879,6 +1990,7 @@ export class Game {
       defense: this.totalDefense,
       gold: this.gold,
     }, this.inventory);
+    this.refreshFloorInfo();
   }
 
   private get totalAttack(): number {
