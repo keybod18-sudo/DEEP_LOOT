@@ -171,16 +171,16 @@ export class Game {
       onClose: () => this.setMenuOpen(false),
     });
 
-    menuRoot.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      const button = target.closest('[data-game-mode]');
-      if (!(button instanceof HTMLElement)) return;
-      const mode = button.dataset.gameMode;
-      if (mode === 'default' || mode === 'dungeon' || mode === 'debug') {
-        this.setGameMode(mode);
-      }
-    });
+    for (const button of menuRoot.querySelectorAll<HTMLElement>('[data-game-mode]')) {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const mode = button.dataset.gameMode;
+        if (mode === 'default' || mode === 'dungeon' || mode === 'debug') {
+          this.setGameMode(mode);
+        }
+      });
+    }
     this.renderModeMenu();
   }
 
@@ -208,9 +208,11 @@ export class Game {
     this.playerLevel = 1;
     this.player.reset();
     this.inventory.clear();
-    const starterArmor = createStarterFaultArmor();
-    this.inventory.add(starterArmor);
-    this.inventory.equipArmor(0);
+    if (this.gameMode !== 'dungeon') {
+      const starterArmor = createStarterFaultArmor();
+      this.inventory.add(starterArmor);
+      this.inventory.equipArmor(0);
+    }
     this.player.clampHp(this.maxHp);
     this.player.heal(this.maxHp, this.maxHp);
     this.inventory.add(createHealingPotion());
@@ -904,7 +906,13 @@ export class Game {
   }
 
   private handleEnemyKilled(enemy: Enemy): void {
-    this.gold += 5 + this.inventory.goldFindBonus;
+    this.gold += 5 + (this.gameMode === 'dungeon' ? 0 : this.inventory.goldFindBonus);
+
+    if (this.gameMode === 'dungeon') {
+      // Dungeon mode has no weapons or armor. Enemy kills only award gold.
+      return;
+    }
+
     if (this.inventory.killHeal > 0) this.player.heal(this.inventory.killHeal, this.maxHp);
     this.loot.push(new LootDrop(
       enemy.x + enemy.w / 2 - 7,
@@ -1393,6 +1401,10 @@ export class Game {
       }
     }
 
+    if (this.gameMode === 'dungeon' && generatedEnemies.length === 0) {
+      throw new Error(`Dungeon spawn produced zero enemies on ${this.floor}F`);
+    }
+
     this.enemies = shuffle(generatedEnemies);
 
     const chestCandidates = shuffle(
@@ -1427,6 +1439,14 @@ export class Game {
     chest.opened = true;
     const goldReward = 12 + Math.floor(Math.random() * 19) + this.floor * 2;
     this.gold += goldReward;
+
+    if (this.gameMode === 'dungeon') {
+      // Dungeon mode chest: gold only. No weapon/armor can enter the run.
+      this.showNotice(`${getChestRarityLabel(chest.rarity)}宝箱: ${goldReward}G`);
+      this.refreshUi();
+      return;
+    }
+
     const item = createTreasureItem(this.floor + 1, chest.rarity);
     if (this.inventory.add(item)) {
       this.showNotice(`${getChestRarityLabel(chest.rarity)}宝箱: ${item.name} / ${goldReward}G`);
@@ -1469,12 +1489,20 @@ export class Game {
   }
 
   private equipWeapon(index: number): void {
+    if (this.gameMode === 'dungeon') {
+      this.showNotice('ダンジョンでは武器を装備しない');
+      return;
+    }
     this.inventory.equipWeapon(index);
     this.showNotice(`武器: ${this.inventory.equippedWeapon?.name ?? 'なし'}`);
     this.refreshUi();
   }
 
   private equipArmor(index: number): void {
+    if (this.gameMode === 'dungeon') {
+      this.showNotice('ダンジョンでは防具を装備しない');
+      return;
+    }
     this.inventory.equipArmor(index);
     this.player.clampHp(this.maxHp);
     this.showNotice(`防具: ${this.inventory.equippedArmor?.name ?? 'なし'}`);
@@ -2025,21 +2053,23 @@ export class Game {
   }
 
   private get totalAttack(): number {
-    const levelBonus = this.gameMode === 'dungeon'
-      ? Math.max(0, this.playerLevel - 1)
-      : 0;
-    return BALANCE.player.attackDamage + levelBonus + this.inventory.attackBonus;
+    if (this.gameMode === 'dungeon') {
+      return BALANCE.player.attackDamage + Math.max(0, this.playerLevel - 1);
+    }
+    return BALANCE.player.attackDamage + this.inventory.attackBonus;
   }
 
   private get totalDefense(): number {
+    if (this.gameMode === 'dungeon') return 0;
     return this.inventory.defenseBonus;
   }
 
   private get maxHp(): number {
-    const baseHp = this.gameMode === 'dungeon'
-      ? 20 + (this.playerLevel - 1) * 5
-      : BALANCE.player.maxHp;
-    return baseHp + this.inventory.maxHpBonus;
+    if (this.gameMode === 'dungeon') {
+      // Final Dungeon HP. Equipment never modifies this value.
+      return 20 + (this.playerLevel - 1) * 5;
+    }
+    return BALANCE.player.maxHp + this.inventory.maxHpBonus;
   }
 }
 
