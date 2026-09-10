@@ -32,67 +32,72 @@ const floor = (
 
 export const DUNGEON_FLOORS: readonly DungeonFloorConfig[] = [
   floor(1, 1, [
-    ['slime', 8],
+    ['slime', 7],
     ['goblin', 4],
+    ['rat', 3],
   ]),
   floor(2, 1, [
-    ['slime', 7],
-    ['goblin', 6],
-  ]),
-  floor(3, 2, [
-    ['slime', 5],
-    ['goblin', 6],
+    ['slime', 6],
+    ['goblin', 5],
     ['rat', 4],
+  ]),
+  floor(3, 1, [
+    ['slime', 5],
+    ['goblin', 5],
+    ['snake', 3],
+    ['rat', 3],
   ]),
   floor(4, 2, [
-    ['goblin', 6],
-    ['snake', 5],
-    ['rat', 4],
-  ]),
-  floor(5, 3, [
-    ['goblin', 6],
-    ['bat', 4],
-    ['caterpillar', 5],
-  ]),
-  floor(6, 3, [
-    ['slime', 4],
     ['goblin', 5],
-    ['skeleton', 5],
+    ['snake', 4],
+    ['bat', 3],
+    ['rat', 3],
+  ]),
+  floor(5, 2, [
+    ['goblin', 4],
+    ['snake', 4],
+    ['caterpillar', 4],
+    ['bat', 3],
+  ]),
+  floor(6, 2, [
+    ['skeleton', 4],
+    ['goblin', 4],
     ['slug', 3],
+    ['caterpillar', 4],
   ]),
   floor(7, 3, [
     ['skeleton', 5],
-    ['skeletonArcher', 3],
+    ['skeletonArcher', 2],
     ['bee', 4],
-    ['rat', 4],
+    ['rat', 3],
   ]),
-  floor(8, 4, [
-    ['goblin', 4],
-    ['roper', 3],
+  floor(8, 3, [
+    ['roper', 2],
     ['frostMite', 4],
-    ['bat', 4],
+    ['bee', 4],
+    ['bat', 3],
   ]),
-  floor(9, 4, [
-    ['ahriman', 3],
-    ['skeleton', 5],
+  floor(9, 3, [
+    ['ahriman', 2],
+    ['skeleton', 4],
     ['skeletonArcher', 3],
-    ['redBee', 4],
+    ['redBee', 3],
   ]),
   floor(10, 4, [
-    ['bomb', 4],
+    ['bomb', 3],
     ['kagenoko', 4],
-    ['caterpillar', 4],
     ['roper', 3],
+    ['caterpillar', 4],
   ]),
-  floor(11, 5, [
+  floor(11, 4, [
     ['crystalEye', 2],
-    ['elemental', 4],
-    ['skeleton', 5],
+    ['elemental', 3],
+    ['skeleton', 4],
     ['bee', 4],
   ]),
-  floor(12, 5, [
+  floor(12, 4, [
     ['decaySlug', 3],
-    ['totemEye', 3],
+    ['totemEye', 2],
     ['frostMite', 4],
     ['ahriman', 3],
   ]),
@@ -101,13 +106,13 @@ export const DUNGEON_FLOORS: readonly DungeonFloorConfig[] = [
     ['iwazaru', 2],
     ['kikazaru', 2],
     ['kagenoko', 4],
-    ['redBee', 4],
+    ['redBee', 3],
   ]),
-  floor(14, 6, [
+  floor(14, 5, [
     ['kyokoki', 2],
-    ['elemental', 5],
-    ['skeletonArcher', 4],
-    ['totemEyeDecay', 3],
+    ['elemental', 4],
+    ['skeletonArcher', 3],
+    ['totemEyeDecay', 2],
   ]),
   floor(15, 6, [
     ['kyokokiPurple', 2],
@@ -115,7 +120,7 @@ export const DUNGEON_FLOORS: readonly DungeonFloorConfig[] = [
     ['crystalEye', 2],
     ['elemental', 4],
     ['ahriman', 3],
-    ['redBee', 4],
+    ['redBee', 3],
     ['totemEyeDecay', 2],
   ]),
 ];
