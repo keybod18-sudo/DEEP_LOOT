@@ -45,6 +45,7 @@ import { TreasureChest, getChestRarityLabel, type ChestRarity } from '../items/T
 
 export interface HudElements {
   floor: HTMLElement;
+  level: HTMLElement;
   hp: HTMLElement;
   attack: HTMLElement;
   defense: HTMLElement;
@@ -125,6 +126,7 @@ export class Game {
   private gold = 0;
   private floor = 1;
   private gameMode: GameMode = 'default';
+  private playerLevel = 1;
   private readonly menuRoot: HTMLElement;
   private notice = '';
   private noticeTime = 0;
@@ -202,11 +204,14 @@ export class Game {
   }
 
   reset(): void {
+    this.floor = 1;
+    this.playerLevel = 1;
     this.player.reset();
     this.inventory.clear();
     const starterArmor = createStarterFaultArmor();
     this.inventory.add(starterArmor);
     this.inventory.equipArmor(0);
+    this.player.clampHp(this.maxHp);
     this.player.heal(this.maxHp, this.maxHp);
     this.inventory.add(createHealingPotion());
     this.inventory.add(createHealingPotion());
@@ -273,6 +278,29 @@ export class Game {
         <div class="dungeon-floor-enemies">${enemies}</div>
       </div>`;
     }).join('');
+  }
+
+
+  private syncDungeonPlayerLevel(): void {
+    if (this.gameMode !== 'dungeon') {
+      this.playerLevel = 1;
+      return;
+    }
+
+    const config = getDungeonFloorConfig(this.floor);
+    const nextLevel = config?.enemyLevel ?? 1;
+    if (nextLevel === this.playerLevel) return;
+
+    const oldMaxHp = this.maxHp;
+    this.playerLevel = nextLevel;
+    const newMaxHp = this.maxHp;
+
+    if (newMaxHp > oldMaxHp) {
+      // Level-up increases current HP by the amount max HP increased.
+      this.player.hp = Math.min(newMaxHp, this.player.hp + (newMaxHp - oldMaxHp));
+    } else {
+      this.player.clampHp(newMaxHp);
+    }
   }
 
   toggleMenu(): void {
@@ -911,6 +939,7 @@ export class Game {
       return;
     }
     this.floor += 1;
+    this.syncDungeonPlayerLevel();
     this.loot = [];
     this.fireballs = [];
     this.thunderStrikes = [];
@@ -1962,7 +1991,7 @@ export class Game {
       ? getDungeonFloorConfig(this.floor)
       : null;
     const modeDetail = dungeonConfig
-      ? ` / 敵Lv${dungeonConfig.enemyLevel}`
+      ? ` / 主人公Lv${this.playerLevel} / 敵Lv${dungeonConfig.enemyLevel}`
       : '';
 
     const signature =
@@ -1978,12 +2007,14 @@ export class Game {
 
   private refreshUi(): void {
     this.hud.floor.textContent = String(this.floor);
+    this.hud.level.textContent = this.gameMode === 'dungeon' ? String(this.playerLevel) : '-';
     this.hud.hp.textContent = `${this.player.hp}/${this.maxHp}`;
     this.hud.attack.textContent = String(this.totalAttack);
     this.hud.defense.textContent = String(this.totalDefense);
     this.hud.gold.textContent = String(this.gold);
     this.menu.render({
       floor: this.floor,
+      level: this.gameMode === 'dungeon' ? this.playerLevel : null,
       hp: this.player.hp,
       maxHp: this.maxHp,
       attack: this.totalAttack,
@@ -1994,7 +2025,10 @@ export class Game {
   }
 
   private get totalAttack(): number {
-    return BALANCE.player.attackDamage + this.inventory.attackBonus;
+    const levelBonus = this.gameMode === 'dungeon'
+      ? Math.max(0, this.playerLevel - 1)
+      : 0;
+    return BALANCE.player.attackDamage + levelBonus + this.inventory.attackBonus;
   }
 
   private get totalDefense(): number {
@@ -2002,7 +2036,10 @@ export class Game {
   }
 
   private get maxHp(): number {
-    return BALANCE.player.maxHp + this.inventory.maxHpBonus;
+    const baseHp = this.gameMode === 'dungeon'
+      ? 20 + (this.playerLevel - 1) * 5
+      : BALANCE.player.maxHp;
+    return baseHp + this.inventory.maxHpBonus;
   }
 }
 
